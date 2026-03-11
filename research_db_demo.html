@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpecimenBase — Research Data Repository</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f0c;
+    --surface: #141510;
+    --border: #2a2b25;
+    --accent: #c8f04a;
+    --accent-dim: #8aaa2a;
+    --text: #e8e8e0;
+    --text-muted: #6b6b60;
+    --text-dim: #3a3a32;
+    --tag-bg: #1e1f18;
+    --tag-border: #2e2f28;
+    --danger: #f05a4a;
+    --info: #4ab8f0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(14,15,12,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 2rem; height: 56px; gap: 2rem;
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 17px;
+    color: var(--accent); letter-spacing: -0.5px;
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--text-muted); font-weight: 400; }
+  .nav-links { display: flex; gap: 0; margin-left: auto; }
+  .nav-links a {
+    color: var(--text-muted); text-decoration: none;
+    padding: 0 1rem; height: 56px; display: flex;
+    align-items: center; font-size: 12px; letter-spacing: 0.05em;
+    text-transform: uppercase; transition: color 0.15s;
+    border-bottom: 2px solid transparent;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-links a.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .nav-btn {
+    background: var(--accent); color: #0e0f0c;
+    border: none; padding: 7px 16px; border-radius: 4px;
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    font-weight: 500; cursor: pointer; letter-spacing: 0.03em;
+    text-transform: uppercase; margin-left: 1rem;
+  }
+
+  /* ── PAGE TABS ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 80px 2rem 60px;
+    max-width: 1100px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
+    align-items: center;
+  }
+  .hero-label {
+    font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--accent-dim); margin-bottom: 1rem;
+  }
+  .hero h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(38px, 5vw, 58px);
+    line-height: 1.1; color: var(--text);
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 em { color: var(--accent); font-style: italic; }
+  .hero p { color: var(--text-muted); font-size: 14px; line-height: 1.8; margin-bottom: 2rem; }
+  .hero-stats {
+    display: flex; gap: 2rem;
+  }
+  .stat { border-left: 2px solid var(--border); padding-left: 1rem; }
+  .stat-n {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 28px; color: var(--accent); line-height: 1;
+  }
+  .stat-label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+  .hero-search {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 2rem;
+  }
+  .search-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 1rem; }
+  .search-input-wrap {
+    display: flex; gap: 8px; margin-bottom: 1rem;
+  }
+  .search-input {
+    flex: 1; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 10px 14px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--text-dim); }
+  .btn-accent {
+    background: var(--accent); color: #0e0f0c;
+    border: none; padding: 10px 20px; border-radius: 4px;
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    font-weight: 500; cursor: pointer; white-space: nowrap;
+  }
+  .btn-outline {
+    background: transparent; color: var(--text-muted);
+    border: 1px solid var(--border); padding: 8px 16px;
+    border-radius: 4px; font-family: 'DM Mono', monospace;
+    font-size: 12px; cursor: pointer;
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: var(--tag-bg); border: 1px solid var(--tag-border);
+    border-radius: 3px; padding: 4px 10px; font-size: 11px;
+    color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .chip:hover, .chip.active { border-color: var(--accent); color: var(--accent); background: rgba(200,240,74,0.06); }
+
+  /* ── DATASET LIST ── */
+  .section { max-width: 1100px; margin: 0 auto; padding: 0 2rem 4rem; }
+  .section-header {
+    display: flex; align-items: baseline; gap: 1rem;
+    border-bottom: 1px solid var(--border); padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 16px; letter-spacing: -0.3px;
+  }
+  .section-count { color: var(--text-muted); font-size: 12px; }
+  .sort-controls { margin-left: auto; display: flex; gap: 8px; }
+
+  .dataset-grid { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .dataset-row {
+    background: var(--surface); padding: 1.25rem 1.5rem;
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 1rem; align-items: start; cursor: pointer;
+    transition: background 0.1s;
+  }
+  .dataset-row:hover { background: #191a15; }
+  .ds-name {
+    font-family: 'Syne', sans-serif; font-weight: 600;
+    font-size: 14px; color: var(--text); margin-bottom: 4px;
+  }
+  .ds-name:hover { color: var(--accent); }
+  .ds-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 8px; }
+  .ds-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    background: var(--tag-bg); border: 1px solid var(--tag-border);
+    border-radius: 3px; padding: 2px 8px; font-size: 10px;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .tag.green { border-color: rgba(200,240,74,0.3); color: var(--accent-dim); background: rgba(200,240,74,0.04); }
+  .tag.blue { border-color: rgba(74,184,240,0.3); color: var(--info); background: rgba(74,184,240,0.04); }
+  .ds-right { text-align: right; }
+  .ds-size { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .ds-date { font-size: 11px; color: var(--text-dim); }
+  .nb-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(200,240,74,0.08); border: 1px solid rgba(200,240,74,0.2);
+    border-radius: 3px; padding: 2px 8px; font-size: 10px;
+    color: var(--accent-dim); margin-top: 6px;
+  }
+
+  /* ── DETAIL PAGE ── */
+  .detail-header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 2.5rem 2rem 0;
+  }
+  .detail-inner { max-width: 1100px; margin: 0 auto; }
+  .breadcrumb { font-size: 11px; color: var(--text-muted); margin-bottom: 1.5rem; }
+  .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb span { margin: 0 6px; }
+  .detail-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 36px; line-height: 1.2; margin-bottom: 0.75rem;
+  }
+  .detail-byline { color: var(--text-muted); font-size: 12px; margin-bottom: 1.5rem; }
+  .detail-tabs { display: flex; gap: 0; margin-top: 1rem; }
+  .dtab {
+    padding: 12px 20px; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-muted); cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+  }
+  .dtab:hover { color: var(--text); }
+  .dtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .detail-body { max-width: 1100px; margin: 0 auto; padding: 2rem; display: grid; grid-template-columns: 1fr 280px; gap: 2rem; }
+  .detail-main {}
+  .detail-sidebar {}
+
+  .info-block { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1.25rem; margin-bottom: 1rem; }
+  .info-block-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 1rem; }
+  .info-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { color: var(--text-muted); }
+  .info-val { color: var(--text); text-align: right; }
+
+  .dl-btn {
+    width: 100%; background: var(--accent); color: #0e0f0c;
+    border: none; padding: 12px; border-radius: 4px;
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    font-weight: 500; cursor: pointer; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .open-btn {
+    width: 100%; background: transparent; color: var(--text-muted);
+    border: 1px solid var(--border); padding: 10px;
+    border-radius: 4px; font-family: 'DM Mono', monospace;
+    font-size: 12px; cursor: pointer; margin-bottom: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .open-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+  /* ── NOTEBOOK VIEWER ── */
+  .nb-viewer { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .nb-toolbar {
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 10px 16px; display: flex; align-items: center; gap: 1rem;
+  }
+  .nb-title { font-size: 12px; color: var(--text-muted); }
+  .nb-badge-sm {
+    background: rgba(200,240,74,0.1); border: 1px solid rgba(200,240,74,0.25);
+    border-radius: 3px; padding: 2px 8px; font-size: 10px; color: var(--accent-dim);
+  }
+  .nb-cell { border-bottom: 1px solid var(--border); }
+  .nb-cell:last-child { border-bottom: none; }
+  .nb-cell-header { padding: 8px 16px; background: rgba(255,255,255,0.02); display: flex; align-items: center; gap: 8px; }
+  .cell-type { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .cell-type.code { color: var(--accent-dim); }
+  .cell-type.markdown { color: var(--info); }
+  .nb-code {
+    padding: 12px 16px; font-family: 'DM Mono', monospace;
+    font-size: 12px; line-height: 1.7; color: #b8c0aa;
+    background: #0b0c09; white-space: pre-wrap;
+  }
+  .nb-md { padding: 12px 20px; font-size: 13px; line-height: 1.8; color: var(--text-muted); }
+  .nb-md h2 { font-family: 'Syne', sans-serif; font-size: 16px; color: var(--text); margin-bottom: 8px; }
+  .nb-output { padding: 12px 16px; background: rgba(200,240,74,0.03); border-top: 1px dashed var(--border); font-size: 12px; color: #7a9a4a; font-family: 'DM Mono', monospace; }
+  .kw { color: #c792ea; }
+  .fn { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm { color: #546e7a; }
+  .num { color: #f78c6c; }
+
+  /* ── UPLOAD ── */
+  .upload-wrap { max-width: 680px; margin: 3rem auto; padding: 0 2rem; }
+  .upload-title { font-family: 'Instrument Serif', serif; font-size: 32px; margin-bottom: 0.5rem; }
+  .upload-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 2rem; }
+  .form-section { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1.5rem; margin-bottom: 1rem; }
+  .form-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 1.25rem; }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 6px; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 10px 14px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px; outline: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-textarea { min-height: 100px; resize: vertical; }
+  .form-select { appearance: none; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .dropzone {
+    border: 2px dashed var(--border); border-radius: 6px;
+    padding: 2.5rem; text-align: center; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dropzone:hover { border-color: var(--accent); background: rgba(200,240,74,0.03); }
+  .dz-icon { font-size: 28px; margin-bottom: 0.75rem; }
+  .dz-text { color: var(--text-muted); font-size: 13px; margin-bottom: 0.5rem; }
+  .dz-hint { color: var(--text-dim); font-size: 11px; }
+  .submit-bar { display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; }
+
+  /* ── AUTH ── */
+  .auth-wrap {
+    max-width: 400px; margin: 5rem auto; padding: 0 2rem;
+  }
+  .auth-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; color: var(--accent); margin-bottom: 2rem; }
+  .auth-title { font-family: 'Instrument Serif', serif; font-size: 28px; margin-bottom: 0.5rem; }
+  .auth-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 2rem; }
+  .auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2rem; }
+  .auth-divider { text-align: center; color: var(--text-dim); font-size: 11px; margin: 1.25rem 0; position: relative; }
+  .auth-divider::before, .auth-divider::after {
+    content: ''; position: absolute; top: 50%; width: 40%;
+    height: 1px; background: var(--border);
+  }
+  .auth-divider::before { left: 0; }
+  .auth-divider::after { right: 0; }
+  .auth-footer { color: var(--text-muted); font-size: 12px; text-align: center; margin-top: 1.5rem; }
+  .auth-footer a { color: var(--accent-dim); }
+  .sso-btn {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 11px; font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--text); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sso-btn:hover { border-color: var(--text-muted); }
+  .sso-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+
+  /* ── PAGE SWITCHER ── */
+  .demo-bar {
+    background: rgba(200,240,74,0.06); border-bottom: 1px solid rgba(200,240,74,0.15);
+    padding: 8px 2rem; display: flex; gap: 1rem; align-items: center;
+  }
+  .demo-label { font-size: 11px; color: var(--accent-dim); text-transform: uppercase; letter-spacing: 0.1em; }
+  .demo-btn {
+    background: transparent; border: 1px solid rgba(200,240,74,0.25);
+    color: var(--accent-dim); padding: 4px 12px; border-radius: 3px;
+    font-family: 'DM Mono', monospace; font-size: 11px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .demo-btn:hover, .demo-btn.active { background: rgba(200,240,74,0.12); border-color: var(--accent); color: var(--accent); }
+
+  /* misc */
+  .accent { color: var(--accent); }
+  .muted { color: var(--text-muted); }
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .pill { display: inline-block; background: rgba(200,240,74,0.1); color: var(--accent); border-radius: 20px; padding: 2px 10px; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<!-- DEMO SWITCHER -->
+<div class="demo-bar">
+  <span class="demo-label">Demo Pages →</span>
+  <button class="demo-btn active" onclick="showPage('home')">Browse</button>
+  <button class="demo-btn" onclick="showPage('detail')">Dataset Detail</button>
+  <button class="demo-btn" onclick="showPage('upload')">Upload</button>
+  <button class="demo-btn" onclick="showPage('auth')">Login</button>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">Specimen<span>Base</span></a>
+  <div class="nav-links">
+    <a href="#" class="active" onclick="showPage('home');return false;">Datasets</a>
+    <a href="#" onclick="showPage('detail');return false;">Notebooks</a>
+    <a href="#">Collections</a>
+    <a href="#">Docs</a>
+  </div>
+  <button class="nav-btn" onclick="showPage('auth')">Sign In</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PAGE: HOME -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <div class="hero">
+    <div>
+      <div class="hero-label">// Open Research Repository</div>
+      <h1>Find, cite &amp;<br><em>build on</em><br>specimen data.</h1>
+      <p>A curated archive of biological specimen datasets with associated notebooks, provenance records, and download-ready exports.</p>
+      <div class="hero-stats">
+        <div class="stat"><div class="stat-n">4,218</div><div class="stat-label">Datasets</div></div>
+        <div class="stat"><div class="stat-n">891</div><div class="stat-label">Notebooks</div></div>
+        <div class="stat"><div class="stat-n">312</div><div class="stat-label">Contributors</div></div>
+      </div>
+    </div>
+    <div class="hero-search">
+      <div class="search-title">// Search datasets</div>
+      <div class="search-input-wrap">
+        <input class="search-input" type="text" placeholder="e.g. Mus musculus femur CT">
+        <button class="btn-accent">Search</button>
+      </div>
+      <div class="filter-chips">
+        <span class="chip active">All</span>
+        <span class="chip">Morphology</span>
+        <span class="chip">Genomics</span>
+        <span class="chip">Histology</span>
+        <span class="chip">CT / MRI</span>
+        <span class="chip">Behavioural</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Recent Datasets</span>
+      <span class="section-count">4,218 total</span>
+      <div class="sort-controls">
+        <button class="btn-outline">Date ↓</button>
+        <button class="btn-outline">Downloads</button>
+      </div>
+    </div>
+
+    <div class="dataset-grid">
+
+      <div class="dataset-row" onclick="showPage('detail')">
+        <div>
+          <div class="ds-name">ERS_F Forelimb Morphometrics — Adult Cohort 2024</div>
+          <div class="ds-meta">Dsenesky Lab · Stanford University · v3 · DOI: 10.9999/sb.2024.0041</div>
+          <div class="ds-tags">
+            <span class="tag green">Morphology</span>
+            <span class="tag">CSV</span>
+            <span class="tag">Rodent</span>
+            <div class="nb-badge">⬡ 3 notebooks</div>
+          </div>
+        </div>
+        <div class="ds-right">
+          <div class="ds-size">14.2 MB</div>
+          <div class="ds-date">2 days ago</div>
+        </div>
+      </div>
+
+      <div class="dataset-row">
+        <div>
+          <div class="ds-name">ERS_W1 Hindlimb Skeletal Measurements — Wild Series</div>
+          <div class="ds-meta">Dsenesky Lab · Stanford University · v1 · DOI: 10.9999/sb.2024.0038</div>
+          <div class="ds-tags">
+            <span class="tag green">Morphology</span>
+            <span class="tag blue">CT Scan</span>
+            <span class="tag">XLSX</span>
+            <div class="nb-badge">⬡ 1 notebook</div>
+          </div>
+        </div>
+        <div class="ds-right">
+          <div class="ds-size">218.4 MB</div>
+          <div class="ds-date">1 week ago</div>
+        </div>
+      </div>
+
+      <div class="dataset-row">
+        <div>
+          <div class="ds-name">GL_F Cranial Landmark Coordinates — Geometric Morphometrics</div>
+          <div class="ds-meta">Dsenesky Lab · Stanford University · v2 · DOI: 10.9999/sb.2024.0031</div>
+          <div class="ds-tags">
+            <span class="tag green">Morphology</span>
+            <span class="tag">CSV</span>
+            <span class="tag">Landmarks</span>
+          </div>
+        </div>
+        <div class="ds-right">
+          <div class="ds-size">3.1 MB</div>
+          <div class="ds-date">3 weeks ago</div>
+        </div>
+      </div>
+
+      <div class="dataset-row">
+        <div>
+          <div class="ds-name">Po_F Postcranial Skeletal Series — Peromyscus</div>
+          <div class="ds-meta">Dsenesky Lab · Stanford University · v1 · DOI: 10.9999/sb.2024.0029</div>
+          <div class="ds-tags">
+            <span class="tag green">Morphology</span>
+            <span class="tag blue">Histology</span>
+            <span class="tag">TIFF</span>
+            <div class="nb-badge">⬡ 2 notebooks</div>
+          </div>
+        </div>
+        <div class="ds-right">
+          <div class="ds-size">1.4 GB</div>
+          <div class="ds-date">1 month ago</div>
+        </div>
+      </div>
+
+      <div class="dataset-row">
+        <div>
+          <div class="ds-name">ERS_W2 Limb Bone Cross-Section Analysis — Wild Cohort</div>
+          <div class="ds-meta">Dsenesky Lab · Stanford University · v1 · DOI: 10.9999/sb.2024.0022</div>
+          <div class="ds-tags">
+            <span class="tag green">Morphology</span>
+            <span class="tag">CSV</span>
+            <span class="tag">JSON</span>
+          </div>
+        </div>
+        <div class="ds-right">
+          <div class="ds-size">8.7 MB</div>
+          <div class="ds-date">2 months ago</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PAGE: DETAIL -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="page" id="page-detail">
+
+  <div class="detail-header">
+    <div class="detail-inner">
+      <div class="breadcrumb">
+        <a href="#" onclick="showPage('home');return false;">Datasets</a>
+        <span>›</span>
+        <a href="#">Morphology</a>
+        <span>›</span>
+        ERS_F Forelimb Morphometrics
+      </div>
+      <div class="detail-title">ERS_F Forelimb Morphometrics<br>— Adult Cohort 2024</div>
+      <div class="detail-byline">
+        Dsenesky Lab, Stanford University &nbsp;·&nbsp;
+        Published <strong>March 9, 2026</strong> &nbsp;·&nbsp;
+        v3 &nbsp;·&nbsp;
+        <span class="accent">DOI: 10.9999/sb.2024.0041</span>
+      </div>
+      <div class="detail-tabs">
+        <div class="dtab active">Overview</div>
+        <div class="dtab">Files (12)</div>
+        <div class="dtab">Notebooks (3)</div>
+        <div class="dtab">Versions</div>
+        <div class="dtab">Cite</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-body">
+    <div class="detail-main">
+
+      <div class="info-block">
+        <div class="info-block-title">// Abstract</div>
+        <p style="color:var(--text-muted);font-size:13px;line-height:1.8">
+          Morphometric measurements collected from adult ERS_F specimens (n=84) across forelimb skeletal elements including humerus, radius, ulna, and associated cartilage. Data collected via digital calipers and photogrammetric landmark digitisation. Associated curve analysis and modulus data included for each specimen. All raw CSVs, analysis outputs, and metadata provided.
+        </p>
+      </div>
+
+      <div class="info-block" style="margin-top:1rem">
+        <div class="info-block-title">// Notebooks</div>
+
+        <div class="nb-viewer">
+          <div class="nb-toolbar">
+            <span class="nb-title">forelimb_analysis.ipynb</span>
+            <span class="nb-badge-sm">Read-only</span>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button class="btn-outline" style="padding:4px 12px;font-size:11px">Open in Colab ↗</button>
+              <button class="btn-outline" style="padding:4px 12px;font-size:11px">Open in Binder ↗</button>
+              <button class="btn-outline" style="padding:4px 12px;font-size:11px">Download .ipynb</button>
+            </div>
+          </div>
+
+          <div class="nb-cell">
+            <div class="nb-cell-header"><span class="cell-type markdown">Markdown</span></div>
+            <div class="nb-md">
+              <h2>ERS_F Forelimb Morphometric Analysis</h2>
+              <p>This notebook loads the raw CSV measurements, performs QC filtering, computes summary statistics per element, and generates publication-ready figures.</p>
+            </div>
+          </div>
+
+          <div class="nb-cell">
+            <div class="nb-cell-header"><span class="cell-type code">In [1]</span></div>
+            <div class="nb-code"><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+<span class="kw">import</span> seaborn <span class="kw">as</span> sns
+
+<span class="cm"># Load specimen data</span>
+df = pd.<span class="fn">read_csv</span>(<span class="str">'ERS_F_forelimb_measurements.csv'</span>)
+<span class="fn">print</span>(f<span class="str">"Loaded {len(df)} specimen records"</span>)
+df.<span class="fn">head</span>()</div>
+            <div class="nb-output">Loaded 84 specimen records
+   specimen_id  humerus_length  radius_length  ulna_length  ...
+0     ERS_F_001          18.42          14.31        15.88  ...
+1     ERS_F_002          17.95          13.98        15.41  ...</div>
+          </div>
+
+          <div class="nb-cell">
+            <div class="nb-cell-header"><span class="cell-type code">In [2]</span></div>
+            <div class="nb-code"><span class="cm"># QC: remove specimens with missing values</span>
+df_clean = df.<span class="fn">dropna</span>(subset=[<span class="str">'humerus_length'</span>, <span class="str">'radius_length'</span>])
+<span class="fn">print</span>(f<span class="str">"After QC: {len(df_clean)} specimens retained"</span>)
+
+<span class="cm"># Summary stats per element</span>
+elements = [<span class="str">'humerus_length'</span>, <span class="str">'radius_length'</span>, <span class="str">'ulna_length'</span>]
+df_clean[elements].<span class="fn">describe</span>().<span class="fn">round</span>(<span class="num">2</span>)</div>
+            <div class="nb-output">After QC: 81 specimens retained
+       humerus_length  radius_length  ulna_length
+count           81.00          81.00        81.00
+mean            18.14          14.02        15.63
+std              0.89           0.71         0.82</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="detail-sidebar">
+      <button class="dl-btn">↓ Download Dataset (14.2 MB)</button>
+      <button class="open-btn">⬡ Open in Colab</button>
+      <button class="open-btn">⬡ Open in Binder</button>
+
+      <div style="height:1rem"></div>
+
+      <div class="info-block">
+        <div class="info-block-title">// Metadata</div>
+        <div class="info-row"><span class="info-key">Specimens</span><span class="info-val">84</span></div>
+        <div class="info-row"><span class="info-key">Species</span><span class="info-val">ERS_F</span></div>
+        <div class="info-row"><span class="info-key">Element</span><span class="info-val">Forelimb</span></div>
+        <div class="info-row"><span class="info-key">Format</span><span class="info-val">CSV, JSON</span></div>
+        <div class="info-row"><span class="info-key">Size</span><span class="info-val">14.2 MB</span></div>
+        <div class="info-row"><span class="info-key">License</span><span class="info-val">CC BY 4.0</span></div>
+        <div class="info-row"><span class="info-key">Version</span><span class="info-val">v3</span></div>
+        <div class="info-row"><span class="info-key">Downloads</span><span class="info-val">142</span></div>
+      </div>
+
+      <div class="info-block">
+        <div class="info-block-title">// Tags</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <span class="tag green">Morphology</span>
+          <span class="tag">Rodent</span>
+          <span class="tag">Forelimb</span>
+          <span class="tag">Skeletal</span>
+          <span class="tag">Adult</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PAGE: UPLOAD -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="page" id="page-upload">
+  <div class="upload-wrap">
+    <div class="upload-title">Upload Dataset</div>
+    <div class="upload-sub">Datasets must include a metadata description and at least one data file. Notebooks are optional but encouraged.</div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Basic Information</div>
+      <div class="form-group">
+        <label class="form-label">Dataset Title</label>
+        <input class="form-input" type="text" placeholder="e.g. ERS_F Forelimb Morphometrics — Adult Cohort 2024">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Abstract / Description</label>
+        <textarea class="form-textarea" placeholder="Describe the dataset, collection methodology, specimen details..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select">
+            <option>Morphology</option>
+            <option>Genomics</option>
+            <option>Histology</option>
+            <option>CT / MRI</option>
+            <option>Behavioural</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">License</label>
+          <select class="form-select">
+            <option>CC BY 4.0</option>
+            <option>CC BY-NC 4.0</option>
+            <option>CC0</option>
+            <option>Restricted</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (comma separated)</label>
+        <input class="form-input" type="text" placeholder="rodent, forelimb, skeletal, adult">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Data Files</div>
+      <div class="dropzone">
+        <div class="dz-icon">⬡</div>
+        <div class="dz-text">Drop files here or click to browse</div>
+        <div class="dz-hint">CSV, XLSX, JSON, TIFF, ZIP — max 2GB per file</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Notebook (optional)</div>
+      <div class="dropzone">
+        <div class="dz-icon">⬡</div>
+        <div class="dz-text">Drop .ipynb file here</div>
+        <div class="dz-hint">Will be rendered as static view. Users can download and run locally or in Colab.</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Specimen Metadata</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Species / Group</label>
+          <input class="form-input" type="text" placeholder="e.g. ERS_F">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Specimen Count</label>
+          <input class="form-input" type="number" placeholder="84">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Collection Date</label>
+          <input class="form-input" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Anatomical Region</label>
+          <input class="form-input" type="text" placeholder="e.g. Forelimb">
+        </div>
+      </div>
+    </div>
+
+    <div class="submit-bar">
+      <button class="btn-outline">Save Draft</button>
+      <button class="btn-accent">Publish Dataset →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PAGE: AUTH -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="page" id="page-auth">
+  <div class="auth-wrap">
+    <div class="auth-logo">SpecimenBase</div>
+    <div class="auth-title">Sign in to continue</div>
+    <div class="auth-sub">Access datasets, upload data, and manage your collections.</div>
+
+    <div class="auth-box">
+      <button class="sso-btn">
+        <div class="sso-icon" style="background:#fff;color:#333">G</div>
+        Continue with Google
+      </button>
+      <button class="sso-btn">
+        <div class="sso-icon" style="background:#24292f;color:#fff">⎔</div>
+        Continue with GitHub
+      </button>
+      <button class="sso-btn">
+        <div class="sso-icon" style="background:#8c1515;color:#fff">S</div>
+        Stanford SSO
+      </button>
+
+      <div class="auth-divider">or use email</div>
+
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" placeholder="you@university.edu">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn-accent" style="width:100%;padding:12px;font-size:13px;border-radius:4px;border:none;cursor:pointer">Sign In →</button>
+    </div>
+
+    <div class="auth-footer">
+      No account? <a href="#">Request access</a> &nbsp;·&nbsp; <a href="#">Forgot password</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const map = {home:0,detail:1,upload:2,auth:3};
+  document.querySelectorAll('.demo-btn')[map[id]].classList.add('active');
+}
+document.querySelectorAll('.chip').forEach(c => {
+  c.addEventListener('click', function() {
+    document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+document.querySelectorAll('.dtab').forEach(t => {
+  t.addEventListener('click', function() {
+    document.querySelectorAll('.dtab').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
