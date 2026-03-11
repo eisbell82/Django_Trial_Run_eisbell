@@ -1,0 +1,35 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}Sign In — SpecimenBase{% endblock %}
+
+{% block content %}
+
+<div class="auth-wrap">
+  <div class="auth-logo">SpecimenBase</div>
+  <div class="auth-title">Sign in to continue</div>
+  <div class="auth-sub">Access datasets, upload data, and manage your collections.</div>
+
+  <div class="auth-box">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" type="text" name="username" placeholder="your username" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-accent" style="width:100%;padding:12px;font-size:13px;border-radius:4px;border:none;cursor:pointer">
+        Sign In →
+      </button>
+    </form>
+  </div>
+
+  <div class="auth-footer">
+    <a href="/admin/" style="color:var(--text-dim)">Admin panel</a>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}SpecimenBase — Research Data Repository{% endblock %}
+{% block nav_datasets %}active{% endblock %}
+
+{% block content %}
+
+<div class="hero">
+  <div>
+    <div class="hero-label">// Open Research Repository</div>
+    <h1>Find, cite &amp;<br><em>build on</em><br>specimen data.</h1>
+    <p>A curated archive of biological specimen datasets with associated notebooks, provenance records, and download-ready exports.</p>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-n">{{ total_count }}</div><div class="stat-label">Datasets</div></div>
+      <div class="stat"><div class="stat-n">{{ notebook_count }}</div><div class="stat-label">Notebooks</div></div>
+      <div class="stat"><div class="stat-n">{{ contributor_count }}</div><div class="stat-label">Contributors</div></div>
+    </div>
+  </div>
+  <div class="hero-search">
+    <div class="search-title">// Search datasets</div>
+    <form method="get" action="{% url 'repository:home' %}">
+      <div class="search-input-wrap">
+        <input class="search-input" type="text" name="q" value="{{ query }}" placeholder="e.g. Mus musculus femur CT">
+        <button class="btn-accent" type="submit">Search</button>
+      </div>
+      <div class="filter-chips">
+        <a href="{% url 'repository:home' %}" class="chip {% if active_category == 'all' %}active{% endif %}">All</a>
+        <a href="?category=morphology" class="chip {% if active_category == 'morphology' %}active{% endif %}">Morphology</a>
+        <a href="?category=genomics" class="chip {% if active_category == 'genomics' %}active{% endif %}">Genomics</a>
+        <a href="?category=histology" class="chip {% if active_category == 'histology' %}active{% endif %}">Histology</a>
+        <a href="?category=ct_mri" class="chip {% if active_category == 'ct_mri' %}active{% endif %}">CT / MRI</a>
+        <a href="?category=behavioural" class="chip {% if active_category == 'behavioural' %}active{% endif %}">Behavioural</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">
+      {% if query %}Search: "{{ query }}"{% else %}Recent Datasets{% endif %}
+    </span>
+    <span class="section-count">{{ datasets|length }} result{{ datasets|length|pluralize }}</span>
+    <div class="sort-controls">
+      <a href="?{% if query %}q={{ query }}&{% endif %}sort=date" class="btn-outline">Date ↓</a>
+      <a href="?{% if query %}q={{ query }}&{% endif %}sort=downloads" class="btn-outline">Downloads</a>
+    </div>
+  </div>
+
+  {% if datasets %}
+  <div class="dataset-grid">
+    {% for ds in datasets %}
+    <a class="dataset-row" href="{% url 'repository:detail' ds.slug %}">
+      <div>
+        <div class="ds-name">{{ ds.title }}</div>
+        <div class="ds-meta">
+          {% if ds.lab %}{{ ds.lab }}{% endif %}
+          {% if ds.institution %} · {{ ds.institution }}{% endif %}
+          {% if ds.version %} · {{ ds.version }}{% endif %}
+          {% if ds.doi %} · DOI: {{ ds.doi }}{% endif %}
+        </div>
+        <div class="ds-tags">
+          {% if ds.category %}
+            <span class="tag green">{{ ds.get_category_display }}</span>
+          {% endif %}
+          {% for tag in ds.tags.all %}
+            <span class="tag {% if tag.color != 'default' %}{{ tag.color }}{% endif %}">{{ tag.name }}</span>
+          {% endfor %}
+          {% if ds.notebook_count > 0 %}
+            <span class="nb-badge">⬡ {{ ds.notebook_count }} notebook{{ ds.notebook_count|pluralize }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="ds-right">
+        {% if ds.file_size_display %}<div class="ds-size">{{ ds.file_size_display }}</div>{% endif %}
+        <div class="ds-date">{{ ds.created_at|timesince }} ago</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>No datasets found{% if query %} for "{{ query }}"{% endif %}.</p>
+    {% if user.is_authenticated %}
+      <a href="{% url 'repository:upload' %}" class="btn-accent">Upload the first dataset →</a>
+    {% else %}
+      <a href="{% url 'repository:login' %}" class="btn-outline">Sign in to upload</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

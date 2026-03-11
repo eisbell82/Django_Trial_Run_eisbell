@@ -1,0 +1,29 @@
+# systemd service unit for SpecimenBase (gunicorn)
+# Place at: /etc/systemd/system/specimenbase.service
+# Then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable specimenbase
+#   sudo systemctl start specimenbase
+
+[Unit]
+Description=SpecimenBase Django app (gunicorn)
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/specimenbase
+EnvironmentFile=/path/to/specimenbase/.env
+ExecStart=/path/to/venv/bin/gunicorn \
+          --config /path/to/specimenbase/gunicorn.conf.py \
+          specimenbase.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+RuntimeDirectory=gunicorn
+RuntimeDirectoryMode=0755
+
+[Install]
+WantedBy=multi-user.target

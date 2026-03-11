@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}SpecimenBase — Research Data Repository{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'repository/css/style.css' %}">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="{% url 'repository:home' %}">Specimen<span>Base</span></a>
+  <div class="nav-links">
+    <a href="{% url 'repository:home' %}" class="{% block nav_datasets %}{% endblock %}">Datasets</a>
+    <a href="#">Collections</a>
+    <a href="#">Docs</a>
+  </div>
+  {% if user.is_authenticated %}
+    <span style="color:var(--text-muted);font-size:12px;margin-left:auto">{{ user.username }}</span>
+    <a href="{% url 'repository:logout' %}" class="nav-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border)">Sign Out</a>
+    <a href="{% url 'repository:upload' %}" class="nav-btn">+ Upload</a>
+  {% else %}
+    <a href="{% url 'repository:login' %}" class="nav-btn" style="margin-left:auto">Sign In</a>
+  {% endif %}
+</nav>
+
+{% if messages %}
+<div class="messages">
+  {% for message in messages %}
+    <div class="message {{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% block content %}{% endblock %}
+
+</body>
+</html>

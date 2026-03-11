@@ -1,0 +1,163 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}{{ dataset.title }} — SpecimenBase{% endblock %}
+{% block nav_datasets %}active{% endblock %}
+
+{% block content %}
+
+<div class="detail-header">
+  <div class="detail-inner">
+    <div class="breadcrumb">
+      <a href="{% url 'repository:home' %}">Datasets</a>
+      <span>›</span>
+      <a href="?category={{ dataset.category }}">{{ dataset.get_category_display }}</a>
+      <span>›</span>
+      {{ dataset.title|truncatechars:60 }}
+    </div>
+    <div class="detail-title">{{ dataset.title }}</div>
+    <div class="detail-byline">
+      {% if dataset.lab %}{{ dataset.lab }}{% endif %}
+      {% if dataset.institution %}, {{ dataset.institution }}{% endif %}
+      &nbsp;·&nbsp;
+      Published <strong>{{ dataset.created_at|date:"F j, Y" }}</strong>
+      &nbsp;·&nbsp;
+      {{ dataset.version }}
+      {% if dataset.doi %}
+        &nbsp;·&nbsp;
+        <span class="accent">DOI: {{ dataset.doi }}</span>
+      {% endif %}
+    </div>
+    <div class="detail-tabs">
+      <div class="dtab active" onclick="switchTab(this,'tab-overview')">Overview</div>
+      <div class="dtab" onclick="switchTab(this,'tab-files')">Files ({{ dataset.files.count }})</div>
+      {% if dataset.notebooks.exists %}
+      <div class="dtab" onclick="switchTab(this,'tab-notebooks')">Notebooks ({{ dataset.notebook_count }})</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="detail-body">
+  <div class="detail-main">
+
+    <!-- TAB: OVERVIEW -->
+    <div id="tab-overview">
+      <div class="info-block">
+        <div class="info-block-title">// Abstract</div>
+        <p style="color:var(--text-muted);font-size:13px;line-height:1.8">{{ dataset.abstract }}</p>
+      </div>
+
+      {% if dataset.tags.exists %}
+      <div class="info-block">
+        <div class="info-block-title">// Tags</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <span class="tag green">{{ dataset.get_category_display }}</span>
+          {% for tag in dataset.tags.all %}
+            <span class="tag {% if tag.color != 'default' %}{{ tag.color }}{% endif %}">{{ tag.name }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- TAB: FILES -->
+    <div id="tab-files" style="display:none">
+      {% if dataset.files.exists %}
+      <div class="file-list">
+        {% for f in dataset.files.all %}
+        <div class="file-row">
+          <span class="file-name">{{ f.filename }}</span>
+          <span class="file-size">{{ f.file_size_display }}</span>
+          <a class="file-dl" href="{{ f.file.url }}">↓ Download</a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="info-block">
+        <p class="muted">No files attached to this dataset.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- TAB: NOTEBOOKS -->
+    <div id="tab-notebooks" style="display:none">
+      {% for nb in dataset.notebooks.all %}
+      <div class="nb-viewer">
+        <div class="nb-toolbar">
+          <span class="nb-title">{{ nb.filename }}</span>
+          <span class="nb-badge-sm">Read-only</span>
+          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+            {% if nb.colab_url %}
+            <a href="{{ nb.colab_url }}" target="_blank" class="btn-outline" style="padding:4px 12px;font-size:11px">Open in Colab ↗</a>
+            {% endif %}
+            {% if nb.binder_url %}
+            <a href="{{ nb.binder_url }}" target="_blank" class="btn-outline" style="padding:4px 12px;font-size:11px">Open in Binder ↗</a>
+            {% endif %}
+            {% if nb.file %}
+            <a href="{{ nb.file.url }}" class="btn-outline" style="padding:4px 12px;font-size:11px">Download .ipynb</a>
+            {% endif %}
+          </div>
+        </div>
+        {% if nb.description %}
+        <div style="padding:1rem 1.25rem;color:var(--text-muted);font-size:13px;border-bottom:1px solid var(--border)">
+          {{ nb.description }}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <div class="detail-sidebar">
+    {% if dataset.files.exists %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="download" value="1">
+      <button type="submit" class="dl-btn">↓ Download Dataset{% if dataset.file_size_display %} ({{ dataset.file_size_display }}){% endif %}</button>
+    </form>
+    {% endif %}
+    {% for nb in dataset.notebooks.all %}
+      {% if nb.colab_url %}<a href="{{ nb.colab_url }}" target="_blank" class="open-btn">⬡ Open in Colab</a>{% endif %}
+      {% if nb.binder_url %}<a href="{{ nb.binder_url }}" target="_blank" class="open-btn">⬡ Open in Binder</a>{% endif %}
+    {% endfor %}
+
+    <div style="height:1rem"></div>
+
+    <div class="info-block">
+      <div class="info-block-title">// Metadata</div>
+      {% if dataset.specimen_count %}<div class="info-row"><span class="info-key">Specimens</span><span class="info-val">{{ dataset.specimen_count }}</span></div>{% endif %}
+      {% if dataset.species %}<div class="info-row"><span class="info-key">Species</span><span class="info-val">{{ dataset.species }}</span></div>{% endif %}
+      {% if dataset.anatomical_region %}<div class="info-row"><span class="info-key">Element</span><span class="info-val">{{ dataset.anatomical_region }}</span></div>{% endif %}
+      {% if dataset.files.exists %}<div class="info-row"><span class="info-key">Files</span><span class="info-val">{{ dataset.files.count }}</span></div>{% endif %}
+      {% if dataset.file_size_display %}<div class="info-row"><span class="info-key">Size</span><span class="info-val">{{ dataset.file_size_display }}</span></div>{% endif %}
+      <div class="info-row"><span class="info-key">License</span><span class="info-val">{{ dataset.get_license_display_short }}</span></div>
+      <div class="info-row"><span class="info-key">Version</span><span class="info-val">{{ dataset.version }}</span></div>
+      <div class="info-row"><span class="info-key">Downloads</span><span class="info-val">{{ dataset.download_count }}</span></div>
+    </div>
+
+    {% if dataset.uploaded_by %}
+    <div class="info-block">
+      <div class="info-block-title">// Contributor</div>
+      <div class="info-row"><span class="info-key">Uploaded by</span><span class="info-val">{{ dataset.uploaded_by.get_full_name|default:dataset.uploaded_by.username }}</span></div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<script>
+function switchTab(el, tabId) {
+  document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  ['tab-overview','tab-files','tab-notebooks'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById(tabId);
+  if (target) target.style.display = 'block';
+}
+</script>
+
+{% endblock %}

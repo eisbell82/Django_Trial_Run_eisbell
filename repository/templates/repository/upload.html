@@ -1,0 +1,108 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}Upload Dataset — SpecimenBase{% endblock %}
+
+{% block content %}
+
+<div class="upload-wrap">
+  <div class="upload-title">Upload Dataset</div>
+  <div class="upload-sub">Datasets must include a metadata description and at least one data file. Notebooks are optional but encouraged.</div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="form-section-title">// Basic Information</div>
+
+      <div class="form-group">
+        <label class="form-label">Dataset Title</label>
+        {{ form.title }}
+        {% if form.title.errors %}<div class="form-errors">{{ form.title.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Abstract / Description</label>
+        {{ form.abstract }}
+        {% if form.abstract.errors %}<div class="form-errors">{{ form.abstract.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          {{ form.category }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">License</label>
+          {{ form.license }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tags (comma separated)</label>
+        {{ form.tags_text }}
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Data Files</div>
+      <div class="dropzone">
+        <div class="dz-icon">⬡</div>
+        <div class="dz-text">Drop files here or click to browse</div>
+        <div class="dz-hint">CSV, XLSX, JSON, TIFF, ZIP — max 2GB per file</div>
+        <input type="file" name="data_file">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Notebook (optional)</div>
+      <div class="dropzone">
+        <div class="dz-icon">⬡</div>
+        <div class="dz-text">Drop .ipynb file here</div>
+        <div class="dz-hint">Will be available for download. Users can run locally or in Colab.</div>
+        <input type="file" name="notebook_file" accept=".ipynb">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Specimen Metadata</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Species / Group</label>
+          {{ form.species }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Specimen Count</label>
+          {{ form.specimen_count }}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Collection Date</label>
+          {{ form.collection_date }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Anatomical Region</label>
+          {{ form.anatomical_region }}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Lab</label>
+          {{ form.lab }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Institution</label>
+          {{ form.institution }}
+        </div>
+      </div>
+    </div>
+
+    <div class="submit-bar">
+      <a href="{% url 'repository:home' %}" class="btn-outline">Cancel</a>
+      <button type="submit" class="btn-accent">Publish Dataset →</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
