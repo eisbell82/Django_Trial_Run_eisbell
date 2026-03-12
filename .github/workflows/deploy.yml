@@ -14,4 +14,4 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
-          script: bash /path/to/specimenbase/deploy/deploy.sh
+          script: bash /srv/specimenbase/deploy/deploy.sh
