@@ -442,23 +442,27 @@ def samples_view(request):
     if dataset_slug:
         samples_qs = samples_qs.filter(dataset__slug=dataset_slug)
 
-    # Group by dataset for display
-    datasets_shown = {}
-    for s in samples_qs:
-        ds = s.dataset
-        if ds.pk not in datasets_shown:
-            datasets_shown[ds.pk] = {"dataset": ds, "columns": list(ds.sample_columns.all()), "samples": []}
-        s.row = [s.value_for(col) for col in datasets_shown[ds.pk]["columns"]]
-        datasets_shown[ds.pk]["samples"].append(s)
+    # When filtered to one experiment, show its custom columns; otherwise Experiment col only
+    extra_columns = []
+    active_dataset_obj = None
+    if dataset_slug:
+        active_dataset_obj = Dataset.objects.filter(slug=dataset_slug).first()
+        if active_dataset_obj:
+            extra_columns = list(active_dataset_obj.sample_columns.all())
+
+    samples = list(samples_qs)
+    for s in samples:
+        s.row = [s.value_for(col) for col in extra_columns]
 
     datasets_with_samples = Dataset.objects.filter(samples__isnull=False).distinct().order_by("title")
 
     return render(request, "repository/samples.html", {
-        "groups": list(datasets_shown.values()),
+        "samples": samples,
+        "extra_columns": extra_columns,
         "query": query,
         "active_dataset": dataset_slug,
         "datasets_with_samples": datasets_with_samples,
-        "total_results": samples_qs.count(),
+        "total_results": len(samples),
     })
 
 
