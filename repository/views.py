@@ -210,18 +210,69 @@ def register_view(request):
 
 
 def collections_view(request):
-    categories = Dataset.CATEGORY_CHOICES
+    query     = request.GET.get("q", "")
+    category  = request.GET.get("category", "")
+    sort      = request.GET.get("sort", "date")
+    order     = request.GET.get("order", "desc")
+    f_species = request.GET.get("species", "")
+    f_lab     = request.GET.get("lab", "")
+    f_inst    = request.GET.get("institution", "")
+    f_license = request.GET.get("license", "")
+
+    sort_field = {"date": "created_at", "downloads": "download_count", "title": "title"}.get(sort, "created_at")
+    order_prefix = "" if order == "asc" else "-"
+
+    base_qs = Dataset.objects.prefetch_related("tags")
+    if query:
+        base_qs = base_qs.filter(
+            Q(title__icontains=query)
+            | Q(abstract__icontains=query)
+            | Q(species__icontains=query)
+            | Q(tags__name__icontains=query)
+        ).distinct()
+    if f_species:
+        base_qs = base_qs.filter(species=f_species)
+    if f_lab:
+        base_qs = base_qs.filter(lab=f_lab)
+    if f_inst:
+        base_qs = base_qs.filter(institution=f_inst)
+    if f_license:
+        base_qs = base_qs.filter(license=f_license)
+    base_qs = base_qs.order_by(f"{order_prefix}{sort_field}")
+
+    categories_to_show = [category] if (category and category != "all") else [k for k, _ in Dataset.CATEGORY_CHOICES]
     collections = []
-    for key, label in categories:
-        qs = Dataset.objects.filter(category=key).prefetch_related("tags")
-        if qs.exists():
-            collections.append({
-                "key": key,
-                "label": label,
-                "datasets": qs[:5],
-                "total": qs.count(),
-            })
-    return render(request, "repository/collections.html", {"collections": collections})
+    total_results = 0
+    for key in categories_to_show:
+        label = dict(Dataset.CATEGORY_CHOICES).get(key, key)
+        qs = base_qs.filter(category=key)
+        count = qs.count()
+        if count:
+            collections.append({"key": key, "label": label, "datasets": qs, "total": count})
+            total_results += count
+
+    species_list     = Dataset.objects.exclude(species="").values_list("species", flat=True).distinct().order_by("species")
+    lab_list         = Dataset.objects.exclude(lab="").values_list("lab", flat=True).distinct().order_by("lab")
+    institution_list = Dataset.objects.exclude(institution="").values_list("institution", flat=True).distinct().order_by("institution")
+
+    return render(request, "repository/collections.html", {
+        "collections": collections,
+        "total_results": total_results,
+        "query": query,
+        "sort": sort,
+        "order": order,
+        "active_category": category or "all",
+        "f_species": f_species,
+        "f_lab": f_lab,
+        "f_inst": f_inst,
+        "f_license": f_license,
+        "species_list": species_list,
+        "lab_list": lab_list,
+        "institution_list": institution_list,
+        "category_choices": Dataset.CATEGORY_CHOICES,
+        "license_choices": Dataset.LICENSE_CHOICES,
+        "sort_options": [("date", "Date"), ("downloads", "Downloads"), ("title", "Title")],
+    })
 
 
 def docs_view(request):
