@@ -71,6 +71,12 @@
           <span class="file-name">{{ f.filename }}</span>
           <span class="file-size">{{ f.file_size_display }}</span>
           <a class="file-dl" href="{{ f.file.url }}">↓ Download</a>
+          {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+          <form method="post" action="{% url 'repository:delete_file' dataset.slug f.pk %}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="col-del-btn" title="Delete file" onclick="return confirm('Delete {{ f.filename }}?')">×</button>
+          </form>
+          {% endif %}
         </div>
         {% endfor %}
       </div>
@@ -78,6 +84,14 @@
       <div class="info-block">
         <p class="muted">No files attached to this dataset.</p>
       </div>
+      {% endif %}
+      {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+      <form method="post" action="{% url 'repository:add_file' dataset.slug %}" enctype="multipart/form-data" style="margin-top:1.25rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        {% csrf_token %}
+        <input type="file" name="data_file" class="sample-col-input" style="width:auto" required>
+        <button type="submit" class="btn-outline" style="font-size:11px;padding:5px 12px">+ Attach file</button>
+        <span style="color:var(--text-dim);font-size:11px">CSV, XLSX, JSON, TIFF, ZIP, TSV, TXT — max 150 MB</span>
+      </form>
       {% endif %}
     </div>
 

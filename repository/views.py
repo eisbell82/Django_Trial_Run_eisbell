@@ -312,6 +312,42 @@ def _can_edit(user, dataset):
 
 
 @login_required
+def add_file(request, slug):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST" and request.FILES.get("data_file"):
+        import os
+        uploaded = request.FILES["data_file"]
+        ext = os.path.splitext(uploaded.name)[1].lower()
+        if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+            messages.error(request, f"File type '{ext}' is not allowed.")
+        elif uploaded.size > 150 * 1024 * 1024:
+            messages.error(request, "File exceeds the 150 MB maximum size limit.")
+        else:
+            DataFile.objects.create(
+                dataset=dataset,
+                file=uploaded,
+                filename=uploaded.name,
+                file_size=uploaded.size,
+            )
+            messages.success(request, f"'{uploaded.name}' added.")
+    return redirect("repository:detail", slug=slug)
+
+
+@login_required
+def delete_file(request, slug, pk):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        DataFile.objects.filter(pk=pk, dataset=dataset).delete()
+    return redirect("repository:detail", slug=slug)
+
+
+@login_required
 def add_sample_column(request, slug):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
