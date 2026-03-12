@@ -14,7 +14,8 @@ git -C "$APP_DIR" pull origin "${DEPLOY_BRANCH:-main}"
 
 echo "==> Fixing file permissions..."
 sudo chown www-data:www-data "$APP_DIR/db.sqlite3" 2>/dev/null || true
-sudo chown -R www-data:www-data "$APP_DIR/media" 2>/dev/null || true
+mkdir -p "$APP_DIR/media"
+sudo chown -R www-data:www-data "$APP_DIR/media"
 
 echo "==> Installing / upgrading dependencies..."
 "$PIP" install -q -r "$APP_DIR/requirements.txt"
