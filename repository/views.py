@@ -13,14 +13,19 @@ ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", 
 
 
 def home(request):
-    category = request.GET.get("category", "")
-    query = request.GET.get("q", "")
+    category  = request.GET.get("category", "")
+    query     = request.GET.get("q", "")
+    sort      = request.GET.get("sort", "date")
+    order     = request.GET.get("order", "desc")
+    f_species = request.GET.get("species", "")
+    f_lab     = request.GET.get("lab", "")
+    f_inst    = request.GET.get("institution", "")
+    f_license = request.GET.get("license", "")
 
     datasets = Dataset.objects.prefetch_related("tags", "notebooks").all()
 
     if category and category != "all":
         datasets = datasets.filter(category=category)
-
     if query:
         datasets = datasets.filter(
             Q(title__icontains=query)
@@ -28,12 +33,31 @@ def home(request):
             | Q(species__icontains=query)
             | Q(tags__name__icontains=query)
         ).distinct()
+    if f_species:
+        datasets = datasets.filter(species=f_species)
+    if f_lab:
+        datasets = datasets.filter(lab=f_lab)
+    if f_inst:
+        datasets = datasets.filter(institution=f_inst)
+    if f_license:
+        datasets = datasets.filter(license=f_license)
+
+    sort_field = {"date": "created_at", "downloads": "download_count", "title": "title"}.get(sort, "created_at")
+    if order == "asc":
+        datasets = datasets.order_by(sort_field)
+    else:
+        datasets = datasets.order_by(f"-{sort_field}")
 
     stats = Dataset.objects.aggregate(
         total_count=Count("id"),
         notebook_count=Count("notebooks"),
         contributor_count=Count("uploaded_by", distinct=True),
     )
+
+    # Distinct values for filter dropdowns (non-blank only)
+    species_list     = Dataset.objects.exclude(species="").values_list("species", flat=True).distinct().order_by("species")
+    lab_list         = Dataset.objects.exclude(lab="").values_list("lab", flat=True).distinct().order_by("lab")
+    institution_list = Dataset.objects.exclude(institution="").values_list("institution", flat=True).distinct().order_by("institution")
 
     context = {
         "datasets": datasets,
@@ -42,6 +66,18 @@ def home(request):
         "contributor_count": stats["contributor_count"],
         "active_category": category or "all",
         "query": query,
+        "sort": sort,
+        "order": order,
+        "f_species": f_species,
+        "f_lab": f_lab,
+        "f_inst": f_inst,
+        "f_license": f_license,
+        "species_list": species_list,
+        "lab_list": lab_list,
+        "institution_list": institution_list,
+        "category_choices": Dataset.CATEGORY_CHOICES,
+        "license_choices": Dataset.LICENSE_CHOICES,
+        "sort_options": [("date", "Date"), ("downloads", "Downloads"), ("title", "Title")],
     }
     return render(request, "repository/home.html", context)
 

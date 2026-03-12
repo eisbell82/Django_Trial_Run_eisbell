@@ -19,19 +19,68 @@
   </div>
   <div class="hero-search">
     <div class="search-title">// Search datasets</div>
-    <form method="get" action="{% url 'repository:home' %}">
+    <form method="get" action="{% url 'repository:home' %}" id="filter-form">
       <div class="search-input-wrap">
         <input class="search-input" type="text" name="q" value="{{ query }}" placeholder="e.g. Mus musculus femur CT">
         <button class="btn-accent" type="submit">Search</button>
       </div>
       <div class="filter-chips">
         <a href="{% url 'repository:home' %}{% if query %}?q={{ query }}{% endif %}" class="chip {% if active_category == 'all' %}active{% endif %}">All</a>
-        <a href="?category=morphology{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == 'morphology' %}active{% endif %}">Morphology</a>
-        <a href="?category=genomics{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == 'genomics' %}active{% endif %}">Genomics</a>
-        <a href="?category=histology{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == 'histology' %}active{% endif %}">Histology</a>
-        <a href="?category=ct_mri{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == 'ct_mri' %}active{% endif %}">CT / MRI</a>
-        <a href="?category=behavioural{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == 'behavioural' %}active{% endif %}">Behavioural</a>
+        {% for key, label in category_choices %}
+        <a href="?category={{ key }}{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == key %}active{% endif %}">{{ label }}</a>
+        {% endfor %}
       </div>
+
+      <!-- Advanced Filters -->
+      <details class="adv-filters" {% if f_species or f_lab or f_inst or f_license %}open{% endif %}>
+        <summary class="adv-filters-toggle">Advanced filters {% if f_species or f_lab or f_inst or f_license %}<span class="adv-active-dot"></span>{% endif %}</summary>
+        <div class="adv-filters-grid">
+          {% if species_list %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Species</label>
+            <select name="species" class="adv-select" onchange="this.form.submit()">
+              <option value="">All species</option>
+              {% for s in species_list %}<option value="{{ s }}" {% if f_species == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          {% if lab_list %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Lab</label>
+            <select name="lab" class="adv-select" onchange="this.form.submit()">
+              <option value="">All labs</option>
+              {% for l in lab_list %}<option value="{{ l }}" {% if f_lab == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          {% if institution_list %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Institution</label>
+            <select name="institution" class="adv-select" onchange="this.form.submit()">
+              <option value="">All institutions</option>
+              {% for i in institution_list %}<option value="{{ i }}" {% if f_inst == i %}selected{% endif %}>{{ i }}</option>{% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="adv-filter-group">
+            <label class="adv-label">License</label>
+            <select name="license" class="adv-select" onchange="this.form.submit()">
+              <option value="">All licenses</option>
+              {% for key, label in license_choices %}<option value="{{ key }}" {% if f_license == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          {% if f_species or f_lab or f_inst or f_license %}
+          <div class="adv-filter-group" style="display:flex;align-items:flex-end">
+            <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category != 'all' %}category={{ active_category }}{% endif %}" class="btn-outline" style="font-size:11px;padding:6px 12px">Clear filters ×</a>
+          </div>
+          {% endif %}
+        </div>
+        <!-- preserve existing params -->
+        {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+        {% if active_category != 'all' %}<input type="hidden" name="category" value="{{ active_category }}">{% endif %}
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="order" value="{{ order }}">
+      </details>
     </form>
   </div>
 </div>
@@ -43,8 +92,13 @@
     </span>
     <span class="section-count">{{ datasets|length }} result{{ datasets|length|pluralize }}</span>
     <div class="sort-controls">
-      <a href="?{% if query %}q={{ query }}&{% endif %}sort=date" class="btn-outline">Date ↓</a>
-      <a href="?{% if query %}q={{ query }}&{% endif %}sort=downloads" class="btn-outline">Downloads</a>
+      {% for s_key, s_label in sort_options %}
+        {% if sort == s_key %}
+          <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category != 'all' %}category={{ active_category }}&{% endif %}{% if f_species %}species={{ f_species }}&{% endif %}{% if f_lab %}lab={{ f_lab }}&{% endif %}{% if f_inst %}institution={{ f_inst }}&{% endif %}{% if f_license %}license={{ f_license }}&{% endif %}sort={{ s_key }}&order={% if order == 'desc' %}asc{% else %}desc{% endif %}" class="btn-outline active">{{ s_label }} {% if order == 'desc' %}↓{% else %}↑{% endif %}</a>
+        {% else %}
+          <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category != 'all' %}category={{ active_category }}&{% endif %}{% if f_species %}species={{ f_species }}&{% endif %}{% if f_lab %}lab={{ f_lab }}&{% endif %}{% if f_inst %}institution={{ f_inst }}&{% endif %}{% if f_license %}license={{ f_license }}&{% endif %}sort={{ s_key }}&order=desc" class="btn-outline">{{ s_label }}</a>
+        {% endif %}
+      {% endfor %}
     </div>
   </div>
 
