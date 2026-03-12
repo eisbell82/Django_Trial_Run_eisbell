@@ -14,6 +14,9 @@ git -C "$APP_DIR" pull origin "${DEPLOY_BRANCH:-main}"
 git -C "$APP_DIR" rev-parse --short HEAD > "$APP_DIR/VERSION"
 
 echo "==> Fixing file permissions..."
+# Directory must be group-writable by www-data for SQLite WAL files
+sudo chown ubuntu:www-data "$APP_DIR"
+sudo chmod 775 "$APP_DIR"
 sudo chown www-data:www-data "$APP_DIR/db.sqlite3" 2>/dev/null || true
 mkdir -p "$APP_DIR/media"
 sudo chown -R www-data:www-data "$APP_DIR/media"
