@@ -1,0 +1,46 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}Create Account — SpecimenBase{% endblock %}
+
+{% block content %}
+
+<div class="auth-wrap">
+  <div class="auth-logo">SpecimenBase</div>
+  <div class="auth-title">Create an account</div>
+  <div class="auth-sub">Browse and upload specimen datasets. Accounts have standard access — admins manage permissions.</div>
+
+  <div class="auth-box">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="form-group">
+          <label class="form-label">{{ field.label }}</label>
+          <input class="form-input"
+                 type="{{ field.field.widget.input_type }}"
+                 name="{{ field.html_name }}"
+                 {% if field.value %}value="{{ field.value }}"{% endif %}
+                 placeholder="{{ field.label|lower }}"
+                 autocomplete="{{ field.html_name }}">
+          {% if field.errors %}
+            {% for error in field.errors %}
+              <div class="form-errors">{{ error }}</div>
+            {% endfor %}
+          {% endif %}
+          {% if field.help_text %}
+            <div style="color:var(--text-dim);font-size:11px;margin-top:4px">{{ field.help_text }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-accent" style="width:100%;padding:12px;font-size:13px;border-radius:4px;border:none;cursor:pointer">
+        Create Account →
+      </button>
+    </form>
+  </div>
+
+  <div class="auth-footer">
+    Already have an account? <a href="{% url 'repository:login' %}">Sign in</a>
+  </div>
+</div>
+
+{% endblock %}

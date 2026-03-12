@@ -1,0 +1,59 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}Collections — SpecimenBase{% endblock %}
+{% block nav_collections %}active{% endblock %}
+
+{% block content %}
+
+<div class="section" style="padding-top:3rem">
+  <div class="section-header">
+    <span class="section-title">Collections</span>
+    <span class="section-count">Datasets grouped by category</span>
+  </div>
+
+  {% for col in collections %}
+  <div style="margin-bottom:2.5rem">
+    <div style="display:flex;align-items:baseline;gap:1rem;margin-bottom:1rem">
+      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700">{{ col.label }}</h2>
+      <span class="section-count">{{ col.total }} dataset{{ col.total|pluralize }}</span>
+      <a href="{% url 'repository:home' %}?category={{ col.key }}" style="margin-left:auto;font-size:11px;color:var(--accent-dim);text-decoration:none">
+        View all →
+      </a>
+    </div>
+
+    <div class="dataset-grid">
+      {% for ds in col.datasets %}
+      <a class="dataset-row" href="{% url 'repository:detail' ds.slug %}">
+        <div>
+          <div class="ds-name">{{ ds.title }}</div>
+          <div class="ds-meta">
+            {% if ds.lab %}{{ ds.lab }}{% endif %}
+            {% if ds.institution %} · {{ ds.institution }}{% endif %}
+            {% if ds.species %} · {{ ds.species }}{% endif %}
+          </div>
+          <div class="ds-tags">
+            {% for tag in ds.tags.all %}
+              <span class="tag">{{ tag.name }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="ds-right">
+          {% if ds.file_size_display %}<div class="ds-size">{{ ds.file_size_display }}</div>{% endif %}
+          <div class="ds-date">{{ ds.created_at|timesince }} ago</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty-state">
+    <p>No datasets have been uploaded yet.</p>
+    {% if user.is_authenticated %}
+      <a href="{% url 'repository:upload' %}" class="btn-accent">Upload the first dataset →</a>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -149,6 +150,45 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect("repository:home")
+
+
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect("repository:home")
+
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.is_staff = False
+            user.is_superuser = False
+            user.save()
+            login(request, user)
+            messages.success(request, f"Welcome, {user.username}! Your account has been created.")
+            return redirect("repository:home")
+    else:
+        form = UserCreationForm()
+
+    return render(request, "repository/register.html", {"form": form})
+
+
+def collections_view(request):
+    categories = Dataset.CATEGORY_CHOICES
+    collections = []
+    for key, label in categories:
+        qs = Dataset.objects.filter(category=key).prefetch_related("tags")
+        if qs.exists():
+            collections.append({
+                "key": key,
+                "label": label,
+                "datasets": qs[:5],
+                "total": qs.count(),
+            })
+    return render(request, "repository/collections.html", {"collections": collections})
+
+
+def docs_view(request):
+    return render(request, "repository/docs.html")
 
 
 def _format_bytes(size):

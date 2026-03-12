@@ -1,0 +1,73 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}Docs — SpecimenBase{% endblock %}
+{% block nav_docs %}active{% endblock %}
+
+{% block content %}
+
+<div style="max-width:760px;margin:3rem auto;padding:0 2rem">
+
+  <div style="margin-bottom:2.5rem">
+    <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-dim);margin-bottom:.75rem">// Documentation</div>
+    <h1 style="font-family:'Instrument Serif',serif;font-size:42px;line-height:1.1;margin-bottom:1rem">SpecimenBase</h1>
+    <p style="color:var(--text-muted);font-size:14px;line-height:1.8">
+      A curated open repository for biological specimen datasets. Upload, discover, and cite research-grade data with associated provenance records and analysis notebooks.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <div style="margin-bottom:2rem">
+    <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Getting Started</h2>
+    <div class="info-block">
+      <div class="info-row"><span class="info-key">Browse datasets</span><span class="info-val">No account required</span></div>
+      <div class="info-row"><span class="info-key">Download files</span><span class="info-val">No account required</span></div>
+      <div class="info-row"><span class="info-key">Upload datasets</span><span class="info-val">Account required</span></div>
+      <div class="info-row"><span class="info-key">Manage datasets</span><span class="info-val">Admin access required</span></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:2rem">
+    <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Uploading a Dataset</h2>
+    <ol style="color:var(--text-muted);font-size:13px;line-height:2;padding-left:1.25rem">
+      <li><a href="{% url 'repository:register' %}" style="color:var(--accent-dim)">Create an account</a> or sign in</li>
+      <li>Click <strong style="color:var(--text)">+ Upload</strong> in the navigation bar</li>
+      <li>Fill in the dataset title, abstract, category, and license</li>
+      <li>Attach your data file (CSV, XLSX, JSON, TIFF, ZIP — max 2 GB)</li>
+      <li>Optionally attach an analysis notebook (.ipynb)</li>
+      <li>Submit — your dataset will appear immediately</li>
+    </ol>
+  </div>
+
+  <div style="margin-bottom:2rem">
+    <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Supported File Types</h2>
+    <div class="info-block">
+      <div class="info-row"><span class="info-key">Tabular data</span><span class="info-val">CSV, TSV, XLSX</span></div>
+      <div class="info-row"><span class="info-key">Structured data</span><span class="info-val">JSON</span></div>
+      <div class="info-row"><span class="info-key">Imaging</span><span class="info-val">TIFF</span></div>
+      <div class="info-row"><span class="info-key">Archives</span><span class="info-val">ZIP</span></div>
+      <div class="info-row"><span class="info-key">Notebooks</span><span class="info-val">.ipynb (Jupyter)</span></div>
+      <div class="info-row"><span class="info-key">Max file size</span><span class="info-val">2 GB per file</span></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:2rem">
+    <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Licenses</h2>
+    <div class="info-block">
+      <div class="info-row"><span class="info-key">CC BY 4.0</span><span class="info-val">Attribution required</span></div>
+      <div class="info-row"><span class="info-key">CC BY-NC 4.0</span><span class="info-val">Non-commercial only</span></div>
+      <div class="info-row"><span class="info-key">CC0</span><span class="info-val">Public domain</span></div>
+      <div class="info-row"><span class="info-key">Restricted</span><span class="info-val">Contact uploader</span></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div style="color:var(--text-dim);font-size:12px;padding-bottom:3rem">
+    Questions? Contact the repository admin.
+  </div>
+
+</div>
+
+{% endblock %}
