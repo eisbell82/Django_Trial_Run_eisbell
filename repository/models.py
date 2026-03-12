@@ -17,11 +17,10 @@ class Tag(models.Model):
 
 class Dataset(models.Model):
     CATEGORY_CHOICES = [
-        ("morphology", "Morphology"),
-        ("genomics", "Genomics"),
-        ("histology", "Histology"),
-        ("ct_mri", "CT / MRI"),
-        ("behavioural", "Behavioural"),
+        ("flame", "Flame"),
+        ("mechanical", "Mechanical"),
+        ("chemical", "Chemical"),
+        ("imaging", "Imaging"),
     ]
     LICENSE_CHOICES = [
         ("cc_by_4", "CC BY 4.0"),
@@ -33,7 +32,7 @@ class Dataset(models.Model):
     title = models.CharField(max_length=300)
     slug = models.SlugField(max_length=320, unique=True, blank=True)
     abstract = models.TextField()
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default="morphology")
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default="flame")
     license = models.CharField(max_length=20, choices=LICENSE_CHOICES, default="cc_by_4")
     doi = models.CharField(max_length=200, blank=True)
     version = models.CharField(max_length=20, default="v1")
