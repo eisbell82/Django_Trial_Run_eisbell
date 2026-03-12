@@ -368,6 +368,64 @@ def delete_sample(request, slug, pk):
     return redirect("repository:detail", slug=slug)
 
 
+@login_required
+def edit_dataset(request, slug):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        form = DatasetUploadForm(request.POST, instance=dataset)
+        if form.is_valid():
+            ds = form.save()
+            ds.tags.clear()
+            tags_text = form.cleaned_data.get("tags_text", "")
+            if tags_text:
+                for tag_name in [t.strip() for t in tags_text.split(",") if t.strip()]:
+                    tag, _ = Tag.objects.get_or_create(name=tag_name.lower())
+                    ds.tags.add(tag)
+            messages.success(request, "Dataset updated.")
+            return redirect("repository:detail", slug=ds.slug)
+    else:
+        existing_tags = ", ".join(dataset.tags.values_list("name", flat=True))
+        form = DatasetUploadForm(instance=dataset, initial={"tags_text": existing_tags})
+    return render(request, "repository/edit_dataset.html", {"form": form, "dataset": dataset})
+
+
+def samples_view(request):
+    query = request.GET.get("q", "")
+    dataset_slug = request.GET.get("dataset", "")
+
+    samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
+    if query:
+        samples_qs = samples_qs.filter(
+            Q(sample_id__icontains=query)
+            | Q(dataset__title__icontains=query)
+            | Q(values__value__icontains=query)
+        ).distinct()
+    if dataset_slug:
+        samples_qs = samples_qs.filter(dataset__slug=dataset_slug)
+
+    # Group by dataset for display
+    datasets_shown = {}
+    for s in samples_qs:
+        ds = s.dataset
+        if ds.pk not in datasets_shown:
+            datasets_shown[ds.pk] = {"dataset": ds, "columns": list(ds.sample_columns.all()), "samples": []}
+        s.row = [s.value_for(col) for col in datasets_shown[ds.pk]["columns"]]
+        datasets_shown[ds.pk]["samples"].append(s)
+
+    datasets_with_samples = Dataset.objects.filter(samples__isnull=False).distinct().order_by("title")
+
+    return render(request, "repository/samples.html", {
+        "groups": list(datasets_shown.values()),
+        "query": query,
+        "active_dataset": dataset_slug,
+        "datasets_with_samples": datasets_with_samples,
+        "total_results": samples_qs.count(),
+    })
+
+
 def docs_view(request):
     return render(request, "repository/docs.html")
 

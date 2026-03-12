@@ -1,0 +1,89 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}Edit — {{ dataset.title }} — SpecimenBase{% endblock %}
+
+{% block content %}
+<div class="upload-wrap">
+  <div style="margin-bottom:1rem">
+    <a href="{% url 'repository:detail' dataset.slug %}" style="color:var(--text-dim);font-size:12px">← Back to dataset</a>
+  </div>
+  <div class="upload-title">Edit Dataset</div>
+  <div class="upload-sub">Update metadata below. Files already attached to this dataset are not affected.</div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="form-section-title">// Basic Information</div>
+
+      <div class="form-group">
+        <label class="form-label">Dataset Title</label>
+        {{ form.title }}
+        {% if form.title.errors %}<div class="form-errors">{{ form.title.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Abstract / Description</label>
+        {{ form.abstract }}
+        {% if form.abstract.errors %}<div class="form-errors">{{ form.abstract.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          {{ form.category }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">License</label>
+          {{ form.license }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tags (comma separated)</label>
+        {{ form.tags_text }}
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Specimen Metadata</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Species / Group</label>
+          {{ form.species }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Specimen Count</label>
+          {{ form.specimen_count }}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Collection Date</label>
+          {{ form.collection_date }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Anatomical Region</label>
+          {{ form.anatomical_region }}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Lab</label>
+          {{ form.lab }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Institution</label>
+          {{ form.institution }}
+        </div>
+      </div>
+    </div>
+
+    <div class="submit-bar">
+      <a href="{% url 'repository:detail' dataset.slug %}" class="btn-outline">Cancel</a>
+      <button type="submit" class="btn-accent">Save changes →</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
