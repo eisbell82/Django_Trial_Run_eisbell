@@ -12,4 +12,5 @@ urlpatterns = [
     path("register/", views.register_view, name="register"),
     path("collections/", views.collections_view, name="collections"),
     path("docs/", views.docs_view, name="docs"),
+    path("datasets/<slug:slug>/delete/", views.delete_dataset, name="delete"),
 ]

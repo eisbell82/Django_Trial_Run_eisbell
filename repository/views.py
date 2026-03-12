@@ -284,6 +284,19 @@ def collections_view(request):
     })
 
 
+@login_required
+def delete_dataset(request, slug):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not (request.user == dataset.uploaded_by or request.user.is_staff):
+        messages.error(request, "You do not have permission to delete this dataset.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        dataset.delete()
+        messages.success(request, "Dataset deleted.")
+        return redirect("repository:home")
+    return render(request, "repository/delete_confirm.html", {"dataset": dataset})
+
+
 def docs_view(request):
     return render(request, "repository/docs.html")
 

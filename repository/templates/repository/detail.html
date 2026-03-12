@@ -144,6 +144,12 @@
     </div>
     {% endif %}
 
+    {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+    <div style="margin-top:1rem">
+      <a href="{% url 'repository:delete' dataset.slug %}" class="btn-outline" style="color:#c0392b;border-color:#c0392b;font-size:12px;padding:6px 14px;display:block;text-align:center">Delete dataset</a>
+    </div>
+    {% endif %}
+
   </div>
 </div>
 
