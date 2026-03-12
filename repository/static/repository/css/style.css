@@ -352,3 +352,38 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
   nav { padding: 0 1rem; }
   .nav-links { display: none; }
 }
+
+/* ── SAMPLE TABLE ── */
+.sample-toolbar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 1rem; padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.sample-col-input {
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px 10px; color: var(--text);
+  width: 180px;
+}
+.sample-col-input:focus { outline: none; border-color: var(--accent); }
+.sample-table-wrap { overflow-x: auto; }
+.sample-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+}
+.sample-table th {
+  text-align: left; padding: 7px 12px;
+  background: var(--tag-bg); border-bottom: 1px solid var(--border);
+  color: var(--text-muted); font-weight: 500; white-space: nowrap;
+}
+.sample-table td {
+  padding: 7px 12px; border-bottom: 1px solid var(--border);
+  color: var(--text-muted); vertical-align: middle;
+}
+.sample-table tbody tr:hover { background: var(--tag-bg); }
+.sample-id-cell { color: var(--text); font-weight: 500; }
+.col-del-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: 14px; padding: 0 4px;
+  line-height: 1;
+}
+.col-del-btn:hover { color: var(--danger); }

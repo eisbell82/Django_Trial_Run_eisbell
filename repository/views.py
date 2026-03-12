@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from .models import Dataset, Tag, DataFile, Notebook
+from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue
 from .forms import DatasetUploadForm, DataFileForm, NotebookForm
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
@@ -92,7 +92,17 @@ def dataset_detail(request, slug):
         dataset.save(update_fields=["download_count"])
         return redirect("repository:detail", slug=slug)
 
-    context = {"dataset": dataset}
+    columns = list(dataset.sample_columns.all())
+    samples = list(dataset.samples.prefetch_related("values").all())
+    # Attach values as ordered list per sample for easy template rendering
+    for s in samples:
+        s.row = [s.value_for(col) for col in columns]
+
+    context = {
+        "dataset": dataset,
+        "sample_columns": columns,
+        "samples": samples,
+    }
     return render(request, "repository/detail.html", context)
 
 
@@ -295,6 +305,67 @@ def delete_dataset(request, slug):
         messages.success(request, "Dataset deleted.")
         return redirect("repository:home")
     return render(request, "repository/delete_confirm.html", {"dataset": dataset})
+
+
+def _can_edit(user, dataset):
+    return user.is_authenticated and (user == dataset.uploaded_by or user.is_staff)
+
+
+@login_required
+def add_sample_column(request, slug):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        if name:
+            order = dataset.sample_columns.count()
+            SampleColumn.objects.get_or_create(dataset=dataset, name=name, defaults={"order": order})
+    return redirect("repository:detail", slug=slug)
+
+
+@login_required
+def delete_sample_column(request, slug, col_id):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        SampleColumn.objects.filter(id=col_id, dataset=dataset).delete()
+    return redirect("repository:detail", slug=slug)
+
+
+@login_required
+def add_sample(request, slug):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    columns = list(dataset.sample_columns.all())
+    if request.method == "POST":
+        sample_id = request.POST.get("sample_id", "").strip()
+        if sample_id:
+            sample, _ = Sample.objects.get_or_create(dataset=dataset, sample_id=sample_id)
+            for col in columns:
+                val = request.POST.get(f"col_{col.id}", "").strip()
+                SampleValue.objects.update_or_create(
+                    sample=sample, column=col, defaults={"value": val}
+                )
+            messages.success(request, f"Sample '{sample_id}' saved.")
+        return redirect("repository:detail", slug=slug)
+    return render(request, "repository/add_sample.html", {"dataset": dataset, "columns": columns})
+
+
+@login_required
+def delete_sample(request, slug, pk):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        Sample.objects.filter(pk=pk, dataset=dataset).delete()
+    return redirect("repository:detail", slug=slug)
 
 
 def docs_view(request):

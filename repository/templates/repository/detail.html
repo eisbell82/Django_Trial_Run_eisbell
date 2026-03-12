@@ -34,6 +34,7 @@
       {% if dataset.notebooks.exists %}
       <div class="dtab" onclick="switchTab(this,'tab-notebooks')">Notebooks ({{ dataset.notebook_count }})</div>
       {% endif %}
+      <div class="dtab" onclick="switchTab(this,'tab-samples')">Samples ({{ samples|length }})</div>
     </div>
   </div>
 </div>
@@ -108,6 +109,69 @@
       {% endfor %}
     </div>
 
+    <!-- TAB: SAMPLES -->
+    <div id="tab-samples" style="display:none">
+
+      {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+      <div class="sample-toolbar">
+        <a href="{% url 'repository:add_sample' dataset.slug %}" class="btn-accent" style="font-size:11px;padding:5px 14px">+ Add sample</a>
+        <form method="post" action="{% url 'repository:add_sample_column' dataset.slug %}" style="display:flex;gap:6px;align-items:center">
+          {% csrf_token %}
+          <input type="text" name="name" placeholder="New column name" class="sample-col-input" required>
+          <button type="submit" class="btn-outline" style="font-size:11px;padding:5px 12px">+ Add column</button>
+        </form>
+      </div>
+      {% endif %}
+
+      {% if sample_columns %}
+      <div class="sample-table-wrap">
+        <table class="sample-table">
+          <thead>
+            <tr>
+              <th>Sample ID</th>
+              {% for col in sample_columns %}
+              <th>
+                {{ col.name }}
+                {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                <form method="post" action="{% url 'repository:delete_sample_column' dataset.slug col.id %}" style="display:inline">
+                  {% csrf_token %}
+                  <button type="submit" class="col-del-btn" title="Remove column">×</button>
+                </form>
+                {% endif %}
+              </th>
+              {% endfor %}
+              {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+              <th></th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in samples %}
+            <tr>
+              <td class="sample-id-cell">{{ s.sample_id }}</td>
+              {% for val in s.row %}<td>{{ val }}</td>{% endfor %}
+              {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+              <td>
+                <form method="post" action="{% url 'repository:delete_sample' dataset.slug s.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="col-del-btn" title="Delete sample">×</button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="{{ sample_columns|length|add:2 }}" style="color:var(--text-dim);text-align:center;padding:1.5rem">No samples yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="info-block">
+        <p class="muted">No columns defined yet.{% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %} Add a column above to start building your sample table.{% endif %}</p>
+      </div>
+      {% endif %}
+    </div>
+
   </div>
 
   <div class="detail-sidebar">
@@ -157,7 +221,7 @@
 function switchTab(el, tabId) {
   document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['tab-overview','tab-files','tab-notebooks'].forEach(id => {
+  ['tab-overview','tab-files','tab-notebooks','tab-samples'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });

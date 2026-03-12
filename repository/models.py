@@ -109,3 +109,44 @@ class Notebook(models.Model):
 
     def __str__(self):
         return self.filename
+
+
+class SampleColumn(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="sample_columns")
+    name = models.CharField(max_length=200)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "id"]
+        unique_together = [("dataset", "name")]
+
+    def __str__(self):
+        return self.name
+
+
+class Sample(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="samples")
+    sample_id = models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["sample_id"]
+        unique_together = [("dataset", "sample_id")]
+
+    def __str__(self):
+        return self.sample_id
+
+    def value_for(self, column):
+        try:
+            return self.values.get(column=column).value
+        except SampleValue.DoesNotExist:
+            return ""
+
+
+class SampleValue(models.Model):
+    sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name="values")
+    column = models.ForeignKey(SampleColumn, on_delete=models.CASCADE, related_name="values")
+    value = models.CharField(max_length=1000, blank=True)
+
+    class Meta:
+        unique_together = [("sample", "column")]
