@@ -14,4 +14,4 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
-          script: bash /srv/specimenbase/deploy/deploy.sh
+          script: DEPLOY_BRANCH=claude/django-app-deployment-qvuJi bash /srv/specimenbase/deploy/deploy.sh
