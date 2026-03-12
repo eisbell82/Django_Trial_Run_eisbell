@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;700;800&display=swap');
 
 :root {
-  --bg: #F9F6EF;
+  --bg: #F5EDD8;
   --surface: #FFFFFF;
   --border: #DDD5C0;
   --accent: #8C1515;
@@ -29,7 +29,7 @@ body {
 /* ── NAV ── */
 nav {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(249,246,239,0.95);
+  background: rgba(245,237,216,0.95);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center;
