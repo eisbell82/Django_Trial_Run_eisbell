@@ -25,12 +25,12 @@
         <button class="btn-accent" type="submit">Search</button>
       </div>
       <div class="filter-chips">
-        <a href="{% url 'repository:home' %}" class="chip {% if active_category == 'all' %}active{% endif %}">All</a>
-        <a href="?category=morphology" class="chip {% if active_category == 'morphology' %}active{% endif %}">Morphology</a>
-        <a href="?category=genomics" class="chip {% if active_category == 'genomics' %}active{% endif %}">Genomics</a>
-        <a href="?category=histology" class="chip {% if active_category == 'histology' %}active{% endif %}">Histology</a>
-        <a href="?category=ct_mri" class="chip {% if active_category == 'ct_mri' %}active{% endif %}">CT / MRI</a>
-        <a href="?category=behavioural" class="chip {% if active_category == 'behavioural' %}active{% endif %}">Behavioural</a>
+        <a href="{% url 'repository:home' %}{% if query %}?q={{ query }}{% endif %}" class="chip {% if active_category == 'all' %}active{% endif %}">All</a>
+        <a href="?category=morphology{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == 'morphology' %}active{% endif %}">Morphology</a>
+        <a href="?category=genomics{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == 'genomics' %}active{% endif %}">Genomics</a>
+        <a href="?category=histology{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == 'histology' %}active{% endif %}">Histology</a>
+        <a href="?category=ct_mri{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == 'ct_mri' %}active{% endif %}">CT / MRI</a>
+        <a href="?category=behavioural{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == 'behavioural' %}active{% endif %}">Behavioural</a>
       </div>
     </form>
   </div>

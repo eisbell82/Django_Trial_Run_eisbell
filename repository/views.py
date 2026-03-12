@@ -2,10 +2,13 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.utils.http import url_has_allowed_host_and_scheme
 
-from .models import Dataset, Tag
+from .models import Dataset, Tag, DataFile, Notebook
 from .forms import DatasetUploadForm, DataFileForm, NotebookForm
+
+ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
 
 
 def home(request):
@@ -25,15 +28,17 @@ def home(request):
             | Q(tags__name__icontains=query)
         ).distinct()
 
-    total_count = Dataset.objects.count()
-    notebook_count = sum(d.notebook_count for d in Dataset.objects.all())
-    contributor_count = Dataset.objects.values("uploaded_by").distinct().count()
+    stats = Dataset.objects.aggregate(
+        total_count=Count("id"),
+        notebook_count=Count("notebooks"),
+        contributor_count=Count("uploaded_by", distinct=True),
+    )
 
     context = {
         "datasets": datasets,
-        "total_count": total_count,
-        "notebook_count": notebook_count,
-        "contributor_count": contributor_count,
+        "total_count": stats["total_count"],
+        "notebook_count": stats["notebook_count"],
+        "contributor_count": stats["contributor_count"],
         "active_category": category or "all",
         "query": query,
     }
@@ -76,7 +81,16 @@ def upload_dataset(request):
             # Handle data file upload
             if request.FILES.get("data_file"):
                 uploaded = request.FILES["data_file"]
-                from .models import DataFile
+                import os
+                ext = os.path.splitext(uploaded.name)[1].lower()
+                if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+                    messages.error(request, f"File type '{ext}' is not allowed.")
+                    dataset.delete()
+                    return render(request, "repository/upload.html", {
+                        "form": form,
+                        "data_file_form": data_file_form,
+                        "notebook_form": notebook_form,
+                    })
                 DataFile.objects.create(
                     dataset=dataset,
                     file=uploaded,
@@ -89,7 +103,6 @@ def upload_dataset(request):
             # Handle notebook upload
             if request.FILES.get("notebook_file"):
                 uploaded = request.FILES["notebook_file"]
-                from .models import Notebook
                 Notebook.objects.create(
                     dataset=dataset,
                     file=uploaded,
@@ -120,7 +133,14 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect(request.GET.get("next", "repository:home"))
+            next_url = request.GET.get("next", "")
+            if next_url and url_has_allowed_host_and_scheme(
+                url=next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                return redirect(next_url)
+            return redirect("repository:home")
         messages.error(request, "Invalid credentials. Please try again.")
 
     return render(request, "repository/login.html")

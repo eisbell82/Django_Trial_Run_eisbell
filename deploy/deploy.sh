@@ -10,7 +10,7 @@ PYTHON="$VENV_DIR/bin/python"
 PIP="$VENV_DIR/bin/pip"
 
 echo "==> Pulling latest code..."
-git -C "$APP_DIR" pull origin claude/django-app-deployment-qvuJi
+git -C "$APP_DIR" pull origin "${DEPLOY_BRANCH:-main}"
 
 echo "==> Installing / upgrading dependencies..."
 "$PIP" install -q -r "$APP_DIR/requirements.txt"
