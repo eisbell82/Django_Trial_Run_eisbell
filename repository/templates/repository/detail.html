@@ -11,7 +11,7 @@
     <div class="breadcrumb">
       <a href="{% url 'repository:home' %}">Datasets</a>
       <span>›</span>
-      <a href="?category={{ dataset.category }}">{{ dataset.get_category_display }}</a>
+      <a href="{% url 'repository:home' %}?category={{ dataset.category }}">{{ dataset.get_category_display }}</a>
       <span>›</span>
       {{ dataset.title|truncatechars:60 }}
     </div>
