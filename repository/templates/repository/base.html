@@ -28,7 +28,10 @@
   </div>
   {% if user.is_authenticated %}
     <span style="color:var(--text-muted);font-size:12px;margin-left:auto">{{ user.username }}</span>
-    <a href="{% url 'repository:logout' %}" class="nav-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border)">Sign Out</a>
+    <form method="post" action="{% url 'repository:logout' %}" style="display:inline">
+      {% csrf_token %}
+      <button type="submit" class="nav-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);cursor:pointer">Sign Out</button>
+    </form>
     <a href="{% url 'repository:upload' %}" class="nav-btn">+ Upload</a>
   {% else %}
     <a href="{% url 'repository:login' %}" class="nav-btn" style="margin-left:auto">Sign In</a>
