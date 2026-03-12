@@ -128,6 +128,15 @@ def upload_dataset(request):
                         "data_file_form": data_file_form,
                         "notebook_form": notebook_form,
                     })
+                MAX_UPLOAD_BYTES = 150 * 1024 * 1024  # 150 MB
+                if uploaded.size > MAX_UPLOAD_BYTES:
+                    messages.error(request, "File exceeds the 150 MB maximum size limit.")
+                    dataset.delete()
+                    return render(request, "repository/upload.html", {
+                        "form": form,
+                        "data_file_form": data_file_form,
+                        "notebook_form": notebook_form,
+                    })
                 DataFile.objects.create(
                     dataset=dataset,
                     file=uploaded,
