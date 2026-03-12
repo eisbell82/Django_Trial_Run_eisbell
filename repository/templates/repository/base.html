@@ -11,7 +11,16 @@
 <body>
 
 <nav>
-  <a class="nav-logo" href="{% url 'repository:home' %}">Specimen<span>Base</span></a>
+  <a class="nav-logo" href="{% url 'repository:home' %}">
+    <svg class="nav-mushroom" width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 13C3 7.477 6.582 3 11 3C15.418 3 19 7.477 19 13H3Z" fill="#2d7a5a"/>
+      <rect x="8" y="13" width="6" height="6" rx="1.5" fill="#2d7a5a"/>
+      <circle cx="8" cy="8.5" r="1.3" fill="rgba(255,255,255,0.45)"/>
+      <circle cx="13.5" cy="7.5" r="0.9" fill="rgba(255,255,255,0.45)"/>
+      <circle cx="11" cy="10.5" r="1.1" fill="rgba(255,255,255,0.45)"/>
+    </svg>
+    Specimen<span>Base</span>
+  </a>
   <div class="nav-links">
     <a href="{% url 'repository:home' %}" class="{% block nav_datasets %}{% endblock %}">Datasets</a>
     <a href="#">Collections</a>
