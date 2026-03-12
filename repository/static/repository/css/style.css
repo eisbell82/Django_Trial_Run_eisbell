@@ -1,18 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;700;800&display=swap');
 
 :root {
-  --bg: #0c0808;
-  --surface: #140a0a;
-  --border: #3d1818;
-  --accent: #c0392b;
-  --accent-dim: #a03030;
-  --text: #f4e8e8;
-  --text-muted: #b07070;
-  --text-dim: #6a3535;
-  --tag-bg: #180c0c;
-  --tag-border: #3d1818;
-  --danger: #f07a30;
-  --info: #e09060;
+  --bg: #F9F6EF;
+  --surface: #FFFFFF;
+  --border: #DDD5C0;
+  --accent: #8C1515;
+  --accent-dim: #B03030;
+  --text: #2E2D29;
+  --text-muted: #6B5E5E;
+  --text-dim: #A09080;
+  --tag-bg: #F2EDE3;
+  --tag-border: #D2C295;
+  --danger: #c0392b;
+  --info: #175E54;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,7 +29,7 @@ body {
 /* ── NAV ── */
 nav {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(12,8,8,0.92);
+  background: rgba(249,246,239,0.95);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center;
@@ -55,7 +55,7 @@ nav {
 .nav-links a:hover { color: var(--text); }
 .nav-links a.active { color: var(--accent); border-bottom-color: var(--accent); }
 .nav-btn {
-  background: var(--accent); color: #f4e8e8;
+  background: var(--accent); color: #ffffff;
   border: none; padding: 7px 16px; border-radius: 4px;
   font-family: 'DM Mono', monospace; font-size: 12px;
   font-weight: 500; cursor: pointer; letter-spacing: 0.03em;
@@ -115,7 +115,7 @@ nav {
 .search-input:focus { border-color: var(--accent); }
 .search-input::placeholder { color: var(--text-dim); }
 .btn-accent {
-  background: var(--accent); color: #f4e8e8;
+  background: var(--accent); color: #ffffff;
   border: none; padding: 10px 20px; border-radius: 4px;
   font-family: 'DM Mono', monospace; font-size: 12px;
   font-weight: 500; cursor: pointer; white-space: nowrap;
@@ -158,7 +158,7 @@ nav {
   gap: 1rem; align-items: start;
   transition: background 0.1s; text-decoration: none;
 }
-.dataset-row:hover { background: #1e0e0e; }
+.dataset-row:hover { background: #F2EDE3; }
 .ds-name {
   font-family: 'Syne', sans-serif; font-weight: 600;
   font-size: 14px; color: var(--text); margin-bottom: 4px;
@@ -225,7 +225,7 @@ nav {
 .info-val { color: var(--text); text-align: right; }
 
 .dl-btn {
-  width: 100%; background: var(--accent); color: #f4e8e8;
+  width: 100%; background: var(--accent); color: #ffffff;
   border: none; padding: 12px; border-radius: 4px;
   font-family: 'DM Mono', monospace; font-size: 13px;
   font-weight: 500; cursor: pointer; margin-bottom: 8px;
@@ -249,7 +249,7 @@ nav {
   display: flex; align-items: center; gap: 1rem;
   font-size: 12px;
 }
-.file-row:hover { background: #1e0e0e; }
+.file-row:hover { background: #F2EDE3; }
 .file-name { color: var(--text); flex: 1; }
 .file-size { color: var(--text-muted); }
 .file-dl { color: var(--accent-dim); text-decoration: none; font-size: 11px; }
