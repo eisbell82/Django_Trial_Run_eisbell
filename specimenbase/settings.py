@@ -59,6 +59,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "repository.context_processors.app_version",
             ],
         },
     },
@@ -134,6 +135,10 @@ MESSAGE_TAGS = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ── Version (written by deploy.sh) ───────────────────────────────────────────
+_version_file = BASE_DIR / "VERSION"
+APP_VERSION = _version_file.read_text().strip() if _version_file.exists() else "dev"
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 LOGGING = {
