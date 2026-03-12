@@ -24,7 +24,7 @@
   <span style="font-size:10px;color:var(--text-dim);letter-spacing:.05em">v{{ APP_VERSION }}</span>
   <div class="nav-links">
     <a href="{% url 'repository:home' %}" class="{% block nav_datasets %}{% endblock %}">Datasets</a>
-    <a href="{% url 'repository:collections' %}" class="{% block nav_collections %}{% endblock %}">Collections</a>
+    <a href="{% url 'repository:collections' %}" class="{% block nav_collections %}{% endblock %}">All</a>
     <a href="{% url 'repository:docs' %}" class="{% block nav_docs %}{% endblock %}">Docs</a>
   </div>
   {% if user.is_authenticated %}
