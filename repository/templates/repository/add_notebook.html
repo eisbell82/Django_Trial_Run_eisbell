@@ -1,0 +1,62 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}Add Notebook Tab — {{ dataset.title }} — SpecimenBase{% endblock %}
+
+{% block content %}
+<div class="upload-wrap">
+  <div style="margin-bottom:1rem">
+    <a href="{% url 'repository:detail' dataset.slug %}" style="color:var(--text-dim);font-size:12px">← Back to {{ dataset.title|truncatechars:50 }}</a>
+  </div>
+  <div class="upload-title">Add Notebook Tab</div>
+  <div class="upload-sub">Attach a notebook file, paste Python code, or both. Up to 3 tabs per experiment.</div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="form-section-title">// Tab</div>
+      <div class="form-group">
+        <label class="form-label">Tab label <span style="color:var(--accent)">*</span></label>
+        <input type="text" name="tab_label" class="form-input" placeholder="e.g. Analysis, Preprocessing, Visualisation" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-textarea" rows="3" placeholder="Briefly describe what this notebook does…"></textarea>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Notebook file (optional)</div>
+      <div class="dropzone">
+        <div class="dz-icon">⬡</div>
+        <div class="dz-text">Drop .ipynb file here or click to browse</div>
+        <input type="file" name="notebook_file" accept=".ipynb">
+      </div>
+      <div class="form-row" style="margin-top:1rem">
+        <div class="form-group">
+          <label class="form-label">Google Colab URL</label>
+          <input type="url" name="colab_url" class="form-input" placeholder="https://colab.research.google.com/…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Binder URL</label>
+          <input type="url" name="binder_url" class="form-input" placeholder="https://mybinder.org/…">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Python code (optional)</div>
+      <div class="form-group">
+        <label class="form-label">Paste code to display inline</label>
+        <textarea name="code" class="form-textarea" rows="16" style="font-family:'DM Mono',monospace;font-size:12px;tab-size:4" placeholder="import pandas as pd&#10;&#10;df = pd.read_csv('data.csv')&#10;print(df.head())"></textarea>
+      </div>
+    </div>
+
+    <div class="submit-bar">
+      <a href="{% url 'repository:detail' dataset.slug %}" class="btn-outline">Cancel</a>
+      <button type="submit" class="btn-accent">Add tab →</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -98,8 +98,10 @@ def dataset_detail(request, slug):
     for s in samples:
         s.row = [s.value_for(col) for col in columns]
 
+    notebooks = list(dataset.notebooks.all())
     context = {
         "dataset": dataset,
+        "notebooks": notebooks,
         "sample_columns": columns,
         "samples": samples,
     }
@@ -344,6 +346,43 @@ def delete_file(request, slug, pk):
         return redirect("repository:detail", slug=slug)
     if request.method == "POST":
         DataFile.objects.filter(pk=pk, dataset=dataset).delete()
+    return redirect("repository:detail", slug=slug)
+
+@login_required
+def add_notebook(request, slug):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if dataset.notebooks.count() >= 3:
+        messages.error(request, "Maximum of 3 notebook tabs per experiment.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        tab_label = request.POST.get("tab_label", "").strip() or "Notebook"
+        description = request.POST.get("description", "").strip()
+        code = request.POST.get("code", "").strip()
+        colab_url = request.POST.get("colab_url", "").strip()
+        binder_url = request.POST.get("binder_url", "").strip()
+        nb = Notebook(dataset=dataset, tab_label=tab_label, description=description,
+                      code=code, colab_url=colab_url, binder_url=binder_url)
+        if request.FILES.get("notebook_file"):
+            uploaded = request.FILES["notebook_file"]
+            nb.file = uploaded
+            nb.filename = uploaded.name
+        nb.save()
+        messages.success(request, f"Notebook tab '{tab_label}' added.")
+        return redirect("repository:detail", slug=slug)
+    return render(request, "repository/add_notebook.html", {"dataset": dataset})
+
+
+@login_required
+def delete_notebook(request, slug, pk):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        Notebook.objects.filter(pk=pk, dataset=dataset).delete()
     return redirect("repository:detail", slug=slug)
 
 

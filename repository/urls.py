@@ -21,4 +21,6 @@ urlpatterns = [
     path("datasets/<slug:slug>/samples/<int:pk>/delete/", views.delete_sample, name="delete_sample"),
     path("datasets/<slug:slug>/columns/add/", views.add_sample_column, name="add_sample_column"),
     path("datasets/<slug:slug>/columns/<int:col_id>/delete/", views.delete_sample_column, name="delete_sample_column"),
+    path("datasets/<slug:slug>/notebooks/add/", views.add_notebook, name="add_notebook"),
+    path("datasets/<slug:slug>/notebooks/<int:pk>/delete/", views.delete_notebook, name="delete_notebook"),
 ]

@@ -100,15 +100,20 @@ class DataFile(models.Model):
 
 class Notebook(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="notebooks")
+    tab_label = models.CharField(max_length=100, default="Notebook")
     file = models.FileField(upload_to="datasets/notebooks/", null=True, blank=True)
-    filename = models.CharField(max_length=300)
+    filename = models.CharField(max_length=300, blank=True)
     description = models.TextField(blank=True)
+    code = models.TextField(blank=True)
     colab_url = models.URLField(blank=True)
     binder_url = models.URLField(blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["uploaded_at"]
+
     def __str__(self):
-        return self.filename
+        return self.tab_label
 
 
 class SampleColumn(models.Model):

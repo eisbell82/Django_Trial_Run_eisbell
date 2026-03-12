@@ -31,8 +31,13 @@
     <div class="detail-tabs">
       <div class="dtab active" onclick="switchTab(this,'tab-overview')">Overview</div>
       <div class="dtab" onclick="switchTab(this,'tab-files')">Files ({{ dataset.files.count }})</div>
-      {% if dataset.notebooks.exists %}
-      <div class="dtab" onclick="switchTab(this,'tab-notebooks')">Notebooks ({{ dataset.notebook_count }})</div>
+      {% for nb in notebooks %}
+      <div class="dtab" onclick="switchTab(this,'tab-nb-{{ nb.pk }}')">{{ nb.tab_label }}</div>
+      {% endfor %}
+      {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+      {% if notebooks|length < 3 %}
+      <a href="{% url 'repository:add_notebook' dataset.slug %}" class="dtab" style="color:var(--accent);text-decoration:none">+ Notebook</a>
+      {% endif %}
       {% endif %}
       <div class="dtab" onclick="switchTab(this,'tab-samples')">Samples ({{ samples|length }})</div>
     </div>
@@ -95,14 +100,13 @@
       {% endif %}
     </div>
 
-    <!-- TAB: NOTEBOOKS -->
-    <div id="tab-notebooks" style="display:none">
-      {% for nb in dataset.notebooks.all %}
+    <!-- TAB: NOTEBOOKS (one tab per notebook) -->
+    {% for nb in notebooks %}
+    <div id="tab-nb-{{ nb.pk }}" style="display:none">
       <div class="nb-viewer">
         <div class="nb-toolbar">
-          <span class="nb-title">{{ nb.filename }}</span>
-          <span class="nb-badge-sm">Read-only</span>
-          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+          <span class="nb-title">{{ nb.tab_label }}</span>
+          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             {% if nb.colab_url %}
             <a href="{{ nb.colab_url }}" target="_blank" class="btn-outline" style="padding:4px 12px;font-size:11px">Open in Colab ↗</a>
             {% endif %}
@@ -110,7 +114,13 @@
             <a href="{{ nb.binder_url }}" target="_blank" class="btn-outline" style="padding:4px 12px;font-size:11px">Open in Binder ↗</a>
             {% endif %}
             {% if nb.file %}
-            <a href="{{ nb.file.url }}" class="btn-outline" style="padding:4px 12px;font-size:11px">Download .ipynb</a>
+            <a href="{{ nb.file.url }}" class="btn-outline" style="padding:4px 12px;font-size:11px">↓ Download .ipynb</a>
+            {% endif %}
+            {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+            <form method="post" action="{% url 'repository:delete_notebook' dataset.slug nb.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button type="submit" class="col-del-btn" title="Remove tab" onclick="return confirm('Remove this notebook tab?')">×</button>
+            </form>
             {% endif %}
           </div>
         </div>
@@ -119,9 +129,14 @@
           {{ nb.description }}
         </div>
         {% endif %}
+        {% if nb.code %}
+        <div style="padding:0">
+          <pre class="nb-code">{{ nb.code }}</pre>
+        </div>
+        {% endif %}
       </div>
-      {% endfor %}
     </div>
+    {% endfor %}
 
     <!-- TAB: SAMPLES -->
     <div id="tab-samples" style="display:none">
@@ -235,11 +250,8 @@
 <script>
 function switchTab(el, tabId) {
   document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  ['tab-overview','tab-files','tab-notebooks','tab-samples'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
+  if (el.classList.contains('dtab')) el.classList.add('active');
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
   const target = document.getElementById(tabId);
   if (target) target.style.display = 'block';
 }
