@@ -107,6 +107,9 @@
         <div class="nb-toolbar">
           <span class="nb-title">{{ nb.tab_label }}</span>
           <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            {% if nb.code and nb.binder_url %}
+            <button id="thebe-btn-{{ nb.pk }}" class="btn-outline" style="padding:4px 12px;font-size:11px;cursor:pointer;background:none;border:1px solid var(--border);color:var(--text);border-radius:4px" onclick="activateThebe('{{ nb.binder_url|escapejs }}', {{ nb.pk }})">⚡ Run Interactive</button>
+            {% endif %}
             {% if nb.colab_url %}
             <a href="{{ nb.colab_url }}" target="_blank" class="btn-outline" style="padding:4px 12px;font-size:11px">Open in Colab ↗</a>
             {% endif %}
@@ -130,8 +133,8 @@
         </div>
         {% endif %}
         {% if nb.code %}
-        <div style="padding:0">
-          <pre class="nb-code">{{ nb.code }}</pre>
+        <div style="padding:0" id="thebe-wrap-{{ nb.pk }}">
+          <pre class="nb-code thebe-cell" data-executable="true" data-language="python" id="thebe-pre-{{ nb.pk }}">{{ nb.code }}</pre>
         </div>
         {% endif %}
       </div>
@@ -301,6 +304,48 @@ function switchTab(el, tabId) {
   document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
   const target = document.getElementById(tabId);
   if (target) target.style.display = 'block';
+}
+
+var _thebeLoaded = false;
+var _thebeBootstrapped = false;
+
+function activateThebe(binderUrl, nbPk) {
+  var btn = document.getElementById('thebe-btn-' + nbPk);
+  if (btn) { btn.textContent = '⏳ Connecting to Binder…'; btn.disabled = true; }
+
+  // Parse repo + ref from the binder URL
+  // Format: https://mybinder.org/v2/gh/ORG/REPO/REF
+  var repo = 'jupyter/scipy-notebook'; // fallback
+  var ref  = 'HEAD';
+  var ghMatch = binderUrl.match(/mybinder\.org\/v2\/gh\/([^/]+\/[^/]+)\/([^/?#]+)/);
+  if (ghMatch) {
+    repo = ghMatch[1];
+    ref  = ghMatch[2];
+  }
+
+  function bootstrap() {
+    if (_thebeBootstrapped) return;
+    _thebeBootstrapped = true;
+    thebelab.bootstrap({
+      requestKernel: true,
+      binderOptions: { repo: repo, ref: ref, binderUrl: 'https://mybinder.org' },
+      kernelOptions:  { name: 'python3' },
+      selector: '.thebe-cell',
+      mountActivateWidget: false,
+      mountStatusWidget: false,
+    });
+    // Hide all run-interactive buttons once Thebe is active
+    document.querySelectorAll('[id^="thebe-btn-"]').forEach(function(b) { b.style.display = 'none'; });
+  }
+
+  if (_thebeLoaded) {
+    bootstrap();
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://unpkg.com/thebelab@0.9.0/lib/index.js';
+    s.onload = function() { _thebeLoaded = true; bootstrap(); };
+    document.head.appendChild(s);
+  }
 }
 </script>
 
