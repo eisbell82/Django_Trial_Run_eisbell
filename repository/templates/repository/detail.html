@@ -167,82 +167,68 @@
               <ul id="col-suggestions-list" style="margin:0;padding:4px 0;list-style:none;max-height:180px;overflow-y:auto"></ul>
             </div>
             <script>
+            // Shared fuzzy suggestion data and helpers (used by add-column + rename inputs)
+            window._colSugs = [{% for col_name in suggested_column_names %}"{{ col_name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+
+            window._colLev = function(a, b) {
+              var m = a.length, n = b.length, dp = [], i, j;
+              for (i = 0; i <= m; i++) { dp[i] = [i]; }
+              for (j = 0; j <= n; j++) { dp[0][j] = j; }
+              for (i = 1; i <= m; i++) {
+                for (j = 1; j <= n; j++) {
+                  dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+                }
+              }
+              return dp[m][n];
+            };
+
+            window._colFilter = function(q) {
+              if (!q) return _colSugs.slice();
+              var scored = _colSugs.map(function(s) {
+                var nl = s.toLowerCase();
+                var sc = nl === q ? 0 : nl.startsWith(q) ? 1 : nl.includes(q) ? 2 : (function(){
+                  var d = _colLev(nl, q), t = Math.ceil(q.length / 3);
+                  return d <= t ? 3 + d : Infinity;
+                })();
+                return { name: s, s: sc };
+              }).filter(function(x) { return x.s < Infinity; });
+              scored.sort(function(a, b) { return a.s - b.s; });
+              return scored.map(function(x) { return x.name; });
+            };
+
+            window._colRender = function(listEl, dropEl, inputEl, items, q) {
+              listEl.innerHTML = '';
+              if (!items.length) { dropEl.style.display = 'none'; return; }
+              items.forEach(function(name) {
+                var li = document.createElement('li');
+                if (q && name.toLowerCase().includes(q)) {
+                  var idx = name.toLowerCase().indexOf(q);
+                  li.innerHTML = name.slice(0, idx) +
+                    '<strong style="color:var(--accent)">' + name.slice(idx, idx + q.length) + '</strong>' +
+                    name.slice(idx + q.length);
+                } else {
+                  li.textContent = name;
+                }
+                li.style.cssText = 'padding:6px 10px;cursor:pointer;font-size:11px;color:var(--text)';
+                li.addEventListener('mousedown', function(e) { e.preventDefault(); inputEl.value = name; dropEl.style.display = 'none'; });
+                li.addEventListener('mouseover', function() { this.style.background = 'var(--border)'; });
+                li.addEventListener('mouseout',  function() { this.style.background = ''; });
+                listEl.appendChild(li);
+              });
+              dropEl.style.display = 'block';
+            };
+
+            // Wire up the add-column input
             (function(){
-              var suggestions = [{% for col_name in suggested_column_names %}"{{ col_name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
               var input = document.getElementById('col-name-input');
               var drop  = document.getElementById('col-suggestions-drop');
               var list  = document.getElementById('col-suggestions-list');
-
-              // Levenshtein distance for fuzzy matching
-              function levenshtein(a, b) {
-                var m = a.length, n = b.length;
-                var dp = [];
-                for (var i = 0; i <= m; i++) { dp[i] = [i]; }
-                for (var j = 0; j <= n; j++) { dp[0][j] = j; }
-                for (var i = 1; i <= m; i++) {
-                  for (var j = 1; j <= n; j++) {
-                    dp[i][j] = a[i-1] === b[j-1]
-                      ? dp[i-1][j-1]
-                      : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
-                  }
-                }
-                return dp[m][n];
-              }
-
-              function score(name, q) {
-                var nl = name.toLowerCase();
-                if (nl === q) return 0;
-                if (nl.startsWith(q)) return 1;
-                if (nl.includes(q)) return 2;
-                // fuzzy: allow up to ceil(q.length/3) edits
-                var dist = levenshtein(nl, q);
-                var threshold = Math.ceil(q.length / 3);
-                if (dist <= threshold) return 3 + dist;
-                return Infinity;
-              }
-
-              function filter(q) {
-                if (!q) return suggestions.slice();
-                var scored = suggestions.map(function(s) {
-                  return { name: s, s: score(s, q) };
-                }).filter(function(x) { return x.s < Infinity; });
-                scored.sort(function(a, b) { return a.s - b.s; });
-                return scored.map(function(x) { return x.name; });
-              }
-
-              function render(items, q) {
-                list.innerHTML = '';
-                if (!items.length) { drop.style.display = 'none'; return; }
-                items.forEach(function(name) {
-                  var li = document.createElement('li');
-                  // Highlight the matching part
-                  if (q && name.toLowerCase().includes(q)) {
-                    var idx = name.toLowerCase().indexOf(q);
-                    li.innerHTML = name.slice(0, idx) +
-                      '<strong style="color:var(--accent)">' + name.slice(idx, idx + q.length) + '</strong>' +
-                      name.slice(idx + q.length);
-                  } else {
-                    li.textContent = name;
-                  }
-                  li.style.cssText = 'padding:7px 12px;cursor:pointer;font-size:12px;color:var(--text)';
-                  li.addEventListener('mousedown', function(e) { e.preventDefault(); input.value = name; drop.style.display = 'none'; });
-                  li.addEventListener('mouseover', function() { this.style.background = 'var(--border)'; });
-                  li.addEventListener('mouseout',  function() { this.style.background = ''; });
-                  list.appendChild(li);
-                });
-                drop.style.display = 'block';
-              }
-
-              input.addEventListener('input', function() {
-                var q = this.value.trim().toLowerCase();
-                render(filter(q), q);
-              });
-              input.addEventListener('focus', function() {
-                var q = this.value.trim().toLowerCase();
-                render(filter(q), q);
-              });
+              if (!input) return;
+              function go() { var q = input.value.trim().toLowerCase(); _colRender(list, drop, input, _colFilter(q), q); }
+              input.addEventListener('input', go);
+              input.addEventListener('focus', go);
               document.addEventListener('click', function(e) {
-                if (!drop.contains(e.target) && e.target !== input) drop.style.display = 'none';
+                if (drop && !drop.contains(e.target) && e.target !== input) drop.style.display = 'none';
               });
             })();
             </script>
@@ -264,15 +250,20 @@
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                 <span id="col-label-{{ col.id }}">{{ col.name }}</span>
                 <button type="button" class="col-del-btn" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
-                <form method="post" action="{% url 'repository:rename_sample_column' dataset.slug col.id %}" id="col-rename-form-{{ col.id }}" style="display:none;margin-top:2px">
+                <form method="post" action="{% url 'repository:rename_sample_column' dataset.slug col.id %}" id="col-rename-form-{{ col.id }}" style="display:none;margin-top:2px;align-items:center;gap:2px">
                   {% csrf_token %}
-                  <input type="text" name="name" value="{{ col.name }}" style="font-size:11px;width:90px;padding:2px 5px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
+                  <div style="position:relative;display:inline-block">
+                    <input type="text" name="name" id="col-rename-input-{{ col.id }}" value="{{ col.name }}" autocomplete="off" style="font-size:11px;width:100px;padding:2px 5px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
+                    <div id="col-rename-drop-{{ col.id }}" style="display:none;position:absolute;top:100%;left:0;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:400;margin-top:2px;overflow:hidden">
+                      <ul id="col-rename-list-{{ col.id }}" style="margin:0;padding:4px 0;list-style:none;max-height:160px;overflow-y:auto"></ul>
+                    </div>
+                  </div>
                   <button type="submit" class="col-del-btn" style="color:var(--accent)">✓</button>
                   <button type="button" class="col-del-btn" onclick="hideColRename({{ col.id }})">✕</button>
                 </form>
                 <form method="post" action="{% url 'repository:delete_sample_column' dataset.slug col.id %}" style="display:inline">
                   {% csrf_token %}
-                  <button type="submit" class="col-del-btn" title="Remove column">×</button>
+                  <button type="submit" class="col-del-btn" title="Remove column" onclick="return confirm('Delete column \"{{ col.name|escapejs }}\"?\n\nAll values stored in this column will be permanently removed.')">×</button>
                 </form>
                 {% else %}
                 {{ col.name }}
@@ -357,15 +348,34 @@
 </div>
 
 <script>
+var _renameWired = {};
 function showColRename(colId) {
   document.getElementById('col-label-' + colId).style.display = 'none';
   document.getElementById('col-rename-form-' + colId).style.display = 'inline-flex';
-  var input = document.querySelector('#col-rename-form-' + colId + ' input[name="name"]');
-  if (input) { input.focus(); input.select(); }
+  var input = document.getElementById('col-rename-input-' + colId);
+  var drop  = document.getElementById('col-rename-drop-' + colId);
+  var list  = document.getElementById('col-rename-list-' + colId);
+  if (!input) return;
+  input.focus(); input.select();
+  // Wire fuzzy suggestions once per column
+  if (!_renameWired[colId] && drop && list) {
+    _renameWired[colId] = true;
+    function go() { var q = input.value.trim().toLowerCase(); _colRender(list, drop, input, _colFilter(q), q); }
+    input.addEventListener('input', go);
+    input.addEventListener('focus', go);
+    document.addEventListener('click', function(e) {
+      if (!drop.contains(e.target) && e.target !== input) drop.style.display = 'none';
+    });
+  }
+  // Show suggestions immediately on open
+  var q = input.value.trim().toLowerCase();
+  if (drop && list) _colRender(list, drop, input, _colFilter(q), q);
 }
 function hideColRename(colId) {
   document.getElementById('col-label-' + colId).style.display = '';
   document.getElementById('col-rename-form-' + colId).style.display = 'none';
+  var drop = document.getElementById('col-rename-drop-' + colId);
+  if (drop) drop.style.display = 'none';
 }
 
 function switchTab(el, tabId) {
