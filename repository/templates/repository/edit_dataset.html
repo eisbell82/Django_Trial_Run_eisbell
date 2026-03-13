@@ -101,11 +101,88 @@
     <p style="font-size:12px;color:var(--text-dim);margin-bottom:1rem">No users added yet.</p>
     {% endif %}
 
-    <form method="post" action="{% url 'repository:add_dataset_access' dataset.slug %}" style="display:flex;gap:8px;align-items:center">
+    <form method="post" action="{% url 'repository:add_dataset_access' dataset.slug %}" style="display:flex;gap:8px;align-items:flex-start" id="add-user-form">
       {% csrf_token %}
-      <input type="text" name="username" placeholder="Username…" class="sample-col-input" style="width:200px" required autocomplete="off">
+      <div style="position:relative">
+        <input type="text" name="username" id="user-search-input" placeholder="Search username…" class="sample-col-input" style="width:220px" required autocomplete="off">
+        <div id="user-drop" style="display:none;position:absolute;top:100%;left:0;min-width:220px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:200;margin-top:3px;overflow:hidden">
+          <div style="padding:5px 10px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);border-bottom:1px solid var(--border)">Users</div>
+          <ul id="user-drop-list" style="margin:0;padding:4px 0;list-style:none;max-height:180px;overflow-y:auto"></ul>
+        </div>
+      </div>
       <button type="submit" class="btn-outline" style="font-size:12px;padding:5px 14px">+ Add user</button>
     </form>
   </div>
 </div>
+
+<script>
+(function(){
+  var _users = [{% for u in candidate_usernames %}"{{ u|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+
+  function _lev(a, b) {
+    var m = a.length, n = b.length, dp = [], i, j;
+    for (i = 0; i <= m; i++) { dp[i] = [i]; }
+    for (j = 0; j <= n; j++) { dp[0][j] = j; }
+    for (i = 1; i <= m; i++) {
+      for (j = 1; j <= n; j++) {
+        dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+      }
+    }
+    return dp[m][n];
+  }
+
+  function _filter(q) {
+    if (!q) return _users.slice(0, 20);
+    var scored = _users.map(function(s) {
+      var nl = s.toLowerCase();
+      var sc = nl === q ? 0 : nl.startsWith(q) ? 1 : nl.includes(q) ? 2 : (function(){
+        var d = _lev(nl, q), t = Math.ceil(q.length / 3);
+        return d <= t ? 3 + d : Infinity;
+      })();
+      return { name: s, s: sc };
+    }).filter(function(x) { return x.s < Infinity; });
+    scored.sort(function(a, b) { return a.s - b.s; });
+    return scored.slice(0, 20).map(function(x) { return x.name; });
+  }
+
+  var input = document.getElementById('user-search-input');
+  var drop  = document.getElementById('user-drop');
+  var list  = document.getElementById('user-drop-list');
+  if (!input) return;
+
+  function render(items, q) {
+    list.innerHTML = '';
+    if (!items.length) { drop.style.display = 'none'; return; }
+    items.forEach(function(name) {
+      var li = document.createElement('li');
+      if (q && name.toLowerCase().includes(q)) {
+        var idx = name.toLowerCase().indexOf(q);
+        li.innerHTML = name.slice(0, idx) +
+          '<strong style="color:var(--accent)">' + name.slice(idx, idx + q.length) + '</strong>' +
+          name.slice(idx + q.length);
+      } else {
+        li.textContent = name;
+      }
+      li.style.cssText = 'padding:6px 10px;cursor:pointer;font-size:12px;color:var(--text)';
+      li.addEventListener('mousedown', function(e) { e.preventDefault(); input.value = name; drop.style.display = 'none'; });
+      li.addEventListener('mouseover', function() { this.style.background = 'var(--border)'; });
+      li.addEventListener('mouseout',  function() { this.style.background = ''; });
+      list.appendChild(li);
+    });
+    drop.style.display = 'block';
+  }
+
+  input.addEventListener('input', function() {
+    var q = input.value.trim().toLowerCase();
+    render(_filter(q), q);
+  });
+  input.addEventListener('focus', function() {
+    var q = input.value.trim().toLowerCase();
+    render(_filter(q), q);
+  });
+  document.addEventListener('click', function(e) {
+    if (!drop.contains(e.target) && e.target !== input) drop.style.display = 'none';
+  });
+})();
+</script>
 {% endblock %}

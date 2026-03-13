@@ -656,10 +656,20 @@ def edit_dataset(request, slug):
         existing_tags = ", ".join(dataset.tags.values_list("name", flat=True))
         form = DatasetUploadForm(instance=dataset, initial={"tags_text": existing_tags})
     allowed = dataset.allowed_users.all()
+    from django.contrib.auth.models import User as AuthUser
+    excluded_ids = set(allowed.values_list("pk", flat=True))
+    if dataset.uploaded_by_id:
+        excluded_ids.add(dataset.uploaded_by_id)
+    candidate_users = list(
+        AuthUser.objects.exclude(pk__in=excluded_ids)
+        .values_list("username", flat=True)
+        .order_by("username")
+    )
     return render(request, "repository/edit_dataset.html", {
         "form": form,
         "dataset": dataset,
         "allowed_users": allowed,
+        "candidate_usernames": candidate_users,
     })
 
 
