@@ -470,6 +470,8 @@ def samples_view(request):
     f_species   = request.GET.get("filter_species", "")
     f_substrate = request.GET.get("filter_substrate", "")
     f_coating   = request.GET.get("filter_coating", "")
+    sort_col    = request.GET.get("sort_col", "")
+    sort_dir    = request.GET.get("sort_dir", "asc")
 
     samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
     if query:
@@ -503,6 +505,15 @@ def samples_view(request):
     for s in samples:
         val_map = {v.column.name: v.value for v in s.values.all()}
         s.row = [val_map.get(col, "") for col in show_columns]
+
+    reverse = (sort_dir == "desc")
+    if sort_col == "sample_id":
+        samples.sort(key=lambda s: s.sample_id.lower(), reverse=reverse)
+    elif sort_col == "type":
+        samples.sort(key=lambda s: s.dataset.get_category_display().lower(), reverse=reverse)
+    elif sort_col in show_columns:
+        idx = show_columns.index(sort_col)
+        samples.sort(key=lambda s: s.row[idx].lower() if idx < len(s.row) else "", reverse=reverse)
 
     # Categories that actually have samples
     category_values = (
@@ -540,6 +551,8 @@ def samples_view(request):
         "substrate_values": col_values("substrate"),
         "coating_values": col_values("coating"),
         "adv_active": adv_active,
+        "sort_col": sort_col,
+        "sort_dir": sort_dir,
     })
 
 
