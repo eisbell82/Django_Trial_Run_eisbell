@@ -149,10 +149,11 @@
         <a href="{% url 'repository:add_sample' dataset.slug %}" class="btn-accent" style="font-size:11px;padding:5px 14px">+ Add sample</a>
         <form method="post" action="{% url 'repository:upload_csv_samples' dataset.slug %}" enctype="multipart/form-data" style="display:flex;gap:6px;align-items:center">
           {% csrf_token %}
-          <label class="btn-outline" style="font-size:11px;padding:5px 12px;cursor:pointer;margin:0">
+          <label class="btn-outline" style="font-size:11px;padding:5px 12px;cursor:pointer;margin:0" title="CSV format: row 1 = headers, first column = sample ID (or name it 'sample_id'). Other columns become data columns.">
             Upload CSV
             <input type="file" name="csv_file" accept=".csv" style="display:none" onchange="this.form.submit()">
           </label>
+          <span style="font-size:10px;color:var(--text-dim);font-style:italic">Row 1 = headers · Col 1 = sample ID</span>
         </form>
         <form method="post" action="{% url 'repository:add_sample_column' dataset.slug %}" style="display:flex;gap:6px;align-items:center">
           {% csrf_token %}
@@ -172,12 +173,57 @@
               var drop  = document.getElementById('col-suggestions-drop');
               var list  = document.getElementById('col-suggestions-list');
 
-              function render(items) {
+              // Levenshtein distance for fuzzy matching
+              function levenshtein(a, b) {
+                var m = a.length, n = b.length;
+                var dp = [];
+                for (var i = 0; i <= m; i++) { dp[i] = [i]; }
+                for (var j = 0; j <= n; j++) { dp[0][j] = j; }
+                for (var i = 1; i <= m; i++) {
+                  for (var j = 1; j <= n; j++) {
+                    dp[i][j] = a[i-1] === b[j-1]
+                      ? dp[i-1][j-1]
+                      : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+                  }
+                }
+                return dp[m][n];
+              }
+
+              function score(name, q) {
+                var nl = name.toLowerCase();
+                if (nl === q) return 0;
+                if (nl.startsWith(q)) return 1;
+                if (nl.includes(q)) return 2;
+                // fuzzy: allow up to ceil(q.length/3) edits
+                var dist = levenshtein(nl, q);
+                var threshold = Math.ceil(q.length / 3);
+                if (dist <= threshold) return 3 + dist;
+                return Infinity;
+              }
+
+              function filter(q) {
+                if (!q) return suggestions.slice();
+                var scored = suggestions.map(function(s) {
+                  return { name: s, s: score(s, q) };
+                }).filter(function(x) { return x.s < Infinity; });
+                scored.sort(function(a, b) { return a.s - b.s; });
+                return scored.map(function(x) { return x.name; });
+              }
+
+              function render(items, q) {
                 list.innerHTML = '';
                 if (!items.length) { drop.style.display = 'none'; return; }
                 items.forEach(function(name) {
                   var li = document.createElement('li');
-                  li.textContent = name;
+                  // Highlight the matching part
+                  if (q && name.toLowerCase().includes(q)) {
+                    var idx = name.toLowerCase().indexOf(q);
+                    li.innerHTML = name.slice(0, idx) +
+                      '<strong style="color:var(--accent)">' + name.slice(idx, idx + q.length) + '</strong>' +
+                      name.slice(idx + q.length);
+                  } else {
+                    li.textContent = name;
+                  }
                   li.style.cssText = 'padding:7px 12px;cursor:pointer;font-size:12px;color:var(--text)';
                   li.addEventListener('mousedown', function(e) { e.preventDefault(); input.value = name; drop.style.display = 'none'; });
                   li.addEventListener('mouseover', function() { this.style.background = 'var(--border)'; });
@@ -189,13 +235,11 @@
 
               input.addEventListener('input', function() {
                 var q = this.value.trim().toLowerCase();
-                var filtered = q ? suggestions.filter(function(s){ return s.toLowerCase().includes(q); }) : suggestions;
-                render(filtered);
+                render(filter(q), q);
               });
               input.addEventListener('focus', function() {
                 var q = this.value.trim().toLowerCase();
-                var filtered = q ? suggestions.filter(function(s){ return s.toLowerCase().includes(q); }) : suggestions;
-                render(filtered);
+                render(filter(q), q);
               });
               document.addEventListener('click', function(e) {
                 if (!drop.contains(e.target) && e.target !== input) drop.style.display = 'none';
