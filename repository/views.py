@@ -98,12 +98,22 @@ def dataset_detail(request, slug):
     for s in samples:
         s.row = [s.value_for(col) for col in columns]
 
+    # Column names already used in other datasets of the same category (for suggestions)
+    existing_col_names = list(
+        SampleColumn.objects.filter(dataset__category=dataset.category)
+        .exclude(dataset=dataset)
+        .values_list("name", flat=True)
+        .distinct()
+        .order_by("name")
+    )
+
     notebooks = list(dataset.notebooks.all())
     context = {
         "dataset": dataset,
         "notebooks": notebooks,
         "sample_columns": columns,
         "samples": samples,
+        "suggested_column_names": existing_col_names,
     }
     return render(request, "repository/detail.html", context)
 

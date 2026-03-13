@@ -146,7 +146,14 @@
         <a href="{% url 'repository:add_sample' dataset.slug %}" class="btn-accent" style="font-size:11px;padding:5px 14px">+ Add sample</a>
         <form method="post" action="{% url 'repository:add_sample_column' dataset.slug %}" style="display:flex;gap:6px;align-items:center">
           {% csrf_token %}
-          <input type="text" name="name" placeholder="New column name" class="sample-col-input" required>
+          <input type="text" name="name" placeholder="Column name…" class="sample-col-input" list="col-name-suggestions" autocomplete="off" required>
+          {% if suggested_column_names %}
+          <datalist id="col-name-suggestions">
+            {% for col_name in suggested_column_names %}
+            <option value="{{ col_name }}">
+            {% endfor %}
+          </datalist>
+          {% endif %}
           <button type="submit" class="btn-outline" style="font-size:11px;padding:5px 12px">+ Add column</button>
         </form>
       </div>
