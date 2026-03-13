@@ -480,7 +480,9 @@ def edit_dataset(request, slug):
 def samples_view(request):
     query = request.GET.get("q", "")
     active_category = request.GET.get("category", "")
-    selected_cols = [c for c in request.GET.get("cols", "").split(",") if c]
+    selected_cols = request.GET.getlist("cols")
+    f_experiment = request.GET.get("experiment", "")
+    f_species = request.GET.get("species", "")
 
     samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
     if query:
@@ -491,6 +493,10 @@ def samples_view(request):
         ).distinct()
     if active_category:
         samples_qs = samples_qs.filter(dataset__category=active_category)
+    if f_experiment:
+        samples_qs = samples_qs.filter(dataset__slug=f_experiment)
+    if f_species:
+        samples_qs = samples_qs.filter(dataset__species=f_species)
 
     # Available columns for the selected category
     available_columns = []
@@ -502,7 +508,6 @@ def samples_view(request):
             .order_by("name")
         )
 
-    # Only show columns that are both selected and available
     show_columns = [c for c in selected_cols if c in available_columns]
 
     samples = list(samples_qs)
@@ -523,6 +528,20 @@ def samples_view(request):
         for c in sorted(category_values)
     ]
 
+    # Experiment list for dropdown (scoped to active category)
+    exp_qs = Dataset.objects.filter(samples__isnull=False).order_by()
+    if active_category:
+        exp_qs = exp_qs.filter(category=active_category)
+    experiment_list = list(exp_qs.distinct().order_by("title").values_list("slug", "title"))
+
+    # Species list for dropdown (scoped to active category)
+    sp_qs = Dataset.objects.filter(samples__isnull=False).exclude(species="").order_by()
+    if active_category:
+        sp_qs = sp_qs.filter(category=active_category)
+    species_list = list(sp_qs.values_list("species", flat=True).distinct().order_by("species"))
+
+    adv_active = bool(f_experiment or f_species or show_columns)
+
     return render(request, "repository/samples.html", {
         "samples": samples,
         "show_columns": show_columns,
@@ -531,6 +550,11 @@ def samples_view(request):
         "active_category": active_category,
         "categories_with_samples": categories_with_samples,
         "total_results": len(samples),
+        "f_experiment": f_experiment,
+        "f_species": f_species,
+        "experiment_list": experiment_list,
+        "species_list": species_list,
+        "adv_active": adv_active,
     })
 
 

@@ -7,13 +7,14 @@
 {% block content %}
 <div class="section" style="padding-top:3rem">
 
-  <!-- Search + filter -->
   <div style="margin-bottom:2rem">
-    <form method="get" action="{% url 'repository:samples' %}">
+    <form method="get" action="{% url 'repository:samples' %}" id="samples-filter-form">
+
       <div class="search-input-wrap" style="margin-bottom:10px">
         <input class="search-input" type="text" name="q" value="{{ query }}" placeholder="Search sample IDs, experiments, values…">
         <button class="btn-accent" type="submit">Search</button>
       </div>
+
       {% if categories_with_samples %}
       <div class="filter-chips" style="margin-bottom:8px">
         <a href="{% url 'repository:samples' %}{% if query %}?q={{ query }}{% endif %}" class="chip {% if not active_category %}active{% endif %}">All</a>
@@ -22,23 +23,63 @@
         {% endfor %}
       </div>
       {% endif %}
-    </form>
 
-    <!-- Column filter -->
-    <div style="margin-top:6px">
-      <span style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-right:8px">Columns</span>
-      {% if not active_category %}
-        <span style="font-size:12px;color:var(--text-dim);opacity:.5;font-style:italic">Select an experiment type to filter columns</span>
-      {% elif available_columns %}
-      <div class="filter-chips" id="col-chips" style="display:inline-flex">
-        {% for col in available_columns %}
-        <button type="button" class="chip col-chip {% if col in show_columns %}active{% endif %}" data-col="{{ col }}">{{ col }}</button>
-        {% endfor %}
-      </div>
-      {% else %}
-        <span style="font-size:12px;color:var(--text-dim);opacity:.5;font-style:italic">No columns defined for this type</span>
-      {% endif %}
-    </div>
+      <!-- Advanced Filters -->
+      <details class="adv-filters" {% if adv_active %}open{% endif %}>
+        <summary class="adv-filters-toggle">Advanced filters {% if adv_active %}<span class="adv-active-dot"></span>{% endif %}</summary>
+        <div class="adv-filters-grid">
+
+          {% if species_list %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Species</label>
+            <select name="species" class="adv-select" onchange="this.form.submit()">
+              <option value="">All species</option>
+              {% for s in species_list %}<option value="{{ s }}" {% if f_species == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          {% if experiment_list %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Experiment</label>
+            <select name="experiment" class="adv-select" onchange="this.form.submit()">
+              <option value="">All experiments</option>
+              {% for slug, title in experiment_list %}<option value="{{ slug }}" {% if f_experiment == slug %}selected{% endif %}>{{ title|truncatechars:50 }}</option>{% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          {% if available_columns %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Columns</label>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">
+              {% for col in available_columns %}
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--text)">
+                <input type="checkbox" name="cols" value="{{ col }}" {% if col in show_columns %}checked{% endif %} onchange="this.form.submit()" style="accent-color:var(--accent)">
+                {{ col }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          {% elif not active_category %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Columns</label>
+            <span style="font-size:12px;color:var(--text-dim);font-style:italic">Select an experiment type first</span>
+          </div>
+          {% endif %}
+
+          {% if adv_active %}
+          <div class="adv-filter-group" style="display:flex;align-items:flex-end">
+            <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category %}category={{ active_category }}{% endif %}" class="btn-outline" style="font-size:11px;padding:6px 12px">Clear filters ×</a>
+          </div>
+          {% endif %}
+
+        </div>
+        {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+        {% if active_category %}<input type="hidden" name="category" value="{{ active_category }}">{% endif %}
+      </details>
+
+    </form>
   </div>
 
   <!-- Header -->
@@ -75,20 +116,4 @@
   </div>
 
 </div>
-
-<script>
-document.querySelectorAll('.col-chip').forEach(function(chip) {
-  chip.addEventListener('click', function() {
-    var col = this.dataset.col;
-    var params = new URLSearchParams(window.location.search);
-    var cols = params.get('cols') ? params.get('cols').split(',').filter(Boolean) : [];
-    var idx = cols.indexOf(col);
-    if (idx >= 0) cols.splice(idx, 1);
-    else cols.push(col);
-    if (cols.length) params.set('cols', cols.join(','));
-    else params.delete('cols');
-    window.location.search = params.toString();
-  });
-});
-</script>
 {% endblock %}
