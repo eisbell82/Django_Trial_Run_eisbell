@@ -95,9 +95,9 @@ def dataset_detail(request, slug):
 
     columns = list(dataset.sample_columns.all())
     samples = list(dataset.samples.prefetch_related("values").all())
-    # Attach values as ordered list per sample for easy template rendering
+    # Attach (column, value) pairs per sample for template rendering
     for s in samples:
-        s.row = [s.value_for(col) for col in columns]
+        s.row_with_cols = [(col, s.value_for(col)) for col in columns]
 
     # Column names already used in other datasets of the same category (for suggestions)
     existing_col_names = list(
@@ -107,6 +107,22 @@ def dataset_detail(request, slug):
         .distinct()
         .order_by("name")
     )
+
+    # Units previously used for columns sharing the same name (for per-column unit suggestions)
+    col_names = [col.name for col in columns]
+    unit_rows = (
+        SampleColumn.objects.filter(name__in=col_names)
+        .exclude(unit="")
+        .values("name", "unit")
+        .distinct()
+    )
+    unit_sugs_by_name = {}
+    for row in unit_rows:
+        lst = unit_sugs_by_name.setdefault(row["name"], [])
+        if row["unit"] not in lst:
+            lst.append(row["unit"])
+    for col in columns:
+        col.unit_suggestions = unit_sugs_by_name.get(col.name, [])
 
     notebooks = list(dataset.notebooks.all())
     context = {
@@ -486,6 +502,18 @@ def rename_sample_column(request, slug, col_id):
         new_name = request.POST.get("name", "").strip()
         if new_name:
             SampleColumn.objects.filter(id=col_id, dataset=dataset).update(name=new_name)
+    return _redirect_to_tab(slug, "tab-samples")
+
+
+@login_required
+def set_column_unit(request, slug, col_id):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return _redirect_to_tab(slug, "tab-samples")
+    if request.method == "POST":
+        unit = request.POST.get("unit", "").strip()
+        SampleColumn.objects.filter(id=col_id, dataset=dataset).update(unit=unit)
     return _redirect_to_tab(slug, "tab-samples")
 
 

@@ -116,6 +116,7 @@ class Notebook(models.Model):
 class SampleColumn(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="sample_columns")
     name = models.CharField(max_length=200)
+    unit = models.CharField(max_length=50, blank=True, default="")
     order = models.PositiveIntegerField(default=0)
 
     class Meta:

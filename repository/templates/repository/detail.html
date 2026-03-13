@@ -182,9 +182,9 @@
               return dp[m][n];
             };
 
-            window._colFilter = function(q) {
-              if (!q) return _colSugs.slice();
-              var scored = _colSugs.map(function(s) {
+            window._filterSugs = function(sugs, q) {
+              if (!q) return sugs.slice();
+              var scored = sugs.map(function(s) {
                 var nl = s.toLowerCase();
                 var sc = nl === q ? 0 : nl.startsWith(q) ? 1 : nl.includes(q) ? 2 : (function(){
                   var d = _colLev(nl, q), t = Math.ceil(q.length / 3);
@@ -194,6 +194,13 @@
               }).filter(function(x) { return x.s < Infinity; });
               scored.sort(function(a, b) { return a.s - b.s; });
               return scored.map(function(x) { return x.name; });
+            };
+
+            window._colFilter = function(q) { return _filterSugs(_colSugs, q); };
+
+            // Per-column unit suggestions (keyed by column id)
+            window._unitSugsByColId = {
+              {% for col in sample_columns %}{{ col.id }}:[{% for u in col.unit_suggestions %}"{{ u|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]{% if not forloop.last %},{% endif %}{% endfor %}
             };
 
             window._colRender = function(listEl, dropEl, inputEl, items, q) {
@@ -265,8 +272,28 @@
                   {% csrf_token %}
                   <button type="submit" class="col-del-btn" title="Remove column" onclick="return confirmDelCol('{{ col.name|escapejs }}')">×</button>
                 </form>
+                <div style="margin-top:2px">
+                  <span id="col-unit-label-{{ col.id }}" style="font-size:10px;font-weight:normal;opacity:.6;cursor:pointer" onclick="showColUnit({{ col.id }})" title="Set unit">{% if col.unit %}[{{ col.unit }}]{% else %}<span style="opacity:.5">+ unit</span>{% endif %}</span>
+                  <form method="post" action="{% url 'repository:set_column_unit' dataset.slug col.id %}" id="col-unit-form-{{ col.id }}" style="display:none;align-items:center;gap:2px">
+                    {% csrf_token %}
+                    <select id="col-unit-select-{{ col.id }}" onchange="onUnitSelectChange({{ col.id }})" style="font-size:10px;padding:2px 4px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
+                      <option value="">— unit —</option>
+                      {% for u in col.unit_suggestions %}
+                      <option value="{{ u|escapejs }}"{% if col.unit == u %} selected{% endif %}>{{ u }}</option>
+                      {% endfor %}
+                      {% if col.unit and col.unit not in col.unit_suggestions %}
+                      <option value="{{ col.unit|escapejs }}" selected>{{ col.unit }}</option>
+                      {% endif %}
+                      <option value="__custom__">Custom…</option>
+                    </select>
+                    <input type="text" name="unit" id="col-unit-input-{{ col.id }}" value="{{ col.unit }}" autocomplete="off" placeholder="unit" style="font-size:10px;width:70px;padding:2px 5px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text);display:none">
+                    <button type="submit" class="col-del-btn" style="color:var(--accent)">✓</button>
+                    <button type="button" class="col-del-btn" onclick="hideColUnit({{ col.id }})">✕</button>
+                  </form>
+                </div>
                 {% else %}
                 {{ col.name }}
+                {% if col.unit %}<div style="font-size:10px;font-weight:normal;opacity:.6">[{{ col.unit }}]</div>{% endif %}
                 {% endif %}
               </th>
               {% endfor %}
@@ -279,7 +306,7 @@
             {% for s in samples %}
             <tr>
               <td class="sample-id-cell">{{ s.sample_id }}</td>
-              {% for val in s.row %}<td>{{ val }}</td>{% endfor %}
+              {% for col, val in s.row_with_cols %}<td>{{ val }}{% if val and col.unit %} <span style="font-size:10px;opacity:.5">{{ col.unit }}</span>{% endif %}</td>{% endfor %}
               {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
               <td style="white-space:nowrap">
                 <a href="{% url 'repository:edit_sample' dataset.slug s.pk %}" class="col-del-btn" title="Edit sample" style="text-decoration:none;opacity:.6">✎</a>
@@ -380,6 +407,28 @@ function hideColRename(colId) {
   document.getElementById('col-rename-form-' + colId).style.display = 'none';
   var drop = document.getElementById('col-rename-drop-' + colId);
   if (drop) drop.style.display = 'none';
+}
+
+function showColUnit(colId) {
+  document.getElementById('col-unit-label-' + colId).style.display = 'none';
+  document.getElementById('col-unit-form-' + colId).style.display = 'inline-flex';
+  document.getElementById('col-unit-select-' + colId).focus();
+}
+function hideColUnit(colId) {
+  document.getElementById('col-unit-label-' + colId).style.display = '';
+  document.getElementById('col-unit-form-' + colId).style.display = 'none';
+}
+function onUnitSelectChange(colId) {
+  var sel = document.getElementById('col-unit-select-' + colId);
+  var inp = document.getElementById('col-unit-input-' + colId);
+  if (sel.value === '__custom__') {
+    sel.style.display = 'none';
+    inp.style.display = '';
+    inp.value = '';
+    inp.focus();
+  } else {
+    inp.value = sel.value;
+  }
 }
 
 function switchTab(el, tabId) {
