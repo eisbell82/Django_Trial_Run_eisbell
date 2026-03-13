@@ -10,7 +10,8 @@ PYTHON="$VENV_DIR/bin/python"
 PIP="$VENV_DIR/bin/pip"
 
 echo "==> Pulling latest code..."
-git -C "$APP_DIR" pull origin "${DEPLOY_BRANCH:-main}"
+git -C "$APP_DIR" fetch origin "${DEPLOY_BRANCH:-main}"
+git -C "$APP_DIR" reset --hard "origin/${DEPLOY_BRANCH:-main}"
 git -C "$APP_DIR" rev-parse --short HEAD > "$APP_DIR/VERSION"
 
 echo "==> Fixing file permissions..."
