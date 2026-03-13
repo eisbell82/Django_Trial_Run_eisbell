@@ -41,6 +41,11 @@ class Dataset(models.Model):
     institution = models.CharField(max_length=200, blank=True)
     file_size_display = models.CharField(max_length=50, blank=True, help_text="e.g. 14.2 MB")
     download_count = models.PositiveIntegerField(default=0)
+    is_private = models.BooleanField(default=False)
+    allowed_users = models.ManyToManyField(
+        User, blank=True, related_name="accessible_datasets",
+        help_text="Users who can view this dataset when it is private."
+    )
     tags = models.ManyToManyField(Tag, blank=True, related_name="datasets")
     uploaded_by = models.ForeignKey(
         User, null=True, blank=True, on_delete=models.SET_NULL, related_name="datasets"

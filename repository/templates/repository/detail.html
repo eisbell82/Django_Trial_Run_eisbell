@@ -15,7 +15,10 @@
       <span>›</span>
       {{ dataset.title|truncatechars:60 }}
     </div>
-    <div class="detail-title">{{ dataset.title }}</div>
+    <div class="detail-title">
+      {{ dataset.title }}
+      {% if dataset.is_private %}<span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:normal;background:var(--tag-bg);border:1px solid var(--border);color:var(--text-muted);padding:3px 8px;border-radius:4px;vertical-align:middle;margin-left:10px">🔒 Private</span>{% endif %}
+    </div>
     <div class="detail-byline">
       {% if dataset.lab %}{{ dataset.lab }}{% endif %}
       {% if dataset.institution %}, {{ dataset.institution }}{% endif %}
@@ -358,6 +361,7 @@
 
     <div class="info-block">
       <div class="info-block-title">// Metadata</div>
+      <div class="info-row"><span class="info-key">Visibility</span><span class="info-val">{% if dataset.is_private %}🔒 Private{% else %}Public{% endif %}</span></div>
       {% if dataset.experiment_date %}<div class="info-row"><span class="info-key">Experiment Date</span><span class="info-val">{{ dataset.experiment_date|date:"F j, Y" }}</span></div>{% endif %}
       {% if dataset.files.exists %}<div class="info-row"><span class="info-key">Files</span><span class="info-val">{{ dataset.files.count }}</span></div>{% endif %}
       {% if dataset.file_size_display %}<div class="info-row"><span class="info-key">Size</span><span class="info-val">{{ dataset.file_size_display }}</span></div>{% endif %}

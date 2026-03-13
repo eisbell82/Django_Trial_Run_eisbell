@@ -49,6 +49,9 @@
           {% if ds.doi %} · DOI: {{ ds.doi }}{% endif %}
         </div>
         <div class="ds-tags">
+          {% if ds.is_private %}
+            <span class="tag" style="background:var(--tag-bg);border-color:var(--border);color:var(--text-muted)">🔒 Private</span>
+          {% endif %}
           {% if ds.category %}
             <span class="tag green">{{ ds.get_category_display }}</span>
           {% endif %}

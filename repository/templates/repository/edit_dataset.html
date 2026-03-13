@@ -66,10 +66,46 @@
       </div>
     </div>
 
+    <div class="form-section">
+      <div class="form-section-title">// Visibility</div>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px">
+        <input type="checkbox" name="is_private" id="id_is_private" {% if dataset.is_private %}checked{% endif %} style="width:16px;height:16px;accent-color:var(--accent)">
+        Make this dataset private (hidden from public listing)
+      </label>
+      <p style="font-size:11px;color:var(--text-dim);margin-top:6px">When private, only you, admins, and users you add below can view this dataset.</p>
+    </div>
+
     <div class="submit-bar">
       <a href="{% url 'repository:detail' dataset.slug %}" class="btn-outline">Cancel</a>
       <button type="submit" class="btn-accent">Save changes →</button>
     </div>
   </form>
+
+  <div class="form-section" style="margin-top:2rem">
+    <div class="form-section-title">// Allowed Users</div>
+    <p style="font-size:11px;color:var(--text-dim);margin-bottom:1rem">Users listed here can view this dataset even when it is private. The owner and admins always have access.</p>
+
+    {% if allowed_users %}
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1rem">
+      {% for u in allowed_users %}
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--tag-bg);border:1px solid var(--border);border-radius:4px;padding:6px 10px">
+        <span style="font-size:12px">{{ u.username }}{% if u.get_full_name %} <span style="color:var(--text-dim)">({{ u.get_full_name }})</span>{% endif %}</span>
+        <form method="post" action="{% url 'repository:remove_dataset_access' dataset.slug u.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="col-del-btn" style="color:var(--danger);font-size:12px" title="Remove access">× Remove</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:1rem">No users added yet.</p>
+    {% endif %}
+
+    <form method="post" action="{% url 'repository:add_dataset_access' dataset.slug %}" style="display:flex;gap:8px;align-items:center">
+      {% csrf_token %}
+      <input type="text" name="username" placeholder="Username…" class="sample-col-input" style="width:200px" required autocomplete="off">
+      <button type="submit" class="btn-outline" style="font-size:12px;padding:5px 14px">+ Add user</button>
+    </form>
+  </div>
 </div>
 {% endblock %}

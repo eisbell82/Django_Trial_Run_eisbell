@@ -31,7 +31,7 @@ def home(request):
     f_inst    = request.GET.get("institution", "")
     f_license = request.GET.get("license", "")
 
-    datasets = Dataset.objects.prefetch_related("tags", "notebooks").all()
+    datasets = _visible_datasets(request.user).prefetch_related("tags", "notebooks")
 
     if category and category != "all":
         datasets = datasets.filter(category=category)
@@ -89,6 +89,10 @@ def dataset_detail(request, slug):
     dataset = get_object_or_404(
         Dataset.objects.prefetch_related("tags", "notebooks", "files"), slug=slug
     )
+
+    if not _can_view(request.user, dataset):
+        messages.error(request, "This dataset is private.")
+        return redirect("repository:home")
 
     if request.method == "POST" and "download" in request.POST:
         dataset.download_count += 1
@@ -272,7 +276,7 @@ def collections_view(request):
     sort_field = {"date": "created_at", "downloads": "download_count", "title": "title"}.get(sort, "created_at")
     order_prefix = "" if order == "asc" else "-"
 
-    base_qs = Dataset.objects.prefetch_related("tags")
+    base_qs = _visible_datasets(request.user).prefetch_related("tags")
     if query:
         base_qs = base_qs.filter(
             Q(title__icontains=query)
@@ -334,6 +338,28 @@ def delete_dataset(request, slug):
 
 def _can_edit(user, dataset):
     return user.is_authenticated and (user == dataset.uploaded_by or user.is_staff)
+
+
+def _can_view(user, dataset):
+    if not dataset.is_private:
+        return True
+    if not user.is_authenticated:
+        return False
+    return user.is_staff or user == dataset.uploaded_by or dataset.allowed_users.filter(pk=user.pk).exists()
+
+
+def _visible_datasets(user):
+    """Return a queryset of datasets visible to the given user."""
+    if user.is_authenticated and user.is_staff:
+        return Dataset.objects.all()
+    if user.is_authenticated:
+        from django.db.models import Q
+        return Dataset.objects.filter(
+            Q(is_private=False) |
+            Q(uploaded_by=user) |
+            Q(allowed_users=user)
+        ).distinct()
+    return Dataset.objects.filter(is_private=False)
 
 
 @login_required
@@ -615,7 +641,9 @@ def edit_dataset(request, slug):
     if request.method == "POST":
         form = DatasetUploadForm(request.POST, instance=dataset)
         if form.is_valid():
-            ds = form.save()
+            ds = form.save(commit=False)
+            ds.is_private = "is_private" in request.POST
+            ds.save()
             ds.tags.clear()
             tags_text = form.cleaned_data.get("tags_text", "")
             if tags_text:
@@ -627,7 +655,44 @@ def edit_dataset(request, slug):
     else:
         existing_tags = ", ".join(dataset.tags.values_list("name", flat=True))
         form = DatasetUploadForm(instance=dataset, initial={"tags_text": existing_tags})
-    return render(request, "repository/edit_dataset.html", {"form": form, "dataset": dataset})
+    allowed = dataset.allowed_users.all()
+    return render(request, "repository/edit_dataset.html", {
+        "form": form,
+        "dataset": dataset,
+        "allowed_users": allowed,
+    })
+
+
+@login_required
+def add_dataset_access(request, slug):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        from django.contrib.auth.models import User as AuthUser
+        username = request.POST.get("username", "").strip()
+        try:
+            target = AuthUser.objects.get(username=username)
+            if target == dataset.uploaded_by:
+                messages.error(request, f"'{username}' is already the owner.")
+            else:
+                dataset.allowed_users.add(target)
+                messages.success(request, f"'{username}' can now view this dataset.")
+        except AuthUser.DoesNotExist:
+            messages.error(request, f"No user with username '{username}'.")
+    return redirect("repository:edit", slug=slug)
+
+
+@login_required
+def remove_dataset_access(request, slug, user_id):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        dataset.allowed_users.remove(user_id)
+    return redirect("repository:edit", slug=slug)
 
 
 _BLANK = {"", "n/a", "na", "none", "null", "-"}
@@ -643,9 +708,10 @@ def _sort_key(val):
         return (1, 0.0, v.lower())
 
 
-def _build_samples_qs(query, active_category, f_species, f_substrate, f_coating):
+def _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, user=None):
     """Return a filtered (but not yet evaluated) Sample queryset."""
-    qs = Sample.objects.select_related("dataset")
+    visible_ids = _visible_datasets(user).values_list("id", flat=True)
+    qs = Sample.objects.select_related("dataset").filter(dataset_id__in=visible_ids)
     if query:
         qs = qs.filter(
             Q(sample_id__icontains=query)
@@ -726,7 +792,7 @@ def samples_view(request):
     sort_col        = request.GET.get("sort_col", "")
     sort_dir        = request.GET.get("sort_dir", "asc")
 
-    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating)
+    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, user=request.user)
 
     available_columns = []
     if active_category:
@@ -752,7 +818,7 @@ def samples_view(request):
     samples = _apply_sort_and_build_rows(samples_qs, show_columns, col_unit_map, sort_col, sort_dir)
 
     category_values = (
-        Dataset.objects.filter(samples__isnull=False)
+        _visible_datasets(request.user).filter(samples__isnull=False)
         .order_by()
         .values_list("category", flat=True)
         .distinct()
@@ -798,7 +864,7 @@ def samples_csv_view(request):
     sort_col        = request.GET.get("sort_col", "")
     sort_dir        = request.GET.get("sort_dir", "asc")
 
-    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating)
+    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, user=request.user)
 
     available_columns = []
     if active_category:
