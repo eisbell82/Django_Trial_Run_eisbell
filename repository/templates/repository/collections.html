@@ -23,18 +23,9 @@
       </div>
 
       <!-- Advanced Filters -->
-      <details class="adv-filters" {% if f_species or f_lab or f_inst or f_license %}open{% endif %}>
-        <summary class="adv-filters-toggle">Advanced filters {% if f_species or f_lab or f_inst or f_license %}<span class="adv-active-dot"></span>{% endif %}</summary>
+      <details class="adv-filters" {% if f_lab or f_inst or f_license %}open{% endif %}>
+        <summary class="adv-filters-toggle">Advanced filters {% if f_lab or f_inst or f_license %}<span class="adv-active-dot"></span>{% endif %}</summary>
         <div class="adv-filters-grid">
-          {% if species_list %}
-          <div class="adv-filter-group">
-            <label class="adv-label">Species</label>
-            <select name="species" class="adv-select" onchange="this.form.submit()">
-              <option value="">All species</option>
-              {% for s in species_list %}<option value="{{ s }}" {% if f_species == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
-            </select>
-          </div>
-          {% endif %}
           {% if lab_list %}
           <div class="adv-filter-group">
             <label class="adv-label">Lab</label>
@@ -60,7 +51,7 @@
               {% for key, label in license_choices %}<option value="{{ key }}" {% if f_license == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
             </select>
           </div>
-          {% if f_species or f_lab or f_inst or f_license %}
+          {% if f_lab or f_inst or f_license %}
           <div class="adv-filter-group" style="display:flex;align-items:flex-end">
             <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category != 'all' %}category={{ active_category }}{% endif %}" class="btn-outline" style="font-size:11px;padding:6px 12px">Clear filters ×</a>
           </div>
@@ -81,9 +72,9 @@
     <div class="sort-controls">
       {% for s_key, s_label in sort_options %}
         {% if sort == s_key %}
-          <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category != 'all' %}category={{ active_category }}&{% endif %}{% if f_species %}species={{ f_species }}&{% endif %}{% if f_lab %}lab={{ f_lab }}&{% endif %}{% if f_inst %}institution={{ f_inst }}&{% endif %}{% if f_license %}license={{ f_license }}&{% endif %}sort={{ s_key }}&order={% if order == 'desc' %}asc{% else %}desc{% endif %}" class="btn-outline active">{{ s_label }} {% if order == 'desc' %}↓{% else %}↑{% endif %}</a>
+          <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category != 'all' %}category={{ active_category }}&{% endif %}{% if f_lab %}lab={{ f_lab }}&{% endif %}{% if f_inst %}institution={{ f_inst }}&{% endif %}{% if f_license %}license={{ f_license }}&{% endif %}sort={{ s_key }}&order={% if order == 'desc' %}asc{% else %}desc{% endif %}" class="btn-outline active">{{ s_label }} {% if order == 'desc' %}↓{% else %}↑{% endif %}</a>
         {% else %}
-          <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category != 'all' %}category={{ active_category }}&{% endif %}{% if f_species %}species={{ f_species }}&{% endif %}{% if f_lab %}lab={{ f_lab }}&{% endif %}{% if f_inst %}institution={{ f_inst }}&{% endif %}{% if f_license %}license={{ f_license }}&{% endif %}sort={{ s_key }}&order=desc" class="btn-outline">{{ s_label }}</a>
+          <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category != 'all' %}category={{ active_category }}&{% endif %}{% if f_lab %}lab={{ f_lab }}&{% endif %}{% if f_inst %}institution={{ f_inst }}&{% endif %}{% if f_license %}license={{ f_license }}&{% endif %}sort={{ s_key }}&order=desc" class="btn-outline">{{ s_label }}</a>
         {% endif %}
       {% endfor %}
     </div>
@@ -104,7 +95,6 @@
           <div class="ds-meta">
             {% if ds.lab %}{{ ds.lab }}{% endif %}
             {% if ds.institution %} · {{ ds.institution }}{% endif %}
-            {% if ds.species %} · {{ ds.species }}{% endif %}
           </div>
           <div class="ds-tags">
             {% for tag in ds.tags.all %}

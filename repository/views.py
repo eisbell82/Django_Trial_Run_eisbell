@@ -17,7 +17,6 @@ def home(request):
     query     = request.GET.get("q", "")
     sort      = request.GET.get("sort", "date")
     order     = request.GET.get("order", "desc")
-    f_species = request.GET.get("species", "")
     f_lab     = request.GET.get("lab", "")
     f_inst    = request.GET.get("institution", "")
     f_license = request.GET.get("license", "")
@@ -30,11 +29,8 @@ def home(request):
         datasets = datasets.filter(
             Q(title__icontains=query)
             | Q(abstract__icontains=query)
-            | Q(species__icontains=query)
             | Q(tags__name__icontains=query)
         ).distinct()
-    if f_species:
-        datasets = datasets.filter(species=f_species)
     if f_lab:
         datasets = datasets.filter(lab=f_lab)
     if f_inst:
@@ -55,7 +51,6 @@ def home(request):
     )
 
     # Distinct values for filter dropdowns (non-blank only)
-    species_list     = Dataset.objects.exclude(species="").values_list("species", flat=True).distinct().order_by("species")
     lab_list         = Dataset.objects.exclude(lab="").values_list("lab", flat=True).distinct().order_by("lab")
     institution_list = Dataset.objects.exclude(institution="").values_list("institution", flat=True).distinct().order_by("institution")
 
@@ -68,11 +63,9 @@ def home(request):
         "query": query,
         "sort": sort,
         "order": order,
-        "f_species": f_species,
         "f_lab": f_lab,
         "f_inst": f_inst,
         "f_license": f_license,
-        "species_list": species_list,
         "lab_list": lab_list,
         "institution_list": institution_list,
         "category_choices": Dataset.CATEGORY_CHOICES,
@@ -245,7 +238,6 @@ def collections_view(request):
     category  = request.GET.get("category", "")
     sort      = request.GET.get("sort", "date")
     order     = request.GET.get("order", "desc")
-    f_species = request.GET.get("species", "")
     f_lab     = request.GET.get("lab", "")
     f_inst    = request.GET.get("institution", "")
     f_license = request.GET.get("license", "")
@@ -258,11 +250,8 @@ def collections_view(request):
         base_qs = base_qs.filter(
             Q(title__icontains=query)
             | Q(abstract__icontains=query)
-            | Q(species__icontains=query)
             | Q(tags__name__icontains=query)
         ).distinct()
-    if f_species:
-        base_qs = base_qs.filter(species=f_species)
     if f_lab:
         base_qs = base_qs.filter(lab=f_lab)
     if f_inst:
@@ -282,7 +271,6 @@ def collections_view(request):
             collections.append({"key": key, "label": label, "datasets": qs, "total": count})
             total_results += count
 
-    species_list     = Dataset.objects.exclude(species="").values_list("species", flat=True).distinct().order_by("species")
     lab_list         = Dataset.objects.exclude(lab="").values_list("lab", flat=True).distinct().order_by("lab")
     institution_list = Dataset.objects.exclude(institution="").values_list("institution", flat=True).distinct().order_by("institution")
 
@@ -293,11 +281,9 @@ def collections_view(request):
         "sort": sort,
         "order": order,
         "active_category": category or "all",
-        "f_species": f_species,
         "f_lab": f_lab,
         "f_inst": f_inst,
         "f_license": f_license,
-        "species_list": species_list,
         "lab_list": lab_list,
         "institution_list": institution_list,
         "category_choices": Dataset.CATEGORY_CHOICES,
@@ -482,7 +468,6 @@ def samples_view(request):
     active_category = request.GET.get("category", "")
     selected_cols = request.GET.getlist("cols")
     f_experiment = request.GET.get("experiment", "")
-    f_species = request.GET.get("species", "")
 
     samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
     if query:
@@ -495,8 +480,6 @@ def samples_view(request):
         samples_qs = samples_qs.filter(dataset__category=active_category)
     if f_experiment:
         samples_qs = samples_qs.filter(dataset__slug=f_experiment)
-    if f_species:
-        samples_qs = samples_qs.filter(dataset__species=f_species)
 
     # Available columns for the selected category
     available_columns = []
@@ -534,13 +517,7 @@ def samples_view(request):
         exp_qs = exp_qs.filter(category=active_category)
     experiment_list = list(exp_qs.distinct().order_by("title").values_list("slug", "title"))
 
-    # Species list for dropdown (scoped to active category)
-    sp_qs = Dataset.objects.filter(samples__isnull=False).exclude(species="").order_by()
-    if active_category:
-        sp_qs = sp_qs.filter(category=active_category)
-    species_list = list(sp_qs.values_list("species", flat=True).distinct().order_by("species"))
-
-    adv_active = bool(f_experiment or f_species or show_columns)
+    adv_active = bool(f_experiment or show_columns)
 
     return render(request, "repository/samples.html", {
         "samples": samples,
@@ -551,9 +528,7 @@ def samples_view(request):
         "categories_with_samples": categories_with_samples,
         "total_results": len(samples),
         "f_experiment": f_experiment,
-        "f_species": f_species,
         "experiment_list": experiment_list,
-        "species_list": species_list,
         "adv_active": adv_active,
     })
 

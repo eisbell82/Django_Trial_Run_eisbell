@@ -29,16 +29,6 @@
         <summary class="adv-filters-toggle">Advanced filters {% if adv_active %}<span class="adv-active-dot"></span>{% endif %}</summary>
         <div class="adv-filters-grid">
 
-          {% if species_list %}
-          <div class="adv-filter-group">
-            <label class="adv-label">Species</label>
-            <select name="species" class="adv-select" onchange="this.form.submit()">
-              <option value="">All species</option>
-              {% for s in species_list %}<option value="{{ s }}" {% if f_species == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
-            </select>
-          </div>
-          {% endif %}
-
           {% if experiment_list %}
           <div class="adv-filter-group">
             <label class="adv-label">Experiment</label>
@@ -94,7 +84,6 @@
         <tr>
           <th>Sample ID</th>
           <th>Experiment</th>
-          <th>Species</th>
           {% for col in show_columns %}<th>{{ col }}</th>{% endfor %}
         </tr>
       </thead>
@@ -103,12 +92,11 @@
         <tr>
           <td class="sample-id-cell">{{ s.sample_id }}</td>
           <td><a href="{% url 'repository:detail' s.dataset.slug %}" style="color:var(--accent);text-decoration:none">{{ s.dataset.title|truncatechars:50 }}</a></td>
-          <td>{{ s.dataset.species|default:"—" }}</td>
           {% for val in s.row %}<td>{{ val }}</td>{% endfor %}
         </tr>
         {% empty %}
         <tr>
-          <td colspan="{{ show_columns|length|add:3 }}" style="color:var(--text-dim);text-align:center;padding:2rem">
+          <td colspan="{{ show_columns|length|add:2 }}" style="color:var(--text-dim);text-align:center;padding:2rem">
             No samples found{% if query %} for "{{ query }}"{% endif %}.
           </td>
         </tr>
