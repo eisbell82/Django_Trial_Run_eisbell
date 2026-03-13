@@ -39,7 +39,7 @@
             <div id="col-drop-panel" style="display:none;position:absolute;top:100%;left:0;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:300;padding:8px;margin-top:3px;display:none;flex-direction:column;gap:4px">
               {% for col in available_columns %}
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" name="cols" value="{{ col }}" {% if col in show_columns %}checked{% endif %} onchange="this.form.submit()" style="accent-color:var(--accent)">
+                <input type="checkbox" name="cols" value="{{ col }}" {% if col in show_columns %}checked{% endif %} style="accent-color:var(--accent)">
                 <span style="font-size:12px;color:var(--text)">{{ col }}</span>
               </label>
               {% endfor %}
@@ -151,13 +151,19 @@
 function toggleColDrop() {
   var panel = document.getElementById('col-drop-panel');
   var open = panel.style.display === 'flex';
-  panel.style.display = open ? 'none' : 'flex';
+  if (open) {
+    panel.style.display = 'none';
+    document.getElementById('samples-filter-form').submit();
+  } else {
+    panel.style.display = 'flex';
+  }
 }
 document.addEventListener('click', function(e) {
   var btn = document.getElementById('col-drop-btn');
   var panel = document.getElementById('col-drop-panel');
-  if (btn && panel && !btn.contains(e.target) && !panel.contains(e.target)) {
+  if (btn && panel && panel.style.display === 'flex' && !btn.contains(e.target) && !panel.contains(e.target)) {
     panel.style.display = 'none';
+    document.getElementById('samples-filter-form').submit();
   }
 });
 </script>
