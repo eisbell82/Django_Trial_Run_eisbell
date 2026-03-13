@@ -469,7 +469,7 @@ def edit_dataset(request, slug):
 
 def samples_view(request):
     query = request.GET.get("q", "")
-    dataset_slug = request.GET.get("dataset", "")
+    active_category = request.GET.get("category", "")
 
     samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
     if query:
@@ -478,29 +478,32 @@ def samples_view(request):
             | Q(dataset__title__icontains=query)
             | Q(values__value__icontains=query)
         ).distinct()
-    if dataset_slug:
-        samples_qs = samples_qs.filter(dataset__slug=dataset_slug)
+    if active_category:
+        samples_qs = samples_qs.filter(dataset__category=active_category)
 
-    # When filtered to one experiment, show its custom columns; otherwise Experiment col only
     extra_columns = []
-    active_dataset_obj = None
-    if dataset_slug:
-        active_dataset_obj = Dataset.objects.filter(slug=dataset_slug).first()
-        if active_dataset_obj:
-            extra_columns = list(active_dataset_obj.sample_columns.all())
-
     samples = list(samples_qs)
     for s in samples:
         s.row = [s.value_for(col) for col in extra_columns]
 
-    datasets_with_samples = Dataset.objects.filter(samples__isnull=False).distinct().order_by("title")
+    # Categories that actually have samples
+    category_values = (
+        Dataset.objects.filter(samples__isnull=False)
+        .values_list("category", flat=True)
+        .distinct()
+    )
+    category_lookup = dict(Dataset.CATEGORY_CHOICES)
+    categories_with_samples = [
+        {"value": c, "label": category_lookup.get(c, c.title())}
+        for c in sorted(category_values)
+    ]
 
     return render(request, "repository/samples.html", {
         "samples": samples,
         "extra_columns": extra_columns,
         "query": query,
-        "active_dataset": dataset_slug,
-        "datasets_with_samples": datasets_with_samples,
+        "active_category": active_category,
+        "categories_with_samples": categories_with_samples,
         "total_results": len(samples),
     })
 

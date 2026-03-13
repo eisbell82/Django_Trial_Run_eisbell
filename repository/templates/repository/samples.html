@@ -14,11 +14,11 @@
         <input class="search-input" type="text" name="q" value="{{ query }}" placeholder="Search sample IDs, experiments, values…">
         <button class="btn-accent" type="submit">Search</button>
       </div>
-      {% if datasets_with_samples %}
+      {% if categories_with_samples %}
       <div class="filter-chips">
-        <a href="{% url 'repository:samples' %}{% if query %}?q={{ query }}{% endif %}" class="chip {% if not active_dataset %}active{% endif %}">All</a>
-        {% for ds in datasets_with_samples %}
-        <a href="?dataset={{ ds.slug }}{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_dataset == ds.slug %}active{% endif %}">{{ ds.title|truncatechars:40 }}</a>
+        <a href="{% url 'repository:samples' %}{% if query %}?q={{ query }}{% endif %}" class="chip {% if not active_category %}active{% endif %}">All</a>
+        {% for cat in categories_with_samples %}
+        <a href="?category={{ cat.value }}{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == cat.value %}active{% endif %}">{{ cat.label }}</a>
         {% endfor %}
       </div>
       {% endif %}
