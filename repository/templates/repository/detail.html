@@ -256,7 +256,7 @@
               <th>
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                 <span id="col-label-{{ col.id }}">{{ col.name }}</span>
-                <button type="button" class="col-del-btn" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
+                <button type="button" id="col-rename-btn-{{ col.id }}" class="col-del-btn" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
                 <form method="post" action="{% url 'repository:rename_sample_column' dataset.slug col.id %}" id="col-rename-form-{{ col.id }}" style="display:none;margin-top:2px;align-items:center;gap:2px">
                   {% csrf_token %}
                   <div style="position:relative;display:inline-block">
@@ -382,6 +382,8 @@ function confirmDelCol(name) {
 var _renameWired = {};
 function showColRename(colId) {
   document.getElementById('col-label-' + colId).style.display = 'none';
+  var btn = document.getElementById('col-rename-btn-' + colId);
+  if (btn) btn.style.display = 'none';
   document.getElementById('col-rename-form-' + colId).style.display = 'inline-flex';
   var input = document.getElementById('col-rename-input-' + colId);
   var drop  = document.getElementById('col-rename-drop-' + colId);
@@ -404,6 +406,8 @@ function showColRename(colId) {
 }
 function hideColRename(colId) {
   document.getElementById('col-label-' + colId).style.display = '';
+  var btn = document.getElementById('col-rename-btn-' + colId);
+  if (btn) btn.style.display = '';
   document.getElementById('col-rename-form-' + colId).style.display = 'none';
   var drop = document.getElementById('col-rename-drop-' + colId);
   if (drop) drop.style.display = 'none';
@@ -428,6 +432,7 @@ function onUnitSelectChange(colId) {
     inp.focus();
   } else {
     inp.value = sel.value;
+    if (sel.value !== '') sel.closest('form').submit();
   }
 }
 
