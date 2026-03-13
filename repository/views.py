@@ -467,7 +467,6 @@ def samples_view(request):
     query = request.GET.get("q", "")
     active_category = request.GET.get("category", "")
     selected_cols = request.GET.getlist("cols")
-    f_experiment = request.GET.get("experiment", "")
 
     samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
     if query:
@@ -478,8 +477,6 @@ def samples_view(request):
         ).distinct()
     if active_category:
         samples_qs = samples_qs.filter(dataset__category=active_category)
-    if f_experiment:
-        samples_qs = samples_qs.filter(dataset__slug=f_experiment)
 
     # Available columns for the selected category
     available_columns = []
@@ -511,13 +508,7 @@ def samples_view(request):
         for c in sorted(category_values)
     ]
 
-    # Experiment list for dropdown (scoped to active category)
-    exp_qs = Dataset.objects.filter(samples__isnull=False).order_by()
-    if active_category:
-        exp_qs = exp_qs.filter(category=active_category)
-    experiment_list = list(exp_qs.distinct().order_by("title").values_list("slug", "title"))
-
-    adv_active = bool(f_experiment or show_columns)
+    adv_active = bool(show_columns)
 
     return render(request, "repository/samples.html", {
         "samples": samples,
@@ -527,8 +518,6 @@ def samples_view(request):
         "active_category": active_category,
         "categories_with_samples": categories_with_samples,
         "total_results": len(samples),
-        "f_experiment": f_experiment,
-        "experiment_list": experiment_list,
         "adv_active": adv_active,
     })
 
