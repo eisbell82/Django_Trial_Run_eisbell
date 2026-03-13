@@ -682,11 +682,16 @@ def samples_view(request):
         val_map = {v.column.name: v.value for v in s.values.all()}
         s.row = [(val_map.get(col, ""), col_unit_map.get(col, "")) for col in show_columns]
 
+    _BLANK = {"", "n/a", "na", "none", "null", "-"}
+
     def _sort_key(val):
+        v = (val or "").strip()
+        if v.lower() in _BLANK:
+            return (0, 0.0, "\xff")   # blank/N/A → numeric 0, tiebreak after real 0s
         try:
-            return (0, float(val), "")
+            return (0, float(v), "")
         except (ValueError, TypeError):
-            return (1, 0.0, (val or "").lower())
+            return (1, 0.0, v.lower() if v.lower() not in _BLANK else "z" * 10)
 
     reverse = (sort_dir == "desc")
     if sort_col == "sample_id":
