@@ -94,6 +94,7 @@
         <tr>
           <th>Sample ID</th>
           <th>Experiment</th>
+          <th>Species</th>
           {% for col in show_columns %}<th>{{ col }}</th>{% endfor %}
         </tr>
       </thead>
@@ -102,11 +103,12 @@
         <tr>
           <td class="sample-id-cell">{{ s.sample_id }}</td>
           <td><a href="{% url 'repository:detail' s.dataset.slug %}" style="color:var(--accent);text-decoration:none">{{ s.dataset.title|truncatechars:50 }}</a></td>
+          <td>{{ s.dataset.species|default:"—" }}</td>
           {% for val in s.row %}<td>{{ val }}</td>{% endfor %}
         </tr>
         {% empty %}
         <tr>
-          <td colspan="{{ show_columns|length|add:2 }}" style="color:var(--text-dim);text-align:center;padding:2rem">
+          <td colspan="{{ show_columns|length|add:3 }}" style="color:var(--text-dim);text-align:center;padding:2rem">
             No samples found{% if query %} for "{{ query }}"{% endif %}.
           </td>
         </tr>
