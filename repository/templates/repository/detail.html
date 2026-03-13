@@ -263,7 +263,7 @@
                 </form>
                 <form method="post" action="{% url 'repository:delete_sample_column' dataset.slug col.id %}" style="display:inline">
                   {% csrf_token %}
-                  <button type="submit" class="col-del-btn" title="Remove column" onclick="return confirm('Delete column \"{{ col.name|escapejs }}\"?\n\nAll values stored in this column will be permanently removed.')">×</button>
+                  <button type="submit" class="col-del-btn" title="Remove column" onclick="return confirmDelCol('{{ col.name|escapejs }}')">×</button>
                 </form>
                 {% else %}
                 {{ col.name }}
@@ -348,6 +348,10 @@
 </div>
 
 <script>
+function confirmDelCol(name) {
+  return confirm('Delete column "' + name + '"?\n\nAll values stored in this column will be permanently removed.');
+}
+
 var _renameWired = {};
 function showColRename(colId) {
   document.getElementById('col-label-' + colId).style.display = 'none';
