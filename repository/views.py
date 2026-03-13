@@ -95,9 +95,10 @@ def dataset_detail(request, slug):
 
     columns = list(dataset.sample_columns.all())
     samples = list(dataset.samples.prefetch_related("values").all())
-    # Attach (column, value) pairs per sample for template rendering
+    # Build row data from prefetch cache — avoids N×M individual queries
     for s in samples:
-        s.row_with_cols = [(col, s.value_for(col)) for col in columns]
+        val_map = {v.column_id: v.value for v in s.values.all()}
+        s.row_with_cols = [(col, val_map.get(col.pk, "")) for col in columns]
 
     # Column names already used in other datasets of the same category (for suggestions)
     existing_col_names = list(
@@ -534,6 +535,8 @@ def upload_csv_samples(request, slug):
                 headers[0] if headers else None,
             )
             data_headers = [h for h in headers if h != sid_col]
+
+            # get_or_create columns (few per dataset, cheap)
             col_map = {}
             for h in data_headers:
                 col, _ = SampleColumn.objects.get_or_create(
@@ -541,17 +544,60 @@ def upload_csv_samples(request, slug):
                     defaults={"order": dataset.sample_columns.count()},
                 )
                 col_map[h] = col
-            count = 0
-            for row in reader:
-                sid = row.get(sid_col, "").strip() if sid_col else ""
-                if not sid:
+
+            # Read all rows up-front
+            rows = [r for r in reader if sid_col and r.get(sid_col, "").strip()]
+            all_sids = [r[sid_col].strip() for r in rows]
+
+            # Fetch existing samples in one query, bulk-create new ones
+            existing_samples = {
+                s.sample_id: s
+                for s in Sample.objects.filter(dataset=dataset, sample_id__in=all_sids)
+            }
+            new_sids = [sid for sid in dict.fromkeys(all_sids) if sid not in existing_samples]
+            if new_sids:
+                Sample.objects.bulk_create(
+                    [Sample(dataset=dataset, sample_id=sid) for sid in new_sids],
+                    ignore_conflicts=True,
+                )
+                existing_samples = {
+                    s.sample_id: s
+                    for s in Sample.objects.filter(dataset=dataset, sample_id__in=all_sids)
+                }
+
+            # Fetch existing values in one query
+            sample_pks = [s.pk for s in existing_samples.values()]
+            col_pks = [c.pk for c in col_map.values()]
+            existing_values = {
+                (sv.sample_id, sv.column_id): sv
+                for sv in SampleValue.objects.filter(
+                    sample_id__in=sample_pks, column_id__in=col_pks
+                )
+            }
+
+            to_create, to_update = [], []
+            for row in rows:
+                sid = row[sid_col].strip()
+                sample = existing_samples.get(sid)
+                if not sample:
                     continue
-                sample, _ = Sample.objects.get_or_create(dataset=dataset, sample_id=sid)
                 for h, col in col_map.items():
-                    SampleValue.objects.update_or_create(
-                        sample=sample, column=col, defaults={"value": row.get(h, "").strip()}
-                    )
-                count += 1
+                    val = row.get(h, "").strip()
+                    key = (sample.pk, col.pk)
+                    if key in existing_values:
+                        sv = existing_values[key]
+                        if sv.value != val:
+                            sv.value = val
+                            to_update.append(sv)
+                    else:
+                        to_create.append(SampleValue(sample=sample, column=col, value=val))
+
+            if to_create:
+                SampleValue.objects.bulk_create(to_create, ignore_conflicts=True)
+            if to_update:
+                SampleValue.objects.bulk_update(to_update, ["value"])
+
+            count = len(set(all_sids))
             messages.success(request, f"Imported {count} sample(s) from CSV.")
         except Exception as e:
             messages.error(request, f"Error reading CSV: {e}")
