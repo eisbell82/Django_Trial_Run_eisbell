@@ -630,33 +630,104 @@ def edit_dataset(request, slug):
     return render(request, "repository/edit_dataset.html", {"form": form, "dataset": dataset})
 
 
-def samples_view(request):
-    query = request.GET.get("q", "")
-    active_category = request.GET.get("category", "")
-    selected_cols = request.GET.getlist("cols")
-    f_species   = request.GET.get("filter_species", "")
-    f_substrate = request.GET.get("filter_substrate", "")
-    f_coating   = request.GET.get("filter_coating", "")
-    sort_col    = request.GET.get("sort_col", "")
-    sort_dir    = request.GET.get("sort_dir", "asc")
+_BLANK = {"", "n/a", "na", "none", "null", "-"}
 
-    samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
+
+def _sort_key(val):
+    v = (val or "").strip()
+    if v.lower() in _BLANK:
+        return (0, 0.0, "\xff")
+    try:
+        return (0, float(v), "")
+    except (ValueError, TypeError):
+        return (1, 0.0, v.lower())
+
+
+def _build_samples_qs(query, active_category, f_species, f_substrate, f_coating):
+    """Return a filtered (but not yet evaluated) Sample queryset."""
+    qs = Sample.objects.select_related("dataset")
     if query:
-        samples_qs = samples_qs.filter(
+        qs = qs.filter(
             Q(sample_id__icontains=query)
             | Q(dataset__title__icontains=query)
             | Q(values__value__icontains=query)
         ).distinct()
     if active_category:
-        samples_qs = samples_qs.filter(dataset__category=active_category)
+        qs = qs.filter(dataset__category=active_category)
     if f_species:
-        samples_qs = samples_qs.filter(values__column__name__iexact="species", values__value=f_species)
+        qs = qs.filter(values__column__name__iexact="species", values__value=f_species)
     if f_substrate:
-        samples_qs = samples_qs.filter(values__column__name__iexact="substrate", values__value=f_substrate)
+        qs = qs.filter(values__column__name__iexact="substrate", values__value=f_substrate)
     if f_coating:
-        samples_qs = samples_qs.filter(values__column__name__iexact="coating", values__value=f_coating)
+        qs = qs.filter(values__column__name__iexact="coating", values__value=f_coating)
+    return qs
 
-    # Available columns for the selected category
+
+# DB-sortable fields — pushed to SQL ORDER BY, no Python sort needed
+_DB_SORT = {"sample_id": "sample_id", "type": "dataset__category"}
+
+
+def _apply_sort_and_build_rows(samples_qs, show_columns, col_unit_map, sort_col, sort_dir):
+    """
+    Apply ordering (DB-level where possible) and attach .row to each sample.
+    Returns a plain list of Sample objects.
+    """
+    reverse = sort_dir == "desc"
+
+    if sort_col in _DB_SORT:
+        order = f"{'-' if reverse else ''}{_DB_SORT[sort_col]}"
+        samples_qs = samples_qs.order_by(order)
+
+    samples = list(samples_qs.prefetch_related("values__column"))
+
+    for s in samples:
+        val_map = {v.column.name: v.value for v in s.values.all()}
+        s.row = [(val_map.get(col, ""), col_unit_map.get(col, "")) for col in show_columns]
+
+    # Python sort only needed for column-value fields (numeric-aware)
+    if sort_col not in _DB_SORT and sort_col in show_columns:
+        idx = show_columns.index(sort_col)
+        samples.sort(
+            key=lambda s: _sort_key(s.row[idx][0]) if idx < len(s.row) else (1, 0.0, ""),
+            reverse=reverse,
+        )
+
+    return samples
+
+
+def _col_values_bulk(col_names, active_category):
+    """
+    Return {col_name_lower: [distinct non-empty values]} for multiple column
+    names in a single DB query instead of one query per column.
+    """
+    filter_q = Q()
+    for name in col_names:
+        filter_q |= Q(column__name__iexact=name)
+    qs = SampleValue.objects.filter(filter_q).exclude(value="")
+    if active_category:
+        qs = qs.filter(sample__dataset__category=active_category)
+    result = {name.lower(): [] for name in col_names}
+    seen = {name.lower(): set() for name in col_names}
+    for row in qs.values("column__name", "value").order_by("column__name", "value"):
+        key = row["column__name"].lower()
+        if key in result and row["value"] not in seen[key]:
+            result[key].append(row["value"])
+            seen[key].add(row["value"])
+    return result
+
+
+def samples_view(request):
+    query           = request.GET.get("q", "")
+    active_category = request.GET.get("category", "")
+    selected_cols   = request.GET.getlist("cols")
+    f_species       = request.GET.get("filter_species", "")
+    f_substrate     = request.GET.get("filter_substrate", "")
+    f_coating       = request.GET.get("filter_coating", "")
+    sort_col        = request.GET.get("sort_col", "")
+    sort_dir        = request.GET.get("sort_dir", "asc")
+
+    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating)
+
     available_columns = []
     if active_category:
         available_columns = list(
@@ -668,7 +739,6 @@ def samples_view(request):
 
     show_columns = [c for c in selected_cols if c in available_columns]
 
-    # First non-empty unit per column name within the selected category
     col_unit_map = {}
     if show_columns:
         for row in (SampleColumn.objects
@@ -679,32 +749,8 @@ def samples_view(request):
 
     show_cols_zip = [(col, col_unit_map.get(col, "")) for col in show_columns]
 
-    samples = list(samples_qs)
-    for s in samples:
-        val_map = {v.column.name: v.value for v in s.values.all()}
-        s.row = [(val_map.get(col, ""), col_unit_map.get(col, "")) for col in show_columns]
+    samples = _apply_sort_and_build_rows(samples_qs, show_columns, col_unit_map, sort_col, sort_dir)
 
-    _BLANK = {"", "n/a", "na", "none", "null", "-"}
-
-    def _sort_key(val):
-        v = (val or "").strip()
-        if v.lower() in _BLANK:
-            return (0, 0.0, "\xff")   # blank/N/A → numeric 0, tiebreak after real 0s
-        try:
-            return (0, float(v), "")
-        except (ValueError, TypeError):
-            return (1, 0.0, v.lower() if v.lower() not in _BLANK else "z" * 10)
-
-    reverse = (sort_dir == "desc")
-    if sort_col == "sample_id":
-        samples.sort(key=lambda s: _sort_key(s.sample_id), reverse=reverse)
-    elif sort_col == "type":
-        samples.sort(key=lambda s: s.dataset.get_category_display().lower(), reverse=reverse)
-    elif sort_col in show_columns:
-        idx = show_columns.index(sort_col)
-        samples.sort(key=lambda s: _sort_key(s.row[idx][0]) if idx < len(s.row) else (1, 0.0, ""), reverse=reverse)
-
-    # Categories that actually have samples
     category_values = (
         Dataset.objects.filter(samples__isnull=False)
         .order_by()
@@ -717,12 +763,7 @@ def samples_view(request):
         for c in sorted(category_values)
     ]
 
-    def col_values(col_name):
-        qs = SampleValue.objects.filter(column__name__iexact=col_name).exclude(value="")
-        if active_category:
-            qs = qs.filter(sample__dataset__category=active_category)
-        return list(qs.values_list("value", flat=True).distinct().order_by("value"))
-
+    adv_filter_values = _col_values_bulk(["species", "substrate", "coating"], active_category)
     adv_active = bool(show_columns or f_species or f_substrate or f_coating)
 
     return render(request, "repository/samples.html", {
@@ -737,9 +778,9 @@ def samples_view(request):
         "f_species": f_species,
         "f_substrate": f_substrate,
         "f_coating": f_coating,
-        "species_values": col_values("species"),
-        "substrate_values": col_values("substrate"),
-        "coating_values": col_values("coating"),
+        "species_values": adv_filter_values["species"],
+        "substrate_values": adv_filter_values["substrate"],
+        "coating_values": adv_filter_values["coating"],
         "adv_active": adv_active,
         "sort_col": sort_col,
         "sort_dir": sort_dir,
@@ -748,30 +789,16 @@ def samples_view(request):
 
 def samples_csv_view(request):
     """Return the currently-filtered + sorted samples table as a CSV download."""
-    query       = request.GET.get("q", "")
+    query           = request.GET.get("q", "")
     active_category = request.GET.get("category", "")
     selected_cols   = request.GET.getlist("cols")
-    f_species   = request.GET.get("filter_species", "")
-    f_substrate = request.GET.get("filter_substrate", "")
-    f_coating   = request.GET.get("filter_coating", "")
-    sort_col    = request.GET.get("sort_col", "")
-    sort_dir    = request.GET.get("sort_dir", "asc")
+    f_species       = request.GET.get("filter_species", "")
+    f_substrate     = request.GET.get("filter_substrate", "")
+    f_coating       = request.GET.get("filter_coating", "")
+    sort_col        = request.GET.get("sort_col", "")
+    sort_dir        = request.GET.get("sort_dir", "asc")
 
-    samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
-    if query:
-        samples_qs = samples_qs.filter(
-            Q(sample_id__icontains=query)
-            | Q(dataset__title__icontains=query)
-            | Q(values__value__icontains=query)
-        ).distinct()
-    if active_category:
-        samples_qs = samples_qs.filter(dataset__category=active_category)
-    if f_species:
-        samples_qs = samples_qs.filter(values__column__name__iexact="species", values__value=f_species)
-    if f_substrate:
-        samples_qs = samples_qs.filter(values__column__name__iexact="substrate", values__value=f_substrate)
-    if f_coating:
-        samples_qs = samples_qs.filter(values__column__name__iexact="coating", values__value=f_coating)
+    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating)
 
     available_columns = []
     if active_category:
@@ -790,37 +817,12 @@ def samples_csv_view(request):
                     .values("name", "unit")):
             col_unit_map.setdefault(row["name"], row["unit"])
 
-    samples = list(samples_qs)
-    for s in samples:
-        val_map = {v.column.name: v.value for v in s.values.all()}
-        s.row = [(val_map.get(col, ""), col_unit_map.get(col, "")) for col in show_columns]
-
-    _BLANK = {"", "n/a", "na", "none", "null", "-"}
-
-    def _sort_key(val):
-        v = (val or "").strip()
-        if v.lower() in _BLANK:
-            return (0, 0.0, "\xff")
-        try:
-            return (0, float(v), "")
-        except (ValueError, TypeError):
-            return (1, 0.0, v.lower() if v.lower() not in _BLANK else "z" * 10)
-
-    reverse = (sort_dir == "desc")
-    if sort_col == "sample_id":
-        samples.sort(key=lambda s: _sort_key(s.sample_id), reverse=reverse)
-    elif sort_col == "type":
-        samples.sort(key=lambda s: s.dataset.get_category_display().lower(), reverse=reverse)
-    elif sort_col in show_columns:
-        idx = show_columns.index(sort_col)
-        samples.sort(key=lambda s: _sort_key(s.row[idx][0]) if idx < len(s.row) else (1, 0.0, ""), reverse=reverse)
+    samples = _apply_sort_and_build_rows(samples_qs, show_columns, col_unit_map, sort_col, sort_dir)
 
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="samples.csv"'
-
     writer = csv.writer(response)
 
-    # Header row – include unit in brackets when present
     header = ["Sample ID", "Type"]
     for col in show_columns:
         unit = col_unit_map.get(col, "")

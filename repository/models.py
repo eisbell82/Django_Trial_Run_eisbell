@@ -153,3 +153,6 @@ class SampleValue(models.Model):
 
     class Meta:
         unique_together = [("sample", "column")]
+        indexes = [
+            models.Index(fields=["column", "value"], name="samplevalue_col_val_idx"),
+        ]
