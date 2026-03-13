@@ -620,10 +620,21 @@ def samples_view(request):
 
     show_columns = [c for c in selected_cols if c in available_columns]
 
+    # First non-empty unit per column name within the selected category
+    col_unit_map = {}
+    if show_columns:
+        for row in (SampleColumn.objects
+                    .filter(name__in=show_columns)
+                    .exclude(unit="")
+                    .values("name", "unit")):
+            col_unit_map.setdefault(row["name"], row["unit"])
+
+    show_cols_zip = [(col, col_unit_map.get(col, "")) for col in show_columns]
+
     samples = list(samples_qs)
     for s in samples:
         val_map = {v.column.name: v.value for v in s.values.all()}
-        s.row = [val_map.get(col, "") for col in show_columns]
+        s.row = [(val_map.get(col, ""), col_unit_map.get(col, "")) for col in show_columns]
 
     reverse = (sort_dir == "desc")
     if sort_col == "sample_id":
@@ -632,7 +643,7 @@ def samples_view(request):
         samples.sort(key=lambda s: s.dataset.get_category_display().lower(), reverse=reverse)
     elif sort_col in show_columns:
         idx = show_columns.index(sort_col)
-        samples.sort(key=lambda s: s.row[idx].lower() if idx < len(s.row) else "", reverse=reverse)
+        samples.sort(key=lambda s: s.row[idx][0].lower() if idx < len(s.row) else "", reverse=reverse)
 
     # Categories that actually have samples
     category_values = (
@@ -658,6 +669,7 @@ def samples_view(request):
     return render(request, "repository/samples.html", {
         "samples": samples,
         "show_columns": show_columns,
+        "show_cols_zip": show_cols_zip,
         "available_columns": available_columns,
         "query": query,
         "active_category": active_category,
