@@ -1,5 +1,7 @@
+import csv
+
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -742,6 +744,96 @@ def samples_view(request):
         "sort_col": sort_col,
         "sort_dir": sort_dir,
     })
+
+
+def samples_csv_view(request):
+    """Return the currently-filtered + sorted samples table as a CSV download."""
+    query       = request.GET.get("q", "")
+    active_category = request.GET.get("category", "")
+    selected_cols   = request.GET.getlist("cols")
+    f_species   = request.GET.get("filter_species", "")
+    f_substrate = request.GET.get("filter_substrate", "")
+    f_coating   = request.GET.get("filter_coating", "")
+    sort_col    = request.GET.get("sort_col", "")
+    sort_dir    = request.GET.get("sort_dir", "asc")
+
+    samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
+    if query:
+        samples_qs = samples_qs.filter(
+            Q(sample_id__icontains=query)
+            | Q(dataset__title__icontains=query)
+            | Q(values__value__icontains=query)
+        ).distinct()
+    if active_category:
+        samples_qs = samples_qs.filter(dataset__category=active_category)
+    if f_species:
+        samples_qs = samples_qs.filter(values__column__name__iexact="species", values__value=f_species)
+    if f_substrate:
+        samples_qs = samples_qs.filter(values__column__name__iexact="substrate", values__value=f_substrate)
+    if f_coating:
+        samples_qs = samples_qs.filter(values__column__name__iexact="coating", values__value=f_coating)
+
+    available_columns = []
+    if active_category:
+        available_columns = list(
+            SampleColumn.objects.filter(dataset__category=active_category)
+            .values_list("name", flat=True).distinct().order_by("name")
+        )
+
+    show_columns = [c for c in selected_cols if c in available_columns]
+
+    col_unit_map = {}
+    if show_columns:
+        for row in (SampleColumn.objects
+                    .filter(name__in=show_columns)
+                    .exclude(unit="")
+                    .values("name", "unit")):
+            col_unit_map.setdefault(row["name"], row["unit"])
+
+    samples = list(samples_qs)
+    for s in samples:
+        val_map = {v.column.name: v.value for v in s.values.all()}
+        s.row = [(val_map.get(col, ""), col_unit_map.get(col, "")) for col in show_columns]
+
+    _BLANK = {"", "n/a", "na", "none", "null", "-"}
+
+    def _sort_key(val):
+        v = (val or "").strip()
+        if v.lower() in _BLANK:
+            return (0, 0.0, "\xff")
+        try:
+            return (0, float(v), "")
+        except (ValueError, TypeError):
+            return (1, 0.0, v.lower() if v.lower() not in _BLANK else "z" * 10)
+
+    reverse = (sort_dir == "desc")
+    if sort_col == "sample_id":
+        samples.sort(key=lambda s: _sort_key(s.sample_id), reverse=reverse)
+    elif sort_col == "type":
+        samples.sort(key=lambda s: s.dataset.get_category_display().lower(), reverse=reverse)
+    elif sort_col in show_columns:
+        idx = show_columns.index(sort_col)
+        samples.sort(key=lambda s: _sort_key(s.row[idx][0]) if idx < len(s.row) else (1, 0.0, ""), reverse=reverse)
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="samples.csv"'
+
+    writer = csv.writer(response)
+
+    # Header row – include unit in brackets when present
+    header = ["Sample ID", "Type"]
+    for col in show_columns:
+        unit = col_unit_map.get(col, "")
+        header.append(f"{col} [{unit}]" if unit else col)
+    writer.writerow(header)
+
+    for s in samples:
+        row = [s.sample_id, s.dataset.get_category_display()]
+        for val, _unit in s.row:
+            row.append(val)
+        writer.writerow(row)
+
+    return response
 
 
 def docs_view(request):

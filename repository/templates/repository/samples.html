@@ -100,6 +100,10 @@
   <div class="section-header">
     <span class="section-title">Samples</span>
     <span class="section-count">{{ total_results }} sample{{ total_results|pluralize }}</span>
+    <a href="{% url 'repository:samples_csv' %}?{{ request.GET.urlencode }}"
+       class="btn-outline"
+       style="font-size:12px;padding:6px 14px;margin-left:auto;text-decoration:none"
+       download>&#8595; Download CSV</a>
   </div>
 
   <div class="sample-table-wrap">

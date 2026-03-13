@@ -15,6 +15,7 @@ urlpatterns = [
     path("datasets/<slug:slug>/delete/", views.delete_dataset, name="delete"),
     path("datasets/<slug:slug>/edit/", views.edit_dataset, name="edit"),
     path("samples/", views.samples_view, name="samples"),
+    path("samples/download/", views.samples_csv_view, name="samples_csv"),
     path("datasets/<slug:slug>/files/add/", views.add_file, name="add_file"),
     path("datasets/<slug:slug>/files/<int:pk>/delete/", views.delete_file, name="delete_file"),
     path("datasets/<slug:slug>/samples/add/", views.add_sample, name="add_sample"),
