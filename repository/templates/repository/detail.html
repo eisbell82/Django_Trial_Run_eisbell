@@ -449,6 +449,8 @@ function switchTab(el, tabId) {
   document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
   const target = document.getElementById(tabId);
   if (target) target.style.display = 'block';
+  const body = document.querySelector('.detail-body');
+  if (body) body.classList.toggle('samples-active', tabId === 'tab-samples');
   history.replaceState(null, '', '#' + tabId);
 }
 
@@ -458,6 +460,10 @@ function switchTab(el, tabId) {
   if (hash && document.getElementById(hash)) {
     var btn = document.querySelector('.dtab[onclick*="\'' + hash + '\'"]');
     switchTab(btn || null, hash);
+  } else {
+    // Default tab: ensure samples-active class is not set
+    var body = document.querySelector('.detail-body');
+    if (body) body.classList.remove('samples-active');
   }
 })();
 

@@ -368,8 +368,10 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
 .sample-col-input:focus { outline: none; border-color: var(--accent); }
 .sample-table-wrap { overflow-x: auto; }
 .sample-table {
-  width: 100%; border-collapse: collapse; font-size: 12px;
+  min-width: max-content; border-collapse: collapse; font-size: 12px;
 }
+.detail-body.samples-active { grid-template-columns: 1fr; }
+.detail-body.samples-active .detail-sidebar { display: none; }
 .sample-table th {
   text-align: left; padding: 7px 12px;
   background: var(--tag-bg); border-bottom: 1px solid var(--border);
