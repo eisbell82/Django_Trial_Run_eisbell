@@ -32,19 +32,46 @@
           {% if available_columns %}
           <div class="adv-filter-group">
             <label class="adv-label">Columns</label>
-            <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">
+            <select name="cols" class="adv-select" multiple size="5" onchange="this.form.submit()" style="height:auto">
               {% for col in available_columns %}
-              <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--text)">
-                <input type="checkbox" name="cols" value="{{ col }}" {% if col in show_columns %}checked{% endif %} onchange="this.form.submit()" style="accent-color:var(--accent)">
-                {{ col }}
-              </label>
+              <option value="{{ col }}" {% if col in show_columns %}selected{% endif %}>{{ col }}</option>
               {% endfor %}
-            </div>
+            </select>
           </div>
           {% elif not active_category %}
           <div class="adv-filter-group">
             <label class="adv-label">Columns</label>
             <span style="font-size:12px;color:var(--text-dim);font-style:italic">Select an experiment type first</span>
+          </div>
+          {% endif %}
+
+          {% if species_values %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Species</label>
+            <select name="filter_species" class="adv-select" onchange="this.form.submit()">
+              <option value="">All</option>
+              {% for v in species_values %}<option value="{{ v }}" {% if f_species == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          {% if substrate_values %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Substrate</label>
+            <select name="filter_substrate" class="adv-select" onchange="this.form.submit()">
+              <option value="">All</option>
+              {% for v in substrate_values %}<option value="{{ v }}" {% if f_substrate == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          {% if coating_values %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Coating</label>
+            <select name="filter_coating" class="adv-select" onchange="this.form.submit()">
+              <option value="">All</option>
+              {% for v in coating_values %}<option value="{{ v }}" {% if f_coating == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
+            </select>
           </div>
           {% endif %}
 

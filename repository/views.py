@@ -467,6 +467,9 @@ def samples_view(request):
     query = request.GET.get("q", "")
     active_category = request.GET.get("category", "")
     selected_cols = request.GET.getlist("cols")
+    f_species   = request.GET.get("filter_species", "")
+    f_substrate = request.GET.get("filter_substrate", "")
+    f_coating   = request.GET.get("filter_coating", "")
 
     samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
     if query:
@@ -477,6 +480,12 @@ def samples_view(request):
         ).distinct()
     if active_category:
         samples_qs = samples_qs.filter(dataset__category=active_category)
+    if f_species:
+        samples_qs = samples_qs.filter(values__column__name__iexact="species", values__value=f_species)
+    if f_substrate:
+        samples_qs = samples_qs.filter(values__column__name__iexact="substrate", values__value=f_substrate)
+    if f_coating:
+        samples_qs = samples_qs.filter(values__column__name__iexact="coating", values__value=f_coating)
 
     # Available columns for the selected category
     available_columns = []
@@ -508,7 +517,13 @@ def samples_view(request):
         for c in sorted(category_values)
     ]
 
-    adv_active = bool(show_columns)
+    def col_values(col_name):
+        qs = SampleValue.objects.filter(column__name__iexact=col_name).exclude(value="")
+        if active_category:
+            qs = qs.filter(sample__dataset__category=active_category)
+        return list(qs.values_list("value", flat=True).distinct().order_by("value"))
+
+    adv_active = bool(show_columns or f_species or f_substrate or f_coating)
 
     return render(request, "repository/samples.html", {
         "samples": samples,
@@ -518,6 +533,12 @@ def samples_view(request):
         "active_category": active_category,
         "categories_with_samples": categories_with_samples,
         "total_results": len(samples),
+        "f_species": f_species,
+        "f_substrate": f_substrate,
+        "f_coating": f_coating,
+        "species_values": col_values("species"),
+        "substrate_values": col_values("substrate"),
+        "coating_values": col_values("coating"),
         "adv_active": adv_active,
     })
 
