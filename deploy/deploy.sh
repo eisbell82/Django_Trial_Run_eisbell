@@ -36,6 +36,10 @@ echo "==> Collecting static files..."
 echo "==> Restarting gunicorn..."
 sudo systemctl restart specimenbase
 
+echo "==> Updating nginx config..."
+sudo cp "$APP_DIR/deploy/nginx.conf" /etc/nginx/sites-available/specimenbase
+sudo ln -sf /etc/nginx/sites-available/specimenbase /etc/nginx/sites-enabled/specimenbase
+
 echo "==> Reloading nginx..."
 sudo nginx -t && sudo systemctl reload nginx
 
