@@ -147,6 +147,13 @@
       {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
       <div class="sample-toolbar">
         <a href="{% url 'repository:add_sample' dataset.slug %}" class="btn-accent" style="font-size:11px;padding:5px 14px">+ Add sample</a>
+        <form method="post" action="{% url 'repository:upload_csv_samples' dataset.slug %}" enctype="multipart/form-data" style="display:flex;gap:6px;align-items:center">
+          {% csrf_token %}
+          <label class="btn-outline" style="font-size:11px;padding:5px 12px;cursor:pointer;margin:0">
+            Upload CSV
+            <input type="file" name="csv_file" accept=".csv" style="display:none" onchange="this.form.submit()">
+          </label>
+        </form>
         <form method="post" action="{% url 'repository:add_sample_column' dataset.slug %}" style="display:flex;gap:6px;align-items:center">
           {% csrf_token %}
           <div style="position:relative">
@@ -210,12 +217,21 @@
               <th>Sample ID</th>
               {% for col in sample_columns %}
               <th>
-                {{ col.name }}
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                <span id="col-label-{{ col.id }}">{{ col.name }}</span>
+                <button type="button" class="col-del-btn" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
+                <form method="post" action="{% url 'repository:rename_sample_column' dataset.slug col.id %}" id="col-rename-form-{{ col.id }}" style="display:none;margin-top:2px">
+                  {% csrf_token %}
+                  <input type="text" name="name" value="{{ col.name }}" style="font-size:11px;width:90px;padding:2px 5px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
+                  <button type="submit" class="col-del-btn" style="color:var(--accent)">✓</button>
+                  <button type="button" class="col-del-btn" onclick="hideColRename({{ col.id }})">✕</button>
+                </form>
                 <form method="post" action="{% url 'repository:delete_sample_column' dataset.slug col.id %}" style="display:inline">
                   {% csrf_token %}
                   <button type="submit" class="col-del-btn" title="Remove column">×</button>
                 </form>
+                {% else %}
+                {{ col.name }}
                 {% endif %}
               </th>
               {% endfor %}
@@ -230,8 +246,9 @@
               <td class="sample-id-cell">{{ s.sample_id }}</td>
               {% for val in s.row %}<td>{{ val }}</td>{% endfor %}
               {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-              <td>
-                <form method="post" action="{% url 'repository:delete_sample' dataset.slug s.pk %}">
+              <td style="white-space:nowrap">
+                <a href="{% url 'repository:edit_sample' dataset.slug s.pk %}" class="col-del-btn" title="Edit sample" style="text-decoration:none;opacity:.6">✎</a>
+                <form method="post" action="{% url 'repository:delete_sample' dataset.slug s.pk %}" style="display:inline">
                   {% csrf_token %}
                   <button type="submit" class="col-del-btn" title="Delete sample">×</button>
                 </form>
@@ -296,6 +313,17 @@
 </div>
 
 <script>
+function showColRename(colId) {
+  document.getElementById('col-label-' + colId).style.display = 'none';
+  document.getElementById('col-rename-form-' + colId).style.display = 'inline-flex';
+  var input = document.querySelector('#col-rename-form-' + colId + ' input[name="name"]');
+  if (input) { input.focus(); input.select(); }
+}
+function hideColRename(colId) {
+  document.getElementById('col-label-' + colId).style.display = '';
+  document.getElementById('col-rename-form-' + colId).style.display = 'none';
+}
+
 function switchTab(el, tabId) {
   document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
   if (el.classList.contains('dtab')) el.classList.add('active');

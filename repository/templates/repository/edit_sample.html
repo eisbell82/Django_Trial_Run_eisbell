@@ -1,0 +1,31 @@
+{% extends "repository/base.html" %}
+
+{% block title %}Edit Sample — {{ dataset.title }} — SpecimenBase{% endblock %}
+
+{% block content %}
+<div class="section" style="padding-top:3rem;max-width:600px;margin:0 auto">
+  <div style="margin-bottom:1.5rem">
+    <a href="{% url 'repository:detail' dataset.slug %}" style="color:var(--text-dim);font-size:12px">← Back to {{ dataset.title|truncatechars:50 }}</a>
+  </div>
+  <h2 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:1.5rem">Edit sample</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label">Sample ID <span style="color:var(--accent)">*</span></label>
+      <input type="text" name="sample_id" class="form-input" value="{{ sample.sample_id }}" required>
+    </div>
+    {% for col, val in column_values %}
+    <div class="form-group">
+      <label class="form-label">{{ col.name }}</label>
+      <input type="text" name="col_{{ col.id }}" class="form-input" value="{{ val }}">
+    </div>
+    {% empty %}
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:1rem">No columns defined for this dataset yet.</p>
+    {% endfor %}
+    <div style="display:flex;gap:12px;margin-top:1.5rem">
+      <button type="submit" class="btn-accent">Save changes</button>
+      <a href="{% url 'repository:detail' dataset.slug %}" class="btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -440,6 +440,89 @@ def delete_sample(request, slug, pk):
 
 
 @login_required
+def edit_sample(request, slug, pk):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    sample = get_object_or_404(Sample, pk=pk, dataset=dataset)
+    columns = list(dataset.sample_columns.all())
+    if request.method == "POST":
+        sample_id = request.POST.get("sample_id", "").strip()
+        if sample_id:
+            sample.sample_id = sample_id
+            sample.save()
+            for col in columns:
+                val = request.POST.get(f"col_{col.id}", "").strip()
+                SampleValue.objects.update_or_create(
+                    sample=sample, column=col, defaults={"value": val}
+                )
+            messages.success(request, f"Sample '{sample_id}' updated.")
+        return redirect("repository:detail", slug=slug)
+    current_values = {v.column_id: v.value for v in sample.values.all()}
+    column_values = [(col, current_values.get(col.id, "")) for col in columns]
+    return render(request, "repository/edit_sample.html", {
+        "dataset": dataset,
+        "sample": sample,
+        "column_values": column_values,
+    })
+
+
+@login_required
+def rename_sample_column(request, slug, col_id):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        new_name = request.POST.get("name", "").strip()
+        if new_name:
+            SampleColumn.objects.filter(id=col_id, dataset=dataset).update(name=new_name)
+    return redirect("repository:detail", slug=slug)
+
+
+@login_required
+def upload_csv_samples(request, slug):
+    import csv, io
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST" and request.FILES.get("csv_file"):
+        try:
+            text = request.FILES["csv_file"].read().decode("utf-8-sig")
+            reader = csv.DictReader(io.StringIO(text))
+            headers = list(reader.fieldnames or [])
+            sid_col = next(
+                (h for h in headers if h.strip().lower() in ("sample_id", "sample id", "id")),
+                headers[0] if headers else None,
+            )
+            data_headers = [h for h in headers if h != sid_col]
+            col_map = {}
+            for h in data_headers:
+                col, _ = SampleColumn.objects.get_or_create(
+                    dataset=dataset, name=h,
+                    defaults={"order": dataset.sample_columns.count()},
+                )
+                col_map[h] = col
+            count = 0
+            for row in reader:
+                sid = row.get(sid_col, "").strip() if sid_col else ""
+                if not sid:
+                    continue
+                sample, _ = Sample.objects.get_or_create(dataset=dataset, sample_id=sid)
+                for h, col in col_map.items():
+                    SampleValue.objects.update_or_create(
+                        sample=sample, column=col, defaults={"value": row.get(h, "").strip()}
+                    )
+                count += 1
+            messages.success(request, f"Imported {count} sample(s) from CSV.")
+        except Exception as e:
+            messages.error(request, f"Error reading CSV: {e}")
+    return redirect("repository:detail", slug=slug)
+
+
+@login_required
 def edit_dataset(request, slug):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
