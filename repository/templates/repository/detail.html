@@ -275,7 +275,7 @@
                       <ul id="col-rename-list-{{ col.id }}" style="margin:0;padding:4px 0;list-style:none;max-height:160px;overflow-y:auto"></ul>
                     </div>
                   </div>
-                  <button type="button" class="col-del-btn" style="color:var(--accent)" onclick="submitColRename({{ col.id }})">✓</button>
+                  <button type="submit" class="col-del-btn" style="color:var(--accent)">✓</button>
                   <button type="button" class="col-del-btn" onclick="hideColRename({{ col.id }})">✕</button>
                 </form>
                 <span class="edit-ctrl"><form method="post" action="{% url 'repository:delete_sample_column' dataset.slug col.id %}" style="display:inline">
@@ -296,7 +296,7 @@
                     </select>
                     {% endif %}
                     <input type="text" name="unit" id="col-unit-input-{{ col.id }}" value="{{ col.unit }}" autocomplete="off" placeholder="e.g. °C, mm, kg" style="font-size:10px;width:80px;padding:2px 5px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
-                    <button type="button" class="col-del-btn" style="color:var(--accent)" onclick="submitColUnit({{ col.id }})">✓</button>
+                    <button type="submit" class="col-del-btn" style="color:var(--accent)">✓</button>
                     <button type="button" class="col-del-btn" onclick="hideColUnit({{ col.id }})">✕</button>
                   </form>
                 </div>
@@ -418,23 +418,6 @@ function showColRename(colId) {
   var q = input.value.trim().toLowerCase();
   if (drop && list) _colRender(list, drop, input, _colFilter(q), q);
 }
-function submitColRename(colId) {
-  var form  = document.getElementById('col-rename-form-' + colId);
-  var input = document.getElementById('col-rename-input-' + colId);
-  var newName = input.value.trim();
-  if (!newName) return;
-  var data = new FormData(form);
-  fetch(form.action, {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    body: data,
-  }).then(function(r) { return r.json(); }).then(function(json) {
-    if (json.ok) {
-      document.getElementById('col-label-' + colId).textContent = json.name;
-      input.value = json.name;
-    }
-  });
-}
 function hideColRename(colId) {
   document.getElementById('col-label-' + colId).style.display = '';
   var btn = document.getElementById('col-rename-btn-' + colId);
@@ -449,28 +432,6 @@ function showColUnit(colId) {
   document.getElementById('col-unit-form-' + colId).style.display = 'inline-flex';
   var inp = document.getElementById('col-unit-input-' + colId);
   if (inp) { inp.focus(); inp.select(); }
-}
-function submitColUnit(colId) {
-  var form  = document.getElementById('col-unit-form-' + colId);
-  var inp   = document.getElementById('col-unit-input-' + colId);
-  var data  = new FormData(form);
-  fetch(form.action, {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    body: data,
-  }).then(function(r) { return r.json(); }).then(function(json) {
-    if (json.ok) {
-      var label = document.getElementById('col-unit-label-' + colId);
-      if (json.unit) {
-        label.innerHTML = '[' + json.unit.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + ']';
-      } else {
-        label.innerHTML = '<span style="opacity:.5">+ unit</span>';
-      }
-      inp.value = json.unit;
-      var sel = document.getElementById('col-unit-select-' + colId);
-      if (sel) sel.value = '';
-    }
-  });
 }
 function hideColUnit(colId) {
   document.getElementById('col-unit-label-' + colId).style.display = '';
