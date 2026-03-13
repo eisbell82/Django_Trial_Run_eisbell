@@ -636,14 +636,20 @@ def samples_view(request):
         val_map = {v.column.name: v.value for v in s.values.all()}
         s.row = [(val_map.get(col, ""), col_unit_map.get(col, "")) for col in show_columns]
 
+    def _sort_key(val):
+        try:
+            return (0, float(val), "")
+        except (ValueError, TypeError):
+            return (1, 0.0, (val or "").lower())
+
     reverse = (sort_dir == "desc")
     if sort_col == "sample_id":
-        samples.sort(key=lambda s: s.sample_id.lower(), reverse=reverse)
+        samples.sort(key=lambda s: _sort_key(s.sample_id), reverse=reverse)
     elif sort_col == "type":
         samples.sort(key=lambda s: s.dataset.get_category_display().lower(), reverse=reverse)
     elif sort_col in show_columns:
         idx = show_columns.index(sort_col)
-        samples.sort(key=lambda s: s.row[idx][0].lower() if idx < len(s.row) else "", reverse=reverse)
+        samples.sort(key=lambda s: _sort_key(s.row[idx][0]) if idx < len(s.row) else (1, 0.0, ""), reverse=reverse)
 
     # Categories that actually have samples
     category_values = (

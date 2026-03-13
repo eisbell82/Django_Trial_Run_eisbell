@@ -143,9 +143,19 @@
 
     <!-- TAB: SAMPLES -->
     <div id="tab-samples" style="display:none">
+<style>
+  #tab-samples .edit-ctrl { display: none !important; }
+  #tab-samples.samples-edit-active .edit-ctrl { display: revert !important; }
+  #tab-samples.samples-edit-active th.edit-ctrl,
+  #tab-samples.samples-edit-active td.edit-ctrl { display: table-cell !important; }
+  #tab-samples.samples-edit-active .read-ctrl { display: none !important; }
+</style>
 
       {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-      <div class="sample-toolbar">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem">
+        <button type="button" id="samples-edit-toggle" onclick="toggleSamplesEdit()" class="btn-outline" style="font-size:11px;padding:5px 12px">✎ Edit</button>
+      </div>
+      <div class="sample-toolbar edit-ctrl">
         <a href="{% url 'repository:add_sample' dataset.slug %}" class="btn-accent" style="font-size:11px;padding:5px 14px">+ Add sample</a>
         <form method="post" action="{% url 'repository:upload_csv_samples' dataset.slug %}" enctype="multipart/form-data" style="display:flex;gap:6px;align-items:center">
           {% csrf_token %}
@@ -256,7 +266,7 @@
               <th>
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                 <span id="col-label-{{ col.id }}">{{ col.name }}</span>
-                <button type="button" id="col-rename-btn-{{ col.id }}" class="col-del-btn" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
+                <button type="button" id="col-rename-btn-{{ col.id }}" class="col-del-btn edit-ctrl" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
                 <form method="post" action="{% url 'repository:rename_sample_column' dataset.slug col.id %}" id="col-rename-form-{{ col.id }}" style="display:none;margin-top:2px;align-items:center;gap:2px">
                   {% csrf_token %}
                   <div style="position:relative;display:inline-block">
@@ -268,11 +278,12 @@
                   <button type="submit" class="col-del-btn" style="color:var(--accent)">✓</button>
                   <button type="button" class="col-del-btn" onclick="hideColRename({{ col.id }})">✕</button>
                 </form>
-                <form method="post" action="{% url 'repository:delete_sample_column' dataset.slug col.id %}" style="display:inline">
+                <span class="edit-ctrl"><form method="post" action="{% url 'repository:delete_sample_column' dataset.slug col.id %}" style="display:inline">
                   {% csrf_token %}
                   <button type="submit" class="col-del-btn" title="Remove column" onclick="return confirmDelCol('{{ col.name|escapejs }}')">×</button>
-                </form>
-                <div style="margin-top:2px">
+                </form></span>
+                <div class="read-ctrl" style="margin-top:2px;font-size:10px;font-weight:normal;opacity:.6">{% if col.unit %}[{{ col.unit }}]{% endif %}</div>
+                <div class="edit-ctrl" style="margin-top:2px">
                   <span id="col-unit-label-{{ col.id }}" style="font-size:10px;font-weight:normal;opacity:.6;cursor:pointer" onclick="showColUnit({{ col.id }})" title="Set unit">{% if col.unit %}[{{ col.unit }}]{% else %}<span style="opacity:.5">+ unit</span>{% endif %}</span>
                   <form method="post" action="{% url 'repository:set_column_unit' dataset.slug col.id %}" id="col-unit-form-{{ col.id }}" style="display:none;align-items:center;gap:2px">
                     {% csrf_token %}
@@ -296,7 +307,7 @@
               </th>
               {% endfor %}
               {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-              <th></th>
+              <th class="edit-ctrl"></th>
               {% endif %}
             </tr>
           </thead>
@@ -306,7 +317,7 @@
               <td class="sample-id-cell">{{ s.sample_id }}</td>
               {% for col, val in s.row_with_cols %}<td>{{ val }}{% if val and col.unit %} <span style="font-size:10px;opacity:.65;font-style:italic">{{ col.unit }}</span>{% endif %}</td>{% endfor %}
               {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-              <td style="white-space:nowrap">
+              <td class="edit-ctrl" style="white-space:nowrap">
                 <a href="{% url 'repository:edit_sample' dataset.slug s.pk %}" class="col-del-btn" title="Edit sample" style="text-decoration:none;opacity:.6">✎</a>
                 <form method="post" action="{% url 'repository:delete_sample' dataset.slug s.pk %}" style="display:inline">
                   {% csrf_token %}
@@ -373,6 +384,13 @@
 </div>
 
 <script>
+function toggleSamplesEdit() {
+  var tab = document.getElementById('tab-samples');
+  var btn = document.getElementById('samples-edit-toggle');
+  var editing = tab.classList.toggle('samples-edit-active');
+  btn.textContent = editing ? '✓ Done' : '✎ Edit';
+}
+
 function confirmDelCol(name) {
   return confirm('Delete column "' + name + '"?\n\nAll values stored in this column will be permanently removed.');
 }
