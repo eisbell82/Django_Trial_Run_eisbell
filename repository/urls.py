@@ -30,4 +30,10 @@ urlpatterns = [
     path("datasets/<slug:slug>/samples/upload-csv/", views.upload_csv_samples, name="upload_csv_samples"),
     path("datasets/<slug:slug>/access/add/", views.add_dataset_access, name="add_dataset_access"),
     path("datasets/<slug:slug>/access/<int:user_id>/remove/", views.remove_dataset_access, name="remove_dataset_access"),
+    path("todo/", views.todo_view, name="todo"),
+    path("todo/add/", views.todo_add, name="todo_add"),
+    path("todo/<int:pk>/toggle/", views.todo_toggle, name="todo_toggle"),
+    path("todo/<int:pk>/edit/", views.todo_edit, name="todo_edit"),
+    path("todo/<int:pk>/delete/", views.todo_delete, name="todo_delete"),
+    path("todo/clear-done/", views.todo_clear_done, name="todo_clear_done"),
 ]

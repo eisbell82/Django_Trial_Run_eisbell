@@ -151,6 +151,19 @@ class Sample(models.Model):
             return ""
 
 
+class TodoItem(models.Model):
+    text = models.CharField(max_length=500)
+    done = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "created_at"]
+
+    def __str__(self):
+        return self.text
+
+
 class SampleValue(models.Model):
     sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name="values")
     column = models.ForeignKey(SampleColumn, on_delete=models.CASCADE, related_name="values")

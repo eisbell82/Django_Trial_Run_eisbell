@@ -1,7 +1,7 @@
 import csv
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.urls import reverse
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue
+from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, TodoItem
 from .forms import DatasetUploadForm, DataFileForm, NotebookForm
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
@@ -916,6 +916,77 @@ def samples_csv_view(request):
 
 def docs_view(request):
     return render(request, "repository/docs.html")
+
+
+def _staff_required(view_fn):
+    """Decorator: 404 for non-staff users."""
+    from functools import wraps
+    @wraps(view_fn)
+    def wrapper(request, *args, **kwargs):
+        if not (request.user.is_authenticated and request.user.is_staff):
+            from django.http import Http404
+            raise Http404
+        return view_fn(request, *args, **kwargs)
+    return wrapper
+
+
+@_staff_required
+def todo_view(request):
+    todos = list(TodoItem.objects.all())
+    return render(request, "repository/todo.html", {"todos": todos})
+
+
+@_staff_required
+def todo_add(request):
+    if request.method == "POST":
+        import json
+        data = json.loads(request.body)
+        text = data.get("text", "").strip()
+        if text:
+            order = TodoItem.objects.count()
+            item = TodoItem.objects.create(text=text, order=order)
+            return JsonResponse({"id": item.pk, "text": item.text, "done": item.done})
+    return JsonResponse({"error": "bad request"}, status=400)
+
+
+@_staff_required
+def todo_toggle(request, pk):
+    if request.method == "POST":
+        item = get_object_or_404(TodoItem, pk=pk)
+        item.done = not item.done
+        item.save(update_fields=["done"])
+        return JsonResponse({"id": item.pk, "done": item.done})
+    return JsonResponse({"error": "bad request"}, status=400)
+
+
+@_staff_required
+def todo_edit(request, pk):
+    if request.method == "POST":
+        import json
+        data = json.loads(request.body)
+        text = data.get("text", "").strip()
+        if text:
+            item = get_object_or_404(TodoItem, pk=pk)
+            item.text = text
+            item.save(update_fields=["text"])
+            return JsonResponse({"id": item.pk, "text": item.text})
+    return JsonResponse({"error": "bad request"}, status=400)
+
+
+@_staff_required
+def todo_delete(request, pk):
+    if request.method == "POST":
+        TodoItem.objects.filter(pk=pk).delete()
+        return JsonResponse({"ok": True})
+    return JsonResponse({"error": "bad request"}, status=400)
+
+
+@_staff_required
+def todo_clear_done(request):
+    if request.method == "POST":
+        TodoItem.objects.filter(done=True).delete()
+        return JsonResponse({"ok": True})
+    return JsonResponse({"error": "bad request"}, status=400)
 
 
 def _format_bytes(size):
