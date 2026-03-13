@@ -1,7 +1,7 @@
 import csv
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.urls import reverse
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -499,12 +499,16 @@ def edit_sample(request, slug, pk):
 def rename_sample_column(request, slug, col_id):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"ok": False, "error": "Permission denied."}, status=403)
         messages.error(request, "Permission denied.")
         return _redirect_to_tab(slug, "tab-samples")
     if request.method == "POST":
         new_name = request.POST.get("name", "").strip()
         if new_name:
             SampleColumn.objects.filter(id=col_id, dataset=dataset).update(name=new_name)
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"ok": True, "name": new_name})
     return _redirect_to_tab(slug, "tab-samples")
 
 
@@ -512,11 +516,15 @@ def rename_sample_column(request, slug, col_id):
 def set_column_unit(request, slug, col_id):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"ok": False, "error": "Permission denied."}, status=403)
         messages.error(request, "Permission denied.")
         return _redirect_to_tab(slug, "tab-samples")
     if request.method == "POST":
         unit = request.POST.get("unit", "").strip()
         SampleColumn.objects.filter(id=col_id, dataset=dataset).update(unit=unit)
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"ok": True, "unit": unit})
     return _redirect_to_tab(slug, "tab-samples")
 
 
