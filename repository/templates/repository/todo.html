@@ -1,0 +1,232 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}To-Do — SpecimenBase{% endblock %}
+{% block nav_todo %}active{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;margin:3rem auto;padding:0 2rem">
+
+  <div style="margin-bottom:2rem">
+    <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-dim);margin-bottom:.75rem">// Admin</div>
+    <h1 style="font-family:'Instrument Serif',serif;font-size:36px;line-height:1.1;margin-bottom:.25rem">To-Do</h1>
+    <p id="summary" style="color:var(--text-dim);font-size:12px"></p>
+  </div>
+
+  <!-- Add task input -->
+  <div style="display:flex;gap:.5rem;margin-bottom:1.75rem">
+    <input
+      id="new-task-input"
+      type="text"
+      placeholder="Add a task and press Enter…"
+      maxlength="500"
+      style="flex:1;padding:.55rem .75rem;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-size:13px;outline:none"
+      autocomplete="off"
+    >
+    <button id="add-btn" onclick="addTask()" style="padding:.55rem 1rem;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;white-space:nowrap">+ Add</button>
+  </div>
+
+  <!-- Task list -->
+  <ul id="todo-list" style="list-style:none;padding:0;margin:0"></ul>
+
+  <!-- Empty state -->
+  <div id="empty-state" style="display:none;text-align:center;padding:3rem 0;color:var(--text-dim);font-size:13px">
+    No tasks yet. Add one above.
+  </div>
+
+  <!-- Clear completed -->
+  <div id="clear-row" style="display:none;margin-top:1.25rem;text-align:right">
+    <button onclick="clearDone()" style="background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;text-decoration:underline">Clear completed</button>
+  </div>
+
+</div>
+
+<style>
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .6rem .75rem;
+    border-radius: 6px;
+    margin-bottom: .35rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: opacity .15s;
+  }
+  .todo-item.done { opacity: .5; }
+  .todo-item:hover .todo-delete { opacity: 1; }
+
+  .todo-check {
+    width: 16px; height: 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  .todo-text {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+    cursor: text;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    padding: 2px 4px;
+    background: transparent;
+    min-width: 0;
+    word-break: break-word;
+  }
+  .todo-text.done-text { text-decoration: line-through; color: var(--text-dim); }
+  .todo-text:focus {
+    outline: none;
+    border-color: var(--accent-dim);
+    background: var(--bg);
+    cursor: text;
+  }
+
+  .todo-delete {
+    opacity: 0;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    flex-shrink: 0;
+    transition: color .1s, opacity .1s;
+  }
+  .todo-delete:hover { color: #c0392b; }
+
+  #new-task-input:focus { border-color: var(--accent-dim); }
+</style>
+
+<script>
+  const URLS = {
+    add:      "{% url 'repository:todo_add' %}",
+    toggle:   id => `/todo/${id}/toggle/`,
+    edit:     id => `/todo/${id}/edit/`,
+    del:      id => `/todo/${id}/delete/`,
+    clearDone:"{% url 'repository:todo_clear_done' %}",
+  };
+
+  const csrfToken = "{{ csrf_token }}";
+
+  function api(url, body) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+      body: JSON.stringify(body),
+    }).then(r => r.json());
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+  function buildItem(item) {
+    const li = document.createElement("li");
+    li.className = "todo-item" + (item.done ? " done" : "");
+    li.dataset.id = item.id;
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.className = "todo-check";
+    cb.checked = item.done;
+    cb.addEventListener("change", () => toggleItem(item.id, li, span, cb));
+
+    const span = document.createElement("span");
+    span.className = "todo-text" + (item.done ? " done-text" : "");
+    span.textContent = item.text;
+    span.contentEditable = "true";
+    span.spellcheck = false;
+    span.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); span.blur(); }
+      if (e.key === "Escape") { span.textContent = item.text; span.blur(); }
+    });
+    span.addEventListener("blur", () => {
+      const newText = span.textContent.trim();
+      if (newText && newText !== item.text) {
+        api(URLS.edit(item.id), { text: newText }).then(data => {
+          if (data.text) item.text = data.text;
+          else span.textContent = item.text;
+        });
+      } else {
+        span.textContent = item.text;
+      }
+    });
+
+    const del = document.createElement("button");
+    del.className = "todo-delete";
+    del.title = "Delete";
+    del.innerHTML = "&#x2715;";
+    del.addEventListener("click", () => deleteItem(item.id, li));
+
+    li.append(cb, span, del);
+    return li;
+  }
+
+  function toggleItem(id, li, span, cb) {
+    api(URLS.toggle(id), {}).then(data => {
+      if ("done" in data) {
+        li.classList.toggle("done", data.done);
+        span.classList.toggle("done-text", data.done);
+        cb.checked = data.done;
+        updateSummary();
+      }
+    });
+  }
+
+  function deleteItem(id, li) {
+    api(URLS.del(id), {}).then(data => {
+      if (data.ok) { li.remove(); updateSummary(); }
+    });
+  }
+
+  function updateSummary() {
+    const items = document.querySelectorAll("#todo-list .todo-item");
+    const done  = document.querySelectorAll("#todo-list .todo-item.done").length;
+    const total = items.length;
+    document.getElementById("summary").textContent =
+      total === 0 ? "" : `${total - done} remaining · ${done} completed`;
+    document.getElementById("empty-state").style.display = total === 0 ? "block" : "none";
+    document.getElementById("clear-row").style.display   = done > 0 ? "block" : "none";
+  }
+
+  // ── Add ─────────────────────────────────────────────────────────────────────
+  function addTask() {
+    const input = document.getElementById("new-task-input");
+    const text = input.value.trim();
+    if (!text) return;
+    input.disabled = true;
+    api(URLS.add, { text }).then(data => {
+      if (data.id) {
+        document.getElementById("todo-list").appendChild(buildItem(data));
+        input.value = "";
+        updateSummary();
+      }
+      input.disabled = false;
+      input.focus();
+    });
+  }
+
+  // ── Clear done ───────────────────────────────────────────────────────────────
+  function clearDone() {
+    api(URLS.clearDone, {}).then(data => {
+      if (data.ok) {
+        document.querySelectorAll("#todo-list .todo-item.done").forEach(el => el.remove());
+        updateSummary();
+      }
+    });
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  document.addEventListener("DOMContentLoaded", () => {
+    const list = document.getElementById("todo-list");
+    const initial = {{ todos_json }};
+    initial.forEach(item => list.appendChild(buildItem(item)));
+    updateSummary();
+
+    document.getElementById("new-task-input").addEventListener("keydown", e => {
+      if (e.key === "Enter") addTask();
+    });
+  });
+</script>
+{% endblock %}

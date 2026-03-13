@@ -932,8 +932,10 @@ def _staff_required(view_fn):
 
 @_staff_required
 def todo_view(request):
+    import json
     todos = list(TodoItem.objects.all())
-    return render(request, "repository/todo.html", {"todos": todos})
+    todos_json = json.dumps([{"id": t.pk, "text": t.text, "done": t.done} for t in todos])
+    return render(request, "repository/todo.html", {"todos": todos, "todos_json": todos_json})
 
 
 @_staff_required
