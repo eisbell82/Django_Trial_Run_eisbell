@@ -513,6 +513,7 @@ def samples_view(request):
     # Categories that actually have samples
     category_values = (
         Dataset.objects.filter(samples__isnull=False)
+        .order_by()
         .values_list("category", flat=True)
         .distinct()
     )
