@@ -470,6 +470,7 @@ def edit_dataset(request, slug):
 def samples_view(request):
     query = request.GET.get("q", "")
     active_category = request.GET.get("category", "")
+    selected_cols = [c for c in request.GET.get("cols", "").split(",") if c]
 
     samples_qs = Sample.objects.select_related("dataset").prefetch_related("values__column").all()
     if query:
@@ -481,10 +482,23 @@ def samples_view(request):
     if active_category:
         samples_qs = samples_qs.filter(dataset__category=active_category)
 
-    extra_columns = []
+    # Available columns for the selected category
+    available_columns = []
+    if active_category:
+        available_columns = list(
+            SampleColumn.objects.filter(dataset__category=active_category)
+            .values_list("name", flat=True)
+            .distinct()
+            .order_by("name")
+        )
+
+    # Only show columns that are both selected and available
+    show_columns = [c for c in selected_cols if c in available_columns]
+
     samples = list(samples_qs)
     for s in samples:
-        s.row = [s.value_for(col) for col in extra_columns]
+        val_map = {v.column.name: v.value for v in s.values.all()}
+        s.row = [val_map.get(col, "") for col in show_columns]
 
     # Categories that actually have samples
     category_values = (
@@ -500,7 +514,8 @@ def samples_view(request):
 
     return render(request, "repository/samples.html", {
         "samples": samples,
-        "extra_columns": extra_columns,
+        "show_columns": show_columns,
+        "available_columns": available_columns,
         "query": query,
         "active_category": active_category,
         "categories_with_samples": categories_with_samples,
