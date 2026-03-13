@@ -270,9 +270,7 @@
 
     <div class="info-block">
       <div class="info-block-title">// Metadata</div>
-      {% if dataset.specimen_count %}<div class="info-row"><span class="info-key">Specimens</span><span class="info-val">{{ dataset.specimen_count }}</span></div>{% endif %}
-      {% if dataset.species %}<div class="info-row"><span class="info-key">Species</span><span class="info-val">{{ dataset.species }}</span></div>{% endif %}
-      {% if dataset.anatomical_region %}<div class="info-row"><span class="info-key">Element</span><span class="info-val">{{ dataset.anatomical_region }}</span></div>{% endif %}
+      {% if dataset.experiment_date %}<div class="info-row"><span class="info-key">Experiment Date</span><span class="info-val">{{ dataset.experiment_date|date:"F j, Y" }}</span></div>{% endif %}
       {% if dataset.files.exists %}<div class="info-row"><span class="info-key">Files</span><span class="info-val">{{ dataset.files.count }}</span></div>{% endif %}
       {% if dataset.file_size_display %}<div class="info-row"><span class="info-key">Size</span><span class="info-val">{{ dataset.file_size_display }}</span></div>{% endif %}
       <div class="info-row"><span class="info-key">License</span><span class="info-val">{{ dataset.get_license_display_short }}</span></div>

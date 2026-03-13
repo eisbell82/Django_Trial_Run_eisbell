@@ -16,8 +16,7 @@ class DatasetUploadForm(forms.ModelForm):
         model = Dataset
         fields = [
             "title", "abstract", "category", "license",
-            "species", "specimen_count", "collection_date", "anatomical_region",
-            "lab", "institution",
+            "experiment_date", "lab", "institution",
         ]
         widgets = {
             "title": forms.TextInput(attrs={
@@ -30,21 +29,9 @@ class DatasetUploadForm(forms.ModelForm):
             }),
             "category": forms.Select(attrs={"class": "form-select"}),
             "license": forms.Select(attrs={"class": "form-select"}),
-            "species": forms.TextInput(attrs={
-                "class": "form-input",
-                "placeholder": "e.g. ERS_F",
-            }),
-            "specimen_count": forms.NumberInput(attrs={
-                "class": "form-input",
-                "placeholder": "84",
-            }),
-            "collection_date": forms.DateInput(attrs={
+            "experiment_date": forms.DateInput(attrs={
                 "class": "form-input",
                 "type": "date",
-            }),
-            "anatomical_region": forms.TextInput(attrs={
-                "class": "form-input",
-                "placeholder": "e.g. Forelimb",
             }),
             "lab": forms.TextInput(attrs={
                 "class": "form-input",
