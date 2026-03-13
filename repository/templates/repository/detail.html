@@ -276,17 +276,15 @@
                   <span id="col-unit-label-{{ col.id }}" style="font-size:10px;font-weight:normal;opacity:.6;cursor:pointer" onclick="showColUnit({{ col.id }})" title="Set unit">{% if col.unit %}[{{ col.unit }}]{% else %}<span style="opacity:.5">+ unit</span>{% endif %}</span>
                   <form method="post" action="{% url 'repository:set_column_unit' dataset.slug col.id %}" id="col-unit-form-{{ col.id }}" style="display:none;align-items:center;gap:2px">
                     {% csrf_token %}
+                    {% if col.unit_suggestions %}
                     <select id="col-unit-select-{{ col.id }}" onchange="onUnitSelectChange({{ col.id }})" style="font-size:10px;padding:2px 4px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
-                      <option value="">— unit —</option>
+                      <option value="">— suggestions —</option>
                       {% for u in col.unit_suggestions %}
-                      <option value="{{ u|escapejs }}"{% if col.unit == u %} selected{% endif %}>{{ u }}</option>
+                      <option value="{{ u|escapejs }}">{{ u }}</option>
                       {% endfor %}
-                      {% if col.unit and col.unit not in col.unit_suggestions %}
-                      <option value="{{ col.unit|escapejs }}" selected>{{ col.unit }}</option>
-                      {% endif %}
-                      <option value="__custom__">Custom…</option>
                     </select>
-                    <input type="text" name="unit" id="col-unit-input-{{ col.id }}" value="{{ col.unit }}" autocomplete="off" placeholder="unit" style="font-size:10px;width:70px;padding:2px 5px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text);display:none">
+                    {% endif %}
+                    <input type="text" name="unit" id="col-unit-input-{{ col.id }}" value="{{ col.unit }}" autocomplete="off" placeholder="e.g. °C, mm, kg" style="font-size:10px;width:80px;padding:2px 5px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
                     <button type="submit" class="col-del-btn" style="color:var(--accent)">✓</button>
                     <button type="button" class="col-del-btn" onclick="hideColUnit({{ col.id }})">✕</button>
                   </form>
@@ -306,7 +304,7 @@
             {% for s in samples %}
             <tr>
               <td class="sample-id-cell">{{ s.sample_id }}</td>
-              {% for col, val in s.row_with_cols %}<td>{{ val }}{% if val and col.unit %} <span style="font-size:10px;opacity:.5">{{ col.unit }}</span>{% endif %}</td>{% endfor %}
+              {% for col, val in s.row_with_cols %}<td>{{ val }}{% if val and col.unit %} <span style="font-size:10px;opacity:.65;font-style:italic">{{ col.unit }}</span>{% endif %}</td>{% endfor %}
               {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
               <td style="white-space:nowrap">
                 <a href="{% url 'repository:edit_sample' dataset.slug s.pk %}" class="col-del-btn" title="Edit sample" style="text-decoration:none;opacity:.6">✎</a>
@@ -416,7 +414,8 @@ function hideColRename(colId) {
 function showColUnit(colId) {
   document.getElementById('col-unit-label-' + colId).style.display = 'none';
   document.getElementById('col-unit-form-' + colId).style.display = 'inline-flex';
-  document.getElementById('col-unit-select-' + colId).focus();
+  var inp = document.getElementById('col-unit-input-' + colId);
+  if (inp) { inp.focus(); inp.select(); }
 }
 function hideColUnit(colId) {
   document.getElementById('col-unit-label-' + colId).style.display = '';
@@ -425,15 +424,7 @@ function hideColUnit(colId) {
 function onUnitSelectChange(colId) {
   var sel = document.getElementById('col-unit-select-' + colId);
   var inp = document.getElementById('col-unit-input-' + colId);
-  if (sel.value === '__custom__') {
-    sel.style.display = 'none';
-    inp.style.display = '';
-    inp.value = '';
-    inp.focus();
-  } else {
-    inp.value = sel.value;
-    if (sel.value !== '') sel.closest('form').submit();
-  }
+  if (sel.value !== '') { inp.value = sel.value; inp.focus(); }
 }
 
 function switchTab(el, tabId) {
