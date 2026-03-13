@@ -1,4 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -10,6 +12,12 @@ from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, Samp
 from .forms import DatasetUploadForm, DataFileForm, NotebookForm
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
+
+
+def _redirect_to_tab(slug, tab):
+    """Redirect to a dataset detail page and land on a specific tab."""
+    url = reverse("repository:detail", kwargs={"slug": slug}) + f"#{tab}"
+    return HttpResponseRedirect(url)
 
 
 def home(request):
@@ -314,7 +322,7 @@ def add_file(request, slug):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
         messages.error(request, "Permission denied.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-files")
     if request.method == "POST" and request.FILES.get("data_file"):
         import os
         uploaded = request.FILES["data_file"]
@@ -331,7 +339,7 @@ def add_file(request, slug):
                 file_size=uploaded.size,
             )
             messages.success(request, f"'{uploaded.name}' added.")
-    return redirect("repository:detail", slug=slug)
+    return _redirect_to_tab(slug, "tab-files")
 
 
 @login_required
@@ -339,10 +347,10 @@ def delete_file(request, slug, pk):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
         messages.error(request, "Permission denied.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-files")
     if request.method == "POST":
         DataFile.objects.filter(pk=pk, dataset=dataset).delete()
-    return redirect("repository:detail", slug=slug)
+    return _redirect_to_tab(slug, "tab-files")
 
 @login_required
 def add_notebook(request, slug):
@@ -387,13 +395,13 @@ def add_sample_column(request, slug):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
         messages.error(request, "Permission denied.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-samples")
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
         if name:
             order = dataset.sample_columns.count()
             SampleColumn.objects.get_or_create(dataset=dataset, name=name, defaults={"order": order})
-    return redirect("repository:detail", slug=slug)
+    return _redirect_to_tab(slug, "tab-samples")
 
 
 @login_required
@@ -401,10 +409,10 @@ def delete_sample_column(request, slug, col_id):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
         messages.error(request, "Permission denied.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-samples")
     if request.method == "POST":
         SampleColumn.objects.filter(id=col_id, dataset=dataset).delete()
-    return redirect("repository:detail", slug=slug)
+    return _redirect_to_tab(slug, "tab-samples")
 
 
 @login_required
@@ -412,7 +420,7 @@ def add_sample(request, slug):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
         messages.error(request, "Permission denied.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-samples")
     columns = list(dataset.sample_columns.all())
     if request.method == "POST":
         sample_id = request.POST.get("sample_id", "").strip()
@@ -424,7 +432,7 @@ def add_sample(request, slug):
                     sample=sample, column=col, defaults={"value": val}
                 )
             messages.success(request, f"Sample '{sample_id}' saved.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-samples")
     return render(request, "repository/add_sample.html", {"dataset": dataset, "columns": columns})
 
 
@@ -433,10 +441,10 @@ def delete_sample(request, slug, pk):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
         messages.error(request, "Permission denied.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-samples")
     if request.method == "POST":
         Sample.objects.filter(pk=pk, dataset=dataset).delete()
-    return redirect("repository:detail", slug=slug)
+    return _redirect_to_tab(slug, "tab-samples")
 
 
 @login_required
@@ -444,7 +452,7 @@ def edit_sample(request, slug, pk):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
         messages.error(request, "Permission denied.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-samples")
     sample = get_object_or_404(Sample, pk=pk, dataset=dataset)
     columns = list(dataset.sample_columns.all())
     if request.method == "POST":
@@ -458,7 +466,7 @@ def edit_sample(request, slug, pk):
                     sample=sample, column=col, defaults={"value": val}
                 )
             messages.success(request, f"Sample '{sample_id}' updated.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-samples")
     current_values = {v.column_id: v.value for v in sample.values.all()}
     column_values = [(col, current_values.get(col.id, "")) for col in columns]
     return render(request, "repository/edit_sample.html", {
@@ -473,12 +481,12 @@ def rename_sample_column(request, slug, col_id):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
         messages.error(request, "Permission denied.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-samples")
     if request.method == "POST":
         new_name = request.POST.get("name", "").strip()
         if new_name:
             SampleColumn.objects.filter(id=col_id, dataset=dataset).update(name=new_name)
-    return redirect("repository:detail", slug=slug)
+    return _redirect_to_tab(slug, "tab-samples")
 
 
 @login_required
@@ -487,7 +495,7 @@ def upload_csv_samples(request, slug):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
         messages.error(request, "Permission denied.")
-        return redirect("repository:detail", slug=slug)
+        return _redirect_to_tab(slug, "tab-samples")
     if request.method == "POST" and request.FILES.get("csv_file"):
         try:
             text = request.FILES["csv_file"].read().decode("utf-8-sig")
@@ -519,7 +527,7 @@ def upload_csv_samples(request, slug):
             messages.success(request, f"Imported {count} sample(s) from CSV.")
         except Exception as e:
             messages.error(request, f"Error reading CSV: {e}")
-    return redirect("repository:detail", slug=slug)
+    return _redirect_to_tab(slug, "tab-samples")
 
 
 @login_required

@@ -326,11 +326,21 @@ function hideColRename(colId) {
 
 function switchTab(el, tabId) {
   document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
-  if (el.classList.contains('dtab')) el.classList.add('active');
+  if (el && el.classList && el.classList.contains('dtab')) el.classList.add('active');
   document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
   const target = document.getElementById(tabId);
   if (target) target.style.display = 'block';
+  history.replaceState(null, '', '#' + tabId);
 }
+
+// On load, restore tab from URL hash (set by server redirects or manual navigation)
+(function() {
+  var hash = window.location.hash.replace('#', '');
+  if (hash && document.getElementById(hash)) {
+    var btn = document.querySelector('.dtab[onclick*="\'' + hash + '\'"]');
+    switchTab(btn || null, hash);
+  }
+})();
 
 var _thebeLoaded = false;
 var _thebeBootstrapped = false;
