@@ -204,6 +204,9 @@
       }
       input.disabled = false;
       input.focus();
+    }).catch(() => {
+      input.disabled = false;
+      input.focus();
     });
   }
 
@@ -220,7 +223,7 @@
   // ── Init ─────────────────────────────────────────────────────────────────────
   document.addEventListener("DOMContentLoaded", () => {
     const list = document.getElementById("todo-list");
-    const initial = {{ todos_json }};
+    const initial = {{ todos_json|safe }};
     initial.forEach(item => list.appendChild(buildItem(item)));
     updateSummary();
 
