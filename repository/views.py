@@ -939,8 +939,9 @@ def about_view(request):
                 messages.success(request, "Photo uploaded.")
             else:
                 messages.error(request, "No image selected.")
-        return redirect("repository:about")
-    return render(request, "repository/about.html", {"page": page, "photos": page.photos.all()})
+        return redirect(reverse("repository:about") + "?edit=1")
+    edit_open = request.GET.get("edit") == "1"
+    return render(request, "repository/about.html", {"page": page, "photos": page.photos.all(), "edit_open": edit_open})
 
 
 def about_photo_delete(request, pk):
@@ -952,7 +953,7 @@ def about_photo_delete(request, pk):
         photo.image.delete(save=False)
         photo.delete()
         messages.success(request, "Photo deleted.")
-    return redirect("repository:about")
+    return redirect(reverse("repository:about") + "?edit=1")
 
 
 def _staff_required(view_fn):
