@@ -1,0 +1,50 @@
+name: Diagnose Server
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run diagnostics via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            echo "===== GUNICORN SERVICE STATUS ====="
+            sudo systemctl status specimenbase --no-pager || true
+
+            echo ""
+            echo "===== GUNICORN LOGS (last 80 lines) ====="
+            sudo journalctl -u specimenbase -n 80 --no-pager || true
+
+            echo ""
+            echo "===== NGINX STATUS ====="
+            sudo systemctl status nginx --no-pager || true
+
+            echo ""
+            echo "===== NGINX CONFIG TEST ====="
+            sudo nginx -t 2>&1 || true
+
+            echo ""
+            echo "===== NGINX ERROR LOG (last 30 lines) ====="
+            sudo tail -30 /var/log/nginx/error.log || true
+
+            echo ""
+            echo "===== SOCKET ====="
+            ls -la /run/gunicorn/ 2>/dev/null || echo "no /run/gunicorn directory"
+
+            echo ""
+            echo "===== APP DIR ====="
+            ls -la /srv/specimenbase/ 2>/dev/null || echo "/srv/specimenbase missing"
+
+            echo ""
+            echo "===== DISK SPACE ====="
+            df -h /srv /tmp /
+
+            echo ""
+            echo "===== MEMORY ====="
+            free -h
