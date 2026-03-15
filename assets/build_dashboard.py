@@ -178,34 +178,38 @@ def make_overview_chunk(chunk_groups, part_num, total_parts):
     all_colors = plt.cm.tab20(np.linspace(0, 1, len(groups)))
     colors = [all_colors[groups.index(g)] for g in chunk_groups]
 
-    fig, ax1 = plt.subplots(figsize=(max(14, n * 1.4), 9))
-    plt.style.use("fivethirtyeight")
-    ax2 = ax1.twinx()
-    w = 0.3
+    with plt.style.context("seaborn-v0_8-whitegrid"):
+        fig, ax1 = plt.subplots(figsize=(max(14, n * 1.4), 9))
+        ax2 = ax1.twinx()
+        w = 0.3
 
-    for i, g in enumerate(chunk_groups):
-        c = colors[i]
-        if ys_col:
-            vals = df_strength.loc[df_strength["Specimen Group"] == g, ys_col].dropna()
-            if len(vals):
-                ax1.errorbar(i - w/2, vals.mean(), yerr=vals.std() if len(vals)>1 else 0,
-                             fmt="o", color=c, capsize=4, ms=7, label=g)
-        if moe_col:
-            vals = df_moe.loc[df_moe["Specimen Group"] == g, moe_col].dropna()
-            if len(vals):
-                ax2.errorbar(i + w/2, vals.mean(), yerr=vals.std() if len(vals)>1 else 0,
-                             fmt="s", color=c, capsize=4, ms=7, alpha=0.75)
+        for i, g in enumerate(chunk_groups):
+            c = colors[i]
+            if ys_col:
+                vals = df_strength.loc[df_strength["Specimen Group"] == g, ys_col].dropna()
+                if len(vals):
+                    ax1.errorbar(i - w/2, vals.mean(), yerr=vals.std() if len(vals)>1 else 0,
+                                 fmt="o", color=c, capsize=4, ms=7, label=g)
+            if moe_col:
+                vals = df_moe.loc[df_moe["Specimen Group"] == g, moe_col].dropna()
+                if len(vals):
+                    ax2.errorbar(i + w/2, vals.mean(), yerr=vals.std() if len(vals)>1 else 0,
+                                 fmt="s", color=c, capsize=4, ms=7, alpha=0.75)
 
-    ax1.set_xticks(np.arange(n))
-    ax1.set_xticklabels(chunk_groups, rotation=35, ha="right", fontsize=10)
-    ax1.set_ylabel("Yield Stress (MPa)", fontsize=10)
-    ax2.set_ylabel("Elastic Modulus (MPa)", fontsize=10)
-    suffix = f" (part {part_num}/{total_parts})" if total_parts > 1 else ""
-    ax1.set_title(f"Strength (●) & MOE (■) by Specimen Group — mean ± std{suffix}", fontsize=11)
-    fig.tight_layout()
-    b64 = fig_to_b64(fig)
-    plt.close(fig)
-    return b64
+        ax1.set_xticks(np.arange(n))
+        ax1.set_xticklabels(chunk_groups, rotation=35, ha="right", fontsize=10)
+        ax1.set_ylabel("Yield Stress (MPa)", fontsize=10)
+        ax2.set_ylabel("Elastic Modulus (MPa)", fontsize=10)
+        suffix = f" (part {part_num}/{total_parts})" if total_parts > 1 else ""
+        ax1.set_title(f"Strength (●) & MOE (■) by Specimen Group — mean ± std{suffix}", fontsize=11)
+        # clean white background, no grey box
+        fig.patch.set_facecolor("white")
+        ax1.set_facecolor("white")
+        ax2.set_facecolor("white")
+        fig.tight_layout()
+        b64 = fig_to_b64(fig)
+        plt.close(fig)
+        return b64
 
 try:
     chunks = [groups[i:i+CHUNK_SIZE] for i in range(0, len(groups), CHUNK_SIZE)]
