@@ -163,21 +163,27 @@ for g in groups:
         "moe_mean": f"{me.mean():.2f}" if len(me) else "—",
     }
 
-# ── 3. Bulk overview figure ───────────────────────────────────────────────────
-print("\n📈 Generating bulk overview figure…")
-try:
-    n_groups = len(groups)
-    colors = plt.cm.tab20(np.linspace(0, 1, n_groups)) if n_groups > 10 else plt.cm.tab10(np.linspace(0, 1, n_groups))
-    fig, ax1 = plt.subplots(figsize=(max(14, n_groups * 1.4), 9))
+# ── 3. Bulk overview figures (chunked) ───────────────────────────────────────
+CHUNK_SIZE = 12   # groups per plot — adjust if you want more/fewer per panel
+
+print("\n📈 Generating bulk overview figures…")
+bulk_b64_list = []   # list of (title, b64) tuples
+
+ys_col  = next((c for c in strength_cols if "Yield Stress" in c and "(y)" in c), None)
+moe_col = next((c for c in moe_cols if "Elastic Modulus" in c), None)
+
+def make_overview_chunk(chunk_groups, part_num, total_parts):
+    n = len(chunk_groups)
+    # one consistent colour palette across all chunks
+    all_colors = plt.cm.tab20(np.linspace(0, 1, len(groups)))
+    colors = [all_colors[groups.index(g)] for g in chunk_groups]
+
+    fig, ax1 = plt.subplots(figsize=(max(14, n * 1.4), 9))
     plt.style.use("fivethirtyeight")
     ax2 = ax1.twinx()
+    w = 0.3
 
-    ys_col  = next((c for c in strength_cols if "Yield Stress" in c and "(y)" in c), None)
-    moe_col = next((c for c in moe_cols if "Elastic Modulus" in c), None)
-    xs = np.arange(n_groups)
-    w  = 0.3
-
-    for i, g in enumerate(groups):
+    for i, g in enumerate(chunk_groups):
         c = colors[i]
         if ys_col:
             vals = df_strength.loc[df_strength["Specimen Group"] == g, ys_col].dropna()
@@ -190,18 +196,25 @@ try:
                 ax2.errorbar(i + w/2, vals.mean(), yerr=vals.std() if len(vals)>1 else 0,
                              fmt="s", color=c, capsize=4, ms=7, alpha=0.75)
 
-    ax1.set_xticks(xs)
-    ax1.set_xticklabels(groups, rotation=35, ha="right", fontsize=max(6, 10 - n_groups//5))
+    ax1.set_xticks(np.arange(n))
+    ax1.set_xticklabels(chunk_groups, rotation=35, ha="right", fontsize=10)
     ax1.set_ylabel("Yield Stress (MPa)", fontsize=10)
     ax2.set_ylabel("Elastic Modulus (MPa)", fontsize=10)
-    ax1.set_title("Strength (●) & MOE (■) by Specimen Group — mean ± std", fontsize=11)
+    suffix = f" (part {part_num}/{total_parts})" if total_parts > 1 else ""
+    ax1.set_title(f"Strength (●) & MOE (■) by Specimen Group — mean ± std{suffix}", fontsize=11)
     fig.tight_layout()
-    bulk_b64 = fig_to_b64(fig)
+    b64 = fig_to_b64(fig)
     plt.close(fig)
-    print("   ✅ bulk overview done")
+    return b64
+
+try:
+    chunks = [groups[i:i+CHUNK_SIZE] for i in range(0, len(groups), CHUNK_SIZE)]
+    for idx, chunk in enumerate(chunks, 1):
+        b64 = make_overview_chunk(chunk, idx, len(chunks))
+        bulk_b64_list.append(b64)
+    print(f"   ✅ {len(chunks)} overview plot(s) done")
 except Exception as e:
     print(f"   ⚠️  bulk overview failed: {e}")
-    bulk_b64 = None
 
 # ── 4. Generate all SVGs ──────────────────────────────────────────────────────
 tmp_strength = os.path.join(OUT_DIR, "_tmp_group_strength")
@@ -320,10 +333,14 @@ for g in groups:
 print("\n🌐 Building index.html…")
 
 bulk_fig = ""
-if bulk_b64:
+if bulk_b64_list:
+    imgs = "".join(
+        f'<img src="data:image/svg+xml;base64,{b64}" '
+        f'style="width:100%;height:auto;display:block;margin-bottom:1.5rem">'
+        for b64 in bulk_b64_list
+    )
     bulk_fig = (f'<section><h2>Bulk Overview — Strength &amp; MOE by Group</h2>'
-                f'<img src="data:image/svg+xml;base64,{bulk_b64}" '
-                f'style="width:100%;height:auto;display:block">'
+                f'{imgs}'
                 f'</section>')
 
 table_section = ""
