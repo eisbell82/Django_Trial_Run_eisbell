@@ -149,7 +149,12 @@
           setBar(100, 'Done');
           var dest = form.dataset.successUrl || xhr.responseURL || window.location.href;
           xhr.abort(); // stop downloading body we don't need
-          window.location.href = dest;
+          // window.location.href = sameUrlWithSameHash is a no-op in all browsers
+          // (hash-only "navigation" never reloads). Force a real GET so newly
+          // uploaded content appears, then let the page's hash-restoration code
+          // open the correct tab.
+          history.replaceState(null, '', dest);
+          window.location.reload();
         }
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 2 && xhr.status >= 200 && xhr.status < 400) {
