@@ -108,8 +108,9 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"          # uploaded files (served by nginx in production)
 
 # ── File uploads ──────────────────────────────────────────────────────────────
-DATA_UPLOAD_MAX_MEMORY_SIZE = 150 * 1024 * 1024  # 150 MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 150 * 1024 * 1024
+# Nginx is the outer gate (500 MB); per-user limits are enforced in views.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024
 # Large files are streamed to disk automatically by Django
 
 # ── Security headers (production) ────────────────────────────────────────────

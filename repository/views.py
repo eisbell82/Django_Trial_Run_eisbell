@@ -22,6 +22,13 @@ from .forms import DatasetUploadForm, DataFileForm, NotebookForm
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
 
+ADMIN_UPLOAD_LIMIT = 500 * 1024 * 1024   # 500 MB
+USER_UPLOAD_LIMIT  = 150 * 1024 * 1024   # 150 MB
+
+
+def _upload_limit(user):
+    return ADMIN_UPLOAD_LIMIT if (user and user.is_staff) else USER_UPLOAD_LIMIT
+
 
 def _redirect_to_tab(slug, tab):
     """Redirect to a dataset detail page and land on a specific tab."""
@@ -181,9 +188,9 @@ def upload_dataset(request):
                         "data_file_form": data_file_form,
                         "notebook_form": notebook_form,
                     })
-                MAX_UPLOAD_BYTES = 150 * 1024 * 1024  # 150 MB
-                if uploaded.size > MAX_UPLOAD_BYTES:
-                    messages.error(request, "File exceeds the 150 MB maximum size limit.")
+                if uploaded.size > _upload_limit(request.user):
+                    limit_mb = _upload_limit(request.user) // (1024 * 1024)
+                    messages.error(request, f"File exceeds the {limit_mb} MB maximum size limit.")
                     dataset.delete()
                     return render(request, "repository/upload.html", {
                         "form": form,
@@ -381,8 +388,9 @@ def add_file(request, slug):
         ext = os.path.splitext(uploaded.name)[1].lower()
         if ext not in ALLOWED_UPLOAD_EXTENSIONS:
             messages.error(request, f"File type '{ext}' is not allowed.")
-        elif uploaded.size > 150 * 1024 * 1024:
-            messages.error(request, "File exceeds the 150 MB maximum size limit.")
+        elif uploaded.size > _upload_limit(request.user):
+            limit_mb = _upload_limit(request.user) // (1024 * 1024)
+            messages.error(request, f"File exceeds the {limit_mb} MB maximum size limit.")
         else:
             DataFile.objects.create(
                 dataset=dataset,

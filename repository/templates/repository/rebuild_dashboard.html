@@ -25,7 +25,7 @@
   </div>
   {% endif %}
 
-  <form method="post" enctype="multipart/form-data" id="rebuild-form">
+  <form method="post" enctype="multipart/form-data" id="rebuild-form" data-upload-form>
     {% csrf_token %}
 
     <div class="form-section">
@@ -56,12 +56,6 @@ document.getElementById('dz-input').addEventListener('change', function() {
   document.getElementById('dz-text').textContent = f.name;
   document.getElementById('dz-hint').textContent = mb + ' MB — ready to upload';
   document.getElementById('dz').style.borderColor = 'var(--accent)';
-});
-
-document.getElementById('rebuild-form').addEventListener('submit', function() {
-  var btn = document.getElementById('submit-btn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Building… this may take a minute';
 });
 </script>
 {% endblock %}

@@ -9,7 +9,7 @@
   <div class="upload-title">Upload Dataset</div>
   <div class="upload-sub">Datasets must include a metadata description and at least one data file. Notebooks are optional but encouraged.</div>
 
-  <form method="post" enctype="multipart/form-data">
+  <form method="post" enctype="multipart/form-data" data-upload-form>
     {% csrf_token %}
 
     <div class="form-section">
