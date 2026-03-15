@@ -94,7 +94,9 @@
       </div>
       {% endif %}
       {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-      <form method="post" action="{% url 'repository:add_file' dataset.slug %}" enctype="multipart/form-data" data-upload-form style="margin-top:1.25rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <form method="post" action="{% url 'repository:add_file' dataset.slug %}" enctype="multipart/form-data"
+            data-upload-form data-success-url="{% url 'repository:detail' dataset.slug %}#tab-files"
+            style="margin-top:1.25rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         {% csrf_token %}
         <input type="file" name="data_file" class="sample-col-input" style="width:auto" required>
         <button type="submit" class="btn-outline" style="font-size:11px;padding:5px 12px">+ Attach file</button>

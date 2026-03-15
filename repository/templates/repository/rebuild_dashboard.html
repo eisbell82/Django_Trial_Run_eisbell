@@ -25,7 +25,8 @@
   </div>
   {% endif %}
 
-  <form method="post" enctype="multipart/form-data" id="rebuild-form" data-upload-form>
+  <form method="post" enctype="multipart/form-data" id="rebuild-form" data-upload-form
+        data-success-url="{% url 'repository:detail' dataset.slug %}#tab-nb-{{ notebook.pk }}">
     {% csrf_token %}
 
     <div class="form-section">

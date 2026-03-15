@@ -49,9 +49,22 @@
 {% block content %}{% endblock %}
 
 <!-- ── Upload progress overlay ─────────────────────────────────────────────── -->
+<style>
+@keyframes upload-sweep {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.upload-processing {
+  background: linear-gradient(90deg,
+    var(--accent) 25%, color-mix(in srgb, var(--accent) 50%, transparent) 50%, var(--accent) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: upload-sweep 1.4s linear infinite !important;
+}
+</style>
 <div id="upload-progress-overlay" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;
      background:var(--surface);border-top:1px solid var(--border);padding:10px 20px;
-     display:none;align-items:center;gap:14px;box-shadow:0 -2px 12px rgba(0,0,0,.15)">
+     align-items:center;gap:14px;box-shadow:0 -2px 12px rgba(0,0,0,.15)">
   <span style="font-size:12px;color:var(--text-muted);white-space:nowrap" id="upload-progress-label">Uploading…</span>
   <div style="flex:1;background:var(--border);border-radius:4px;height:8px;overflow:hidden">
     <div id="upload-progress-fill" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width .15s linear"></div>
@@ -61,22 +74,35 @@
 
 <script>
 (function () {
-  function showBar() {
-    var el = document.getElementById('upload-progress-overlay');
-    el.style.display = 'flex';
+  var overlay = null, fill = null, label = null, pct = null;
+  function init() {
+    overlay = document.getElementById('upload-progress-overlay');
+    fill    = document.getElementById('upload-progress-fill');
+    label   = document.getElementById('upload-progress-label');
+    pct     = document.getElementById('upload-progress-pct');
   }
-  function setBar(pct, label) {
-    document.getElementById('upload-progress-fill').style.width = pct + '%';
-    document.getElementById('upload-progress-pct').textContent = pct + '%';
-    if (label) document.getElementById('upload-progress-label').textContent = label;
+  function showBar() { overlay.style.display = 'flex'; }
+  function setBar(p, lbl) {
+    fill.style.width = p + '%';
+    pct.textContent  = p + '%';
+    if (lbl) label.textContent = lbl;
+  }
+  function setProcessing() {
+    fill.classList.add('upload-processing');
+    fill.style.width = '100%';
+    pct.textContent  = '';
+    label.textContent = 'Processing on server…';
   }
   function errorBar(msg) {
-    document.getElementById('upload-progress-fill').style.background = '#c0392b';
-    document.getElementById('upload-progress-label').textContent = msg || 'Upload failed';
-    document.getElementById('upload-progress-pct').textContent = '';
+    fill.classList.remove('upload-processing');
+    fill.style.background = '#c0392b';
+    fill.style.width = '100%';
+    label.textContent = msg || 'Upload failed';
+    pct.textContent   = '';
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    init();
     document.querySelectorAll('form[data-upload-form]').forEach(function (form) {
       form.addEventListener('submit', function (e) {
         var hasFile = Array.from(form.querySelectorAll('input[type="file"]'))
@@ -86,10 +112,11 @@
         e.preventDefault();
 
         var submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+        var origText;
         if (submitBtn) {
           submitBtn.disabled = true;
-          var origText = submitBtn.textContent;
-          submitBtn.textContent = submitBtn.dataset.buildingMsg || 'Uploading…';
+          origText = submitBtn.textContent;
+          submitBtn.textContent = 'Uploading…';
         }
 
         showBar();
@@ -97,17 +124,27 @@
 
         var xhr = new XMLHttpRequest();
 
-        xhr.upload.addEventListener('progress', function (e) {
-          if (e.lengthComputable) {
-            var pct = Math.round(e.loaded / e.total * 100);
-            // Cap display at 99% until server responds
-            setBar(Math.min(pct, 99), pct < 100 ? 'Uploading…' : 'Processing…');
+        xhr.upload.addEventListener('progress', function (ev) {
+          if (ev.lengthComputable) {
+            var p = Math.round(ev.loaded / ev.total * 100);
+            if (p >= 100) {
+              setProcessing(); // bytes sent; waiting for server
+            } else {
+              setBar(p, 'Uploading…');
+            }
           }
         });
 
+        // Also switch to processing state once upload phase ends
+        xhr.upload.addEventListener('load', function () { setProcessing(); });
+
         xhr.addEventListener('load', function () {
+          fill.classList.remove('upload-processing');
           setBar(100, 'Done');
-          window.location.href = xhr.responseURL || window.location.href;
+          // Use explicit success URL when provided (preserves hash fragment that
+          // HTTP redirects strip, and avoids a second GET that consumes messages).
+          var dest = form.dataset.successUrl || xhr.responseURL || window.location.href;
+          window.location.href = dest;
         });
 
         xhr.addEventListener('error', function () {
