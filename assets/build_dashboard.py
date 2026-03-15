@@ -168,7 +168,7 @@ print("\n📈 Generating bulk overview figure…")
 try:
     n_groups = len(groups)
     colors = plt.cm.tab20(np.linspace(0, 1, n_groups)) if n_groups > 10 else plt.cm.tab10(np.linspace(0, 1, n_groups))
-    fig, ax1 = plt.subplots(figsize=(max(8, n_groups * 1.2), 5))
+    fig, ax1 = plt.subplots(figsize=(max(14, n_groups * 1.4), 9))
     plt.style.use("fivethirtyeight")
     ax2 = ax1.twinx()
 
@@ -323,7 +323,7 @@ bulk_fig = ""
 if bulk_b64:
     bulk_fig = (f'<section><h2>Bulk Overview — Strength &amp; MOE by Group</h2>'
                 f'<img src="data:image/svg+xml;base64,{bulk_b64}" '
-                f'style="width:100%;max-width:1100px;height:auto;display:block;margin:0 auto">'
+                f'style="width:100%;height:auto;display:block">'
                 f'</section>')
 
 table_section = ""
