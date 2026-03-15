@@ -12,7 +12,7 @@ bind = os.environ.get("GUNICORN_BIND", "unix:/run/gunicorn/specimenbase.sock")
 workers = int(os.environ.get("GUNICORN_WORKERS", multiprocessing.cpu_count() * 2 + 1))
 worker_class = "sync"
 worker_connections = 1000
-timeout = 120
+timeout = 600   # must be >= nginx proxy_read_timeout / proxy_send_timeout
 keepalive = 5
 
 # ── Logging ───────────────────────────────────────────────────────────────────
