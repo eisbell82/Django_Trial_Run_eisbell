@@ -32,10 +32,11 @@
 
     <div class="form-section">
       <div class="form-section-title">// Dashboard zip</div>
-      <div class="dropzone">
+      <div class="dropzone" id="dz">
         <div class="dz-icon">⬡</div>
-        <div class="dz-text">Drop .zip file here or click to browse</div>
-        <input type="file" name="dashboard_zip" accept=".zip" required>
+        <div class="dz-text" id="dz-text">Drop .zip file here or click to browse</div>
+        <div class="dz-hint" id="dz-hint"></div>
+        <input type="file" name="dashboard_zip" accept=".zip" required id="dz-input">
       </div>
       <p style="color:var(--text-dim);font-size:11px;margin-top:.5rem">
         The zip should contain an <code>index.html</code> (e.g. inside a <code>docs/</code> folder). All relative asset paths (JS, CSS) are preserved. Max 150 MB.
@@ -48,4 +49,14 @@
     </div>
   </form>
 </div>
+<script>
+document.getElementById('dz-input').addEventListener('change', function() {
+  var f = this.files[0];
+  if (!f) return;
+  var mb = (f.size / 1024 / 1024).toFixed(1);
+  document.getElementById('dz-text').textContent = f.name;
+  document.getElementById('dz-hint').textContent = mb + ' MB — ready to upload';
+  document.getElementById('dz').style.borderColor = 'var(--accent)';
+});
+</script>
 {% endblock %}
