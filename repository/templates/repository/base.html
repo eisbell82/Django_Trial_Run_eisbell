@@ -138,21 +138,34 @@
         // Also switch to processing state once upload phase ends
         xhr.upload.addEventListener('load', function () { setProcessing(); });
 
-        xhr.addEventListener('load', function () {
+        // Navigate as soon as server response headers arrive instead of waiting
+        // for XHR to silently download the redirect-target body before firing
+        // 'load' — this is what caused the bar to appear stuck at 100%.
+        var navigated = false;
+        function finishUpload() {
+          if (navigated) return;
+          navigated = true;
           fill.classList.remove('upload-processing');
           setBar(100, 'Done');
-          // Use explicit success URL when provided (preserves hash fragment that
-          // HTTP redirects strip, and avoids a second GET that consumes messages).
           var dest = form.dataset.successUrl || xhr.responseURL || window.location.href;
+          xhr.abort(); // stop downloading body we don't need
           window.location.href = dest;
-        });
+        }
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 2 && xhr.status >= 200 && xhr.status < 400) {
+            finishUpload();
+          }
+        };
+        xhr.addEventListener('load', finishUpload); // fallback
 
         xhr.addEventListener('error', function () {
+          if (navigated) return;
           errorBar('Upload failed — please try again');
           if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = origText; }
         });
 
         xhr.addEventListener('timeout', function () {
+          if (navigated) return;
           errorBar('Request timed out — please try again');
           if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = origText; }
         });
