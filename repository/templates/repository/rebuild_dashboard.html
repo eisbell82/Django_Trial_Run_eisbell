@@ -1,0 +1,67 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}Rebuild Dashboard — {{ dataset.title }} — SpecimenBase{% endblock %}
+
+{% block content %}
+<div class="upload-wrap">
+  <div style="margin-bottom:1rem">
+    <a href="{% url 'repository:detail' dataset.slug %}" style="color:var(--text-dim);font-size:12px">← Back to {{ dataset.title|truncatechars:50 }}</a>
+  </div>
+  <div class="upload-title">Rebuild Dashboard — {{ notebook.tab_label }}</div>
+  <div class="upload-sub">
+    Upload a zip of your raw data. The server will run <code>build_dashboard.py</code> on it and
+    replace the current dashboard automatically.<br><br>
+    <strong>Zip structure:</strong> your zip should contain the <code>input_data/</code> folder
+    (or be the contents of it). The <code>custom_python_functions/</code> folder must already be
+    present on the server alongside <code>build_dashboard.py</code>.
+  </div>
+
+  {% if messages %}
+  <div style="margin-bottom:1rem">
+    {% for msg in messages %}
+    <div style="color:var(--accent);font-size:13px;padding:8px 12px;border:1px solid var(--accent);border-radius:4px;margin-bottom:6px;white-space:pre-wrap">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" id="rebuild-form">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="form-section-title">// Data zip</div>
+      <div class="dropzone" id="dz">
+        <div class="dz-icon">⬡</div>
+        <div class="dz-text" id="dz-text">Drop .zip file here or click to browse</div>
+        <div class="dz-hint" id="dz-hint"></div>
+        <input type="file" name="data_zip" accept=".zip" required id="dz-input">
+      </div>
+      <p style="color:var(--text-dim);font-size:11px;margin-top:.5rem">
+        Max 150 MB. Build may take up to a few minutes for large datasets.
+      </p>
+    </div>
+
+    <div class="submit-bar">
+      <a href="{% url 'repository:detail' dataset.slug %}" class="btn-outline">Cancel</a>
+      <button type="submit" class="btn-accent" id="submit-btn">↺ Rebuild dashboard →</button>
+    </div>
+  </form>
+</div>
+
+<script>
+document.getElementById('dz-input').addEventListener('change', function() {
+  var f = this.files[0];
+  if (!f) return;
+  var mb = (f.size / 1024 / 1024).toFixed(1);
+  document.getElementById('dz-text').textContent = f.name;
+  document.getElementById('dz-hint').textContent = mb + ' MB — ready to upload';
+  document.getElementById('dz').style.borderColor = 'var(--accent)';
+});
+
+document.getElementById('rebuild-form').addEventListener('submit', function() {
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Building… this may take a minute';
+});
+</script>
+{% endblock %}

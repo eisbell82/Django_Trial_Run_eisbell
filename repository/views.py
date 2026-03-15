@@ -1,6 +1,9 @@
 import csv
 import os
 import shutil
+import subprocess
+import sys
+import tempfile
 import zipfile
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -411,6 +414,105 @@ def _find_entry_html(extract_dir):
         return None
     docs_candidates = [p for p in candidates if os.sep + "docs" + os.sep in p]
     return docs_candidates[0] if docs_candidates else candidates[0]
+
+
+def _unwrap_single_dir(extract_dir):
+    """If the zip contained one top-level folder, return that folder path; else extract_dir."""
+    try:
+        entries = [e for e in os.listdir(extract_dir) if not e.startswith("__MACOSX")]
+        if len(entries) == 1:
+            candidate = os.path.join(extract_dir, entries[0])
+            if os.path.isdir(candidate):
+                return candidate
+    except OSError:
+        pass
+    return extract_dir
+
+
+@login_required
+def rebuild_dashboard(request, slug, pk):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    nb = get_object_or_404(Notebook, pk=pk, dataset=dataset)
+
+    if request.method == "POST":
+        data_zip = request.FILES.get("data_zip")
+        if not data_zip:
+            messages.error(request, "Please select a data zip file.")
+            return render(request, "repository/rebuild_dashboard.html",
+                          {"dataset": dataset, "notebook": nb})
+        if not data_zip.name.lower().endswith(".zip"):
+            messages.error(request, "File must be a .zip archive.")
+            return render(request, "repository/rebuild_dashboard.html",
+                          {"dataset": dataset, "notebook": nb})
+
+        # Write upload to a temp file so we can open it as a ZipFile
+        with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
+            for chunk in data_zip.chunks():
+                tmp.write(chunk)
+            tmp_zip_path = tmp.name
+
+        try:
+            # Extract data zip → input staging area
+            input_extract = os.path.join(
+                settings.MEDIA_ROOT, "dashboard_input", str(nb.pk)
+            )
+            if os.path.isdir(input_extract):
+                shutil.rmtree(input_extract)
+            os.makedirs(input_extract, exist_ok=True)
+
+            try:
+                with zipfile.ZipFile(tmp_zip_path, "r") as zf:
+                    zf.extractall(input_extract)
+            except zipfile.BadZipFile:
+                messages.error(request, "The file is not a valid zip archive.")
+                return render(request, "repository/rebuild_dashboard.html",
+                              {"dataset": dataset, "notebook": nb})
+
+            input_dir = _unwrap_single_dir(input_extract)
+
+            # Output directory (same place as existing dashboard extract)
+            output_dir = os.path.join(
+                settings.MEDIA_ROOT, "datasets", "dashboards", str(nb.pk)
+            )
+            if os.path.isdir(output_dir):
+                shutil.rmtree(output_dir)
+            os.makedirs(output_dir, exist_ok=True)
+
+            # assets/ dir is where build_dashboard.py lives
+            assets_dir = os.path.join(settings.BASE_DIR, "assets")
+            script = os.path.join(assets_dir, "build_dashboard.py")
+
+            result = subprocess.run(
+                [sys.executable, script,
+                 "--repo", assets_dir,
+                 "--data", input_dir,
+                 "--out",  output_dir],
+                capture_output=True, text=True, timeout=300,
+            )
+
+            if result.returncode != 0:
+                err_snippet = (result.stderr or result.stdout or "")[-3000:]
+                messages.error(request, f"Build failed:\n{err_snippet}")
+                return render(request, "repository/rebuild_dashboard.html",
+                              {"dataset": dataset, "notebook": nb})
+
+            entry = _find_entry_html(output_dir)
+            if entry:
+                rel = os.path.relpath(entry, settings.MEDIA_ROOT).replace(os.sep, "/")
+                nb.entry_url = settings.MEDIA_URL + rel
+            nb.extracted_path = os.path.relpath(output_dir, settings.MEDIA_ROOT)
+            nb.save(update_fields=["entry_url", "extracted_path"])
+
+            messages.success(request, "Dashboard rebuilt from uploaded data.")
+            return _redirect_to_tab(slug, f"tab-nb-{nb.pk}")
+        finally:
+            os.unlink(tmp_zip_path)
+
+    return render(request, "repository/rebuild_dashboard.html",
+                  {"dataset": dataset, "notebook": nb})
 
 
 @login_required

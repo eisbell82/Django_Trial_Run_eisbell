@@ -127,6 +127,7 @@
           <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <a href="{{ nb.entry_url }}" target="_blank" class="btn-outline" style="padding:4px 12px;font-size:11px">Open full screen ↗</a>
             {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+            <a href="{% url 'repository:rebuild_dashboard' dataset.slug nb.pk %}" class="btn-outline" style="padding:4px 12px;font-size:11px" title="Upload new data and regenerate this dashboard">↺ Rebuild from data</a>
             <form method="post" action="{% url 'repository:delete_notebook' dataset.slug nb.pk %}" style="display:inline">
               {% csrf_token %}
               <button type="submit" class="col-del-btn" title="Remove tab" onclick="return confirm('Remove this tab?')">×</button>
