@@ -33,6 +33,11 @@ echo "==> Running migrations..."
 echo "==> Collecting static files..."
 "$PYTHON" "$APP_DIR/manage.py" collectstatic --no-input --clear
 
+echo "==> Installing systemd service unit..."
+sudo cp "$APP_DIR/deploy/specimenbase.service" /etc/systemd/system/specimenbase.service
+sudo systemctl daemon-reload
+sudo systemctl enable specimenbase
+
 echo "==> Restarting gunicorn..."
 sudo systemctl restart specimenbase
 
