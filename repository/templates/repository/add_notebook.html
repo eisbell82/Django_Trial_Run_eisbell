@@ -1,15 +1,23 @@
 {% extends "repository/base.html" %}
 {% load static %}
 
-{% block title %}Add Notebook Tab — {{ dataset.title }} — SpecimenBase{% endblock %}
+{% block title %}Add Tab — {{ dataset.title }} — SpecimenBase{% endblock %}
 
 {% block content %}
 <div class="upload-wrap">
   <div style="margin-bottom:1rem">
     <a href="{% url 'repository:detail' dataset.slug %}" style="color:var(--text-dim);font-size:12px">← Back to {{ dataset.title|truncatechars:50 }}</a>
   </div>
-  <div class="upload-title">Add Notebook Tab</div>
-  <div class="upload-sub">Attach a notebook file, paste Python code, or both. Up to 3 tabs per experiment.</div>
+  <div class="upload-title">Add Tab</div>
+  <div class="upload-sub">Attach a notebook, paste Python code, or upload a static dashboard zip. Up to 3 tabs per experiment.</div>
+
+  {% if messages %}
+  <div style="margin-bottom:1rem">
+    {% for msg in messages %}
+    <div style="color:var(--accent);font-size:13px;padding:8px 12px;border:1px solid var(--accent);border-radius:4px;margin-bottom:6px">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
@@ -18,20 +26,30 @@
       <div class="form-section-title">// Tab</div>
       <div class="form-group">
         <label class="form-label">Tab label <span style="color:var(--accent)">*</span></label>
-        <input type="text" name="tab_label" class="form-input" placeholder="e.g. Analysis, Preprocessing, Visualisation" required>
+        <input type="text" name="tab_label" class="form-input" placeholder="e.g. Analysis, Dashboard, Results" required>
       </div>
       <div class="form-group">
         <label class="form-label">Description</label>
-        <textarea name="description" class="form-textarea" rows="3" placeholder="Briefly describe what this notebook does…"></textarea>
+        <textarea name="description" class="form-textarea" rows="3" placeholder="Briefly describe what this tab contains…"></textarea>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Dashboard zip (optional)</div>
+      <div class="dropzone" id="dz-dash">
+        <div class="dz-icon">⬡</div>
+        <div class="dz-text" id="dz-dash-text">Drop .zip file here or click to browse</div>
+        <div class="dz-hint" id="dz-dash-hint">Upload a static site (e.g. from GitHub Pages). Must contain an index.html. Max 150 MB.</div>
+        <input type="file" name="dashboard_zip" accept=".zip" id="dz-dash-input">
       </div>
     </div>
 
     <div class="form-section">
       <div class="form-section-title">// Notebook file (optional)</div>
-      <div class="dropzone">
+      <div class="dropzone" id="dz-nb">
         <div class="dz-icon">⬡</div>
-        <div class="dz-text">Drop .ipynb file here or click to browse</div>
-        <input type="file" name="notebook_file" accept=".ipynb">
+        <div class="dz-text" id="dz-nb-text">Drop .ipynb file here or click to browse</div>
+        <input type="file" name="notebook_file" accept=".ipynb" id="dz-nb-input">
       </div>
       <div class="form-row" style="margin-top:1rem">
         <div class="form-group">
@@ -59,4 +77,20 @@
     </div>
   </form>
 </div>
+<script>
+document.getElementById('dz-dash-input').addEventListener('change', function() {
+  var f = this.files[0];
+  if (!f) return;
+  var mb = (f.size / 1024 / 1024).toFixed(1);
+  document.getElementById('dz-dash-text').textContent = f.name;
+  document.getElementById('dz-dash-hint').textContent = mb + ' MB — ready to upload';
+  document.getElementById('dz-dash').style.borderColor = 'var(--accent)';
+});
+document.getElementById('dz-nb-input').addEventListener('change', function() {
+  var f = this.files[0];
+  if (!f) return;
+  document.getElementById('dz-nb-text').textContent = f.name;
+  document.getElementById('dz-nb').style.borderColor = 'var(--accent)';
+});
+</script>
 {% endblock %}

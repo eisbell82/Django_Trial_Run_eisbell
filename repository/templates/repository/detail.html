@@ -37,14 +37,10 @@
       {% for nb in notebooks %}
       <div class="dtab" onclick="switchTab(this,'tab-nb-{{ nb.pk }}')">{{ nb.tab_label }}</div>
       {% endfor %}
-      {% for dash in dashboards %}
-      <div class="dtab" onclick="switchTab(this,'tab-dash-{{ dash.pk }}')">{{ dash.tab_label }}</div>
-      {% endfor %}
       {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
       {% if notebooks|length < 3 %}
-      <a href="{% url 'repository:add_notebook' dataset.slug %}" class="dtab" style="color:var(--accent);text-decoration:none">+ Notebook</a>
+      <a href="{% url 'repository:add_notebook' dataset.slug %}" class="dtab" style="color:var(--accent);text-decoration:none">+ Tab</a>
       {% endif %}
-      <a href="{% url 'repository:add_dashboard' dataset.slug %}" class="dtab" style="color:var(--accent);text-decoration:none">+ Dashboard</a>
       {% endif %}
       <div class="dtab" onclick="switchTab(this,'tab-samples')">Samples ({{ samples|length }})</div>
     </div>
@@ -107,9 +103,43 @@
       {% endif %}
     </div>
 
-    <!-- TAB: NOTEBOOKS (one tab per notebook) -->
+    <!-- TAB: NOTEBOOKS / DASHBOARDS (one tab per notebook) -->
+    <style>
+      .detail-body.dashboard-active { max-width: 100%; grid-template-columns: 1fr; }
+      .detail-body.dashboard-active .detail-sidebar { display: none; }
+      .dash-frame-wrap {
+        width: calc(100vw - 3rem);
+        margin-left: calc(50% - 50vw + 1.5rem);
+      }
+      .dash-frame-wrap iframe {
+        width: 100%;
+        height: calc(100vh - 160px);
+        border: none;
+        display: block;
+      }
+    </style>
     {% for nb in notebooks %}
     <div id="tab-nb-{{ nb.pk }}" style="display:none">
+      {% if nb.entry_url %}
+      <div class="nb-viewer dash-frame-wrap">
+        <div class="nb-toolbar">
+          <span class="nb-title">{{ nb.tab_label }}</span>
+          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <a href="{{ nb.entry_url }}" target="_blank" class="btn-outline" style="padding:4px 12px;font-size:11px">Open full screen ↗</a>
+            {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+            <form method="post" action="{% url 'repository:delete_notebook' dataset.slug nb.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button type="submit" class="col-del-btn" title="Remove tab" onclick="return confirm('Remove this tab?')">×</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        <iframe src="{{ nb.entry_url }}"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+                loading="lazy"
+                title="{{ nb.tab_label }}"></iframe>
+      </div>
+      {% else %}
       <div class="nb-viewer">
         <div class="nb-toolbar">
           <span class="nb-title">{{ nb.tab_label }}</span>
@@ -129,7 +159,7 @@
             {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
             <form method="post" action="{% url 'repository:delete_notebook' dataset.slug nb.pk %}" style="display:inline">
               {% csrf_token %}
-              <button type="submit" class="col-del-btn" title="Remove tab" onclick="return confirm('Remove this notebook tab?')">×</button>
+              <button type="submit" class="col-del-btn" title="Remove tab" onclick="return confirm('Remove this tab?')">×</button>
             </form>
             {% endif %}
           </div>
@@ -145,52 +175,7 @@
         </div>
         {% endif %}
       </div>
-    </div>
-    {% endfor %}
-
-    <!-- TAB: DASHBOARDS (one iframe tab per dashboard) -->
-    <style>
-      .detail-body.dashboard-active { max-width: 100%; grid-template-columns: 1fr; }
-      .detail-body.dashboard-active .detail-sidebar { display: none; }
-      .dash-frame-wrap {
-        width: calc(100vw - 3rem);
-        margin-left: calc(50% - 50vw + 1.5rem);
-      }
-      .dash-frame-wrap iframe {
-        width: 100%;
-        height: calc(100vh - 160px);
-        border: none;
-        display: block;
-      }
-    </style>
-    {% for dash in dashboards %}
-    <div id="tab-dash-{{ dash.pk }}" style="display:none">
-      <div class="nb-viewer dash-frame-wrap">
-        <div class="nb-toolbar">
-          <span class="nb-title">{{ dash.tab_label }}</span>
-          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            {% if dash.entry_url %}
-            <a href="{{ dash.entry_url }}" target="_blank" class="btn-outline" style="padding:4px 12px;font-size:11px">Open full screen ↗</a>
-            {% endif %}
-            {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-            <form method="post" action="{% url 'repository:delete_dashboard' dataset.slug dash.pk %}" style="display:inline">
-              {% csrf_token %}
-              <button type="submit" class="col-del-btn" title="Remove dashboard tab" onclick="return confirm('Remove this dashboard tab?')">×</button>
-            </form>
-            {% endif %}
-          </div>
-        </div>
-        {% if dash.entry_url %}
-        <iframe src="{{ dash.entry_url }}"
-                sandbox="allow-scripts allow-same-origin allow-forms"
-                loading="lazy"
-                title="{{ dash.tab_label }}"></iframe>
-        {% else %}
-        <div style="padding:2rem;color:var(--text-muted);font-size:13px">
-          No <code>index.html</code> was found in the uploaded zip.
-        </div>
-        {% endif %}
-      </div>
+      {% endif %}
     </div>
     {% endfor %}
 
@@ -505,8 +490,9 @@ function switchTab(el, tabId) {
   if (target) target.style.display = 'block';
   const body = document.querySelector('.detail-body');
   if (body) {
+    const isDash = target && target.querySelector('.dash-frame-wrap') !== null;
     body.classList.toggle('samples-active', tabId === 'tab-samples');
-    body.classList.toggle('dashboard-active', tabId.startsWith('tab-dash-'));
+    body.classList.toggle('dashboard-active', isDash);
   }
   history.replaceState(null, '', '#' + tabId);
 }
