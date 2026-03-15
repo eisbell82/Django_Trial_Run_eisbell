@@ -13,10 +13,10 @@ After=network.target
 Type=notify
 User=www-data
 Group=www-data
-WorkingDirectory=/path/to/specimenbase
-EnvironmentFile=/path/to/specimenbase/.env
-ExecStart=/path/to/venv/bin/gunicorn \
-          --config /path/to/specimenbase/gunicorn.conf.py \
+WorkingDirectory=/srv/specimenbase
+EnvironmentFile=/srv/specimenbase/.env
+ExecStart=/srv/specimenbase/venv/bin/gunicorn \
+          --config /srv/specimenbase/gunicorn.conf.py \
           specimenbase.wsgi:application
 ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=mixed
