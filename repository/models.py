@@ -164,6 +164,35 @@ class TodoItem(models.Model):
         return self.text
 
 
+class AboutPage(models.Model):
+    """Singleton model — only one row ever exists (pk=1)."""
+    title = models.CharField(max_length=200, default="About")
+    content = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def content_paragraphs(self):
+        """Split content on blank lines into a list of paragraphs."""
+        import re
+        return [p.strip() for p in re.split(r"\n\s*\n", self.content) if p.strip()]
+
+
+class AboutPhoto(models.Model):
+    page = models.ForeignKey(AboutPage, on_delete=models.CASCADE, related_name="photos")
+    image = models.ImageField(upload_to="about/photos/")
+    caption = models.CharField(max_length=300, blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return self.caption or f"Photo {self.pk}"
+
+
 class SampleValue(models.Model):
     sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name="values")
     column = models.ForeignKey(SampleColumn, on_delete=models.CASCADE, related_name="values")

@@ -36,4 +36,6 @@ urlpatterns = [
     path("todo/<int:pk>/edit/", views.todo_edit, name="todo_edit"),
     path("todo/<int:pk>/delete/", views.todo_delete, name="todo_delete"),
     path("todo/clear-done/", views.todo_clear_done, name="todo_clear_done"),
+    path("about/", views.about_view, name="about"),
+    path("about/photos/<int:pk>/delete/", views.about_photo_delete, name="about_photo_delete"),
 ]

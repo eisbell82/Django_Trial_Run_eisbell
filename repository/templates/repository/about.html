@@ -1,0 +1,93 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}{{ page.title }} — SpecimenBase{% endblock %}
+{% block nav_about %}active{% endblock %}
+
+{% block content %}
+
+<div style="max-width:760px;margin:3rem auto;padding:0 2rem">
+
+  <div style="margin-bottom:2.5rem">
+    <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-dim);margin-bottom:.75rem">// About</div>
+    <h1 style="font-family:'Instrument Serif',serif;font-size:42px;line-height:1.1;margin-bottom:1rem">{{ page.title }}</h1>
+    {% if page.content %}
+      <div style="color:var(--text-muted);font-size:14px;line-height:1.9">
+        {% for para in page.content_paragraphs %}
+          <p style="margin:0 0 1rem">{{ para }}</p>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% if not user.is_staff %}
+        <p style="color:var(--text-dim);font-size:13px">Nothing here yet.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  {% if photos %}
+    <hr class="divider">
+    <div style="margin-bottom:2.5rem">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem">
+        {% for photo in photos %}
+          <div style="position:relative">
+            <img src="{{ photo.image.url }}" alt="{{ photo.caption }}"
+                 style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border)">
+            {% if photo.caption %}
+              <p style="font-size:11px;color:var(--text-dim);margin:.4rem 0 0;text-align:center">{{ photo.caption }}</p>
+            {% endif %}
+            {% if user.is_staff %}
+              <form method="post" action="{% url 'repository:about_photo_delete' photo.pk %}"
+                    style="position:absolute;top:6px;right:6px"
+                    onsubmit="return confirm('Delete this photo?')">
+                {% csrf_token %}
+                <button type="submit"
+                        style="background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer">✕</button>
+              </form>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if user.is_staff %}
+    <hr class="divider">
+    <div style="margin-bottom:3rem">
+      <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-dim);margin-bottom:1.25rem">// Admin — Edit Page</div>
+
+      <form method="post" style="margin-bottom:2rem">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_content">
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:.3rem">Page title</label>
+          <input type="text" name="title" value="{{ page.title }}"
+                 style="width:100%;padding:.5rem .75rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:.3rem">Content <span style="color:var(--text-dim)">(blank lines create new paragraphs)</span></label>
+          <textarea name="content" rows="8"
+                    style="width:100%;padding:.5rem .75rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;line-height:1.7;resize:vertical;box-sizing:border-box">{{ page.content }}</textarea>
+        </div>
+        <button type="submit"
+                style="padding:.45rem 1.1rem;background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer">Save content</button>
+      </form>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="upload_photo">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">Upload photo</div>
+        <div style="display:flex;gap:.6rem;align-items:flex-start;flex-wrap:wrap">
+          <input type="file" name="image" accept="image/*" required
+                 style="font-size:12px;color:var(--text-muted)">
+          <input type="text" name="caption" placeholder="Caption (optional)"
+                 style="flex:1;min-width:160px;padding:.45rem .7rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px">
+          <button type="submit"
+                  style="padding:.45rem 1.1rem;background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer">Upload</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}

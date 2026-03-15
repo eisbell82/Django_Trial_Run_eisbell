@@ -23,6 +23,7 @@
     <a href="{% url 'repository:collections' %}" class="{% block nav_collections %}{% endblock %}">Experiments</a>
     <a href="{% url 'repository:samples' %}" class="{% block nav_samples %}{% endblock %}">Samples</a>
     <a href="{% url 'repository:docs' %}" class="{% block nav_docs %}{% endblock %}">Docs</a>
+    <a href="{% url 'repository:about' %}" class="{% block nav_about %}{% endblock %}">About</a>
     {% if user.is_staff %}<a href="{% url 'repository:todo' %}" class="{% block nav_todo %}{% endblock %}">To-Do</a>{% endif %}
   </div>
   {% if user.is_authenticated %}

@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, TodoItem
+from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, TodoItem, AboutPage, AboutPhoto
 from .forms import DatasetUploadForm, DataFileForm, NotebookForm
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
@@ -916,6 +916,43 @@ def samples_csv_view(request):
 
 def docs_view(request):
     return render(request, "repository/docs.html")
+
+
+def about_view(request):
+    page, _ = AboutPage.objects.get_or_create(pk=1, defaults={"title": "About", "content": ""})
+    if request.method == "POST":
+        if not (request.user.is_authenticated and request.user.is_staff):
+            from django.http import Http404
+            raise Http404
+        action = request.POST.get("action")
+        if action == "update_content":
+            page.title = request.POST.get("title", page.title).strip() or page.title
+            page.content = request.POST.get("content", "").strip()
+            page.save()
+            messages.success(request, "About page updated.")
+        elif action == "upload_photo":
+            img = request.FILES.get("image")
+            if img:
+                caption = request.POST.get("caption", "").strip()
+                order = AboutPhoto.objects.filter(page=page).count()
+                AboutPhoto.objects.create(page=page, image=img, caption=caption, order=order)
+                messages.success(request, "Photo uploaded.")
+            else:
+                messages.error(request, "No image selected.")
+        return redirect("repository:about")
+    return render(request, "repository/about.html", {"page": page, "photos": page.photos.all()})
+
+
+def about_photo_delete(request, pk):
+    if not (request.user.is_authenticated and request.user.is_staff):
+        from django.http import Http404
+        raise Http404
+    photo = get_object_or_404(AboutPhoto, pk=pk)
+    if request.method == "POST":
+        photo.image.delete(save=False)
+        photo.delete()
+        messages.success(request, "Photo deleted.")
+    return redirect("repository:about")
 
 
 def _staff_required(view_fn):
