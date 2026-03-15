@@ -1,0 +1,51 @@
+{% extends "repository/base.html" %}
+{% load static %}
+
+{% block title %}Add Dashboard Tab — {{ dataset.title }} — SpecimenBase{% endblock %}
+
+{% block content %}
+<div class="upload-wrap">
+  <div style="margin-bottom:1rem">
+    <a href="{% url 'repository:detail' dataset.slug %}" style="color:var(--text-dim);font-size:12px">← Back to {{ dataset.title|truncatechars:50 }}</a>
+  </div>
+  <div class="upload-title">Add Dashboard Tab</div>
+  <div class="upload-sub">Upload a zip containing a static dashboard (with an <code>index.html</code>). The dashboard will be displayed in an embedded panel on the experiment page.</div>
+
+  {% if messages %}
+  <div style="margin-bottom:1rem">
+    {% for msg in messages %}
+    <div style="color:var(--accent);font-size:13px;padding:8px 12px;border:1px solid var(--accent);border-radius:4px;margin-bottom:6px">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="form-section-title">// Tab</div>
+      <div class="form-group">
+        <label class="form-label">Tab label <span style="color:var(--accent)">*</span></label>
+        <input type="text" name="tab_label" class="form-input" placeholder="e.g. Dashboard, Results, Visualisation" required>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">// Dashboard zip</div>
+      <div class="dropzone">
+        <div class="dz-icon">⬡</div>
+        <div class="dz-text">Drop .zip file here or click to browse</div>
+        <input type="file" name="dashboard_zip" accept=".zip" required>
+      </div>
+      <p style="color:var(--text-dim);font-size:11px;margin-top:.5rem">
+        The zip should contain an <code>index.html</code> (e.g. inside a <code>docs/</code> folder). All relative asset paths (JS, CSS) are preserved. Max 150 MB.
+      </p>
+    </div>
+
+    <div class="submit-bar">
+      <a href="{% url 'repository:detail' dataset.slug %}" class="btn-outline">Cancel</a>
+      <button type="submit" class="btn-accent">Upload dashboard →</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

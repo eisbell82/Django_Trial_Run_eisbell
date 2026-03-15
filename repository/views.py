@@ -1,4 +1,7 @@
 import csv
+import os
+import shutil
+import zipfile
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
@@ -9,8 +12,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.conf import settings
 
-from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, TodoItem, AboutPage, AboutPhoto
+from .models import Dataset, Tag, DataFile, Notebook, Dashboard, Sample, SampleColumn, SampleValue, TodoItem, AboutPage, AboutPhoto
 from .forms import DatasetUploadForm, DataFileForm, NotebookForm
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
@@ -87,7 +91,7 @@ def home(request):
 
 def dataset_detail(request, slug):
     dataset = get_object_or_404(
-        Dataset.objects.prefetch_related("tags", "notebooks", "files"), slug=slug
+        Dataset.objects.prefetch_related("tags", "notebooks", "dashboards", "files"), slug=slug
     )
 
     if not _can_view(request.user, dataset):
@@ -132,9 +136,11 @@ def dataset_detail(request, slug):
         col.unit_suggestions = unit_sugs_by_name.get(col.name, [])
 
     notebooks = list(dataset.notebooks.all())
+    dashboards = list(dataset.dashboards.all())
     context = {
         "dataset": dataset,
         "notebooks": notebooks,
+        "dashboards": dashboards,
         "sample_columns": columns,
         "samples": samples,
         "suggested_column_names": existing_col_names,
@@ -432,6 +438,77 @@ def delete_notebook(request, slug, pk):
         return redirect("repository:detail", slug=slug)
     if request.method == "POST":
         Notebook.objects.filter(pk=pk, dataset=dataset).delete()
+    return redirect("repository:detail", slug=slug)
+
+
+def _find_entry_html(extract_dir):
+    """Return the best index.html path within extract_dir, preferring docs/index.html."""
+    candidates = []
+    for root, dirs, files in os.walk(extract_dir):
+        for fname in files:
+            if fname.lower() == "index.html":
+                candidates.append(os.path.join(root, fname))
+    if not candidates:
+        return None
+    # Prefer paths containing /docs/
+    docs_candidates = [p for p in candidates if os.sep + "docs" + os.sep in p]
+    return docs_candidates[0] if docs_candidates else candidates[0]
+
+
+@login_required
+def upload_dashboard(request, slug):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        uploaded = request.FILES.get("dashboard_zip")
+        tab_label = request.POST.get("tab_label", "").strip() or "Dashboard"
+        if not uploaded:
+            messages.error(request, "Please select a zip file.")
+            return render(request, "repository/add_dashboard.html", {"dataset": dataset})
+        if not uploaded.name.lower().endswith(".zip"):
+            messages.error(request, "Only .zip files are accepted.")
+            return render(request, "repository/add_dashboard.html", {"dataset": dataset})
+        if uploaded.size > 150 * 1024 * 1024:
+            messages.error(request, "File exceeds the 150 MB limit.")
+            return render(request, "repository/add_dashboard.html", {"dataset": dataset})
+        dash = Dashboard(dataset=dataset, tab_label=tab_label, zip_file=uploaded)
+        dash.save()
+        # Extract zip into media/datasets/dashboards/<pk>/
+        extract_dir = os.path.join(settings.MEDIA_ROOT, "datasets", "dashboards", str(dash.pk))
+        os.makedirs(extract_dir, exist_ok=True)
+        try:
+            with zipfile.ZipFile(dash.zip_file.path, "r") as zf:
+                zf.extractall(extract_dir)
+        except zipfile.BadZipFile:
+            dash.delete()
+            shutil.rmtree(extract_dir, ignore_errors=True)
+            messages.error(request, "The file is not a valid zip archive.")
+            return render(request, "repository/add_dashboard.html", {"dataset": dataset})
+        entry = _find_entry_html(extract_dir)
+        if entry:
+            rel = os.path.relpath(entry, settings.MEDIA_ROOT).replace(os.sep, "/")
+            dash.entry_url = settings.MEDIA_URL + rel
+        dash.extracted_path = os.path.relpath(extract_dir, settings.MEDIA_ROOT)
+        dash.save(update_fields=["entry_url", "extracted_path"])
+        messages.success(request, f"Dashboard '{tab_label}' added.")
+        return redirect("repository:detail", slug=slug)
+    return render(request, "repository/add_dashboard.html", {"dataset": dataset})
+
+
+@login_required
+def delete_dashboard(request, slug, pk):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        dash = get_object_or_404(Dashboard, pk=pk, dataset=dataset)
+        extract_dir = os.path.join(settings.MEDIA_ROOT, dash.extracted_path) if dash.extracted_path else None
+        dash.delete()
+        if extract_dir and os.path.isdir(extract_dir):
+            shutil.rmtree(extract_dir, ignore_errors=True)
     return redirect("repository:detail", slug=slug)
 
 

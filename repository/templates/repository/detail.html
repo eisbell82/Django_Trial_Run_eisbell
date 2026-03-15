@@ -37,10 +37,14 @@
       {% for nb in notebooks %}
       <div class="dtab" onclick="switchTab(this,'tab-nb-{{ nb.pk }}')">{{ nb.tab_label }}</div>
       {% endfor %}
+      {% for dash in dashboards %}
+      <div class="dtab" onclick="switchTab(this,'tab-dash-{{ dash.pk }}')">{{ dash.tab_label }}</div>
+      {% endfor %}
       {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
       {% if notebooks|length < 3 %}
       <a href="{% url 'repository:add_notebook' dataset.slug %}" class="dtab" style="color:var(--accent);text-decoration:none">+ Notebook</a>
       {% endif %}
+      <a href="{% url 'repository:add_dashboard' dataset.slug %}" class="dtab" style="color:var(--accent);text-decoration:none">+ Dashboard</a>
       {% endif %}
       <div class="dtab" onclick="switchTab(this,'tab-samples')">Samples ({{ samples|length }})</div>
     </div>
@@ -138,6 +142,39 @@
         {% if nb.code %}
         <div style="padding:0" id="thebe-wrap-{{ nb.pk }}">
           <pre class="nb-code thebe-cell" data-executable="true" data-language="python" id="thebe-pre-{{ nb.pk }}">{{ nb.code }}</pre>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- TAB: DASHBOARDS (one iframe tab per dashboard) -->
+    {% for dash in dashboards %}
+    <div id="tab-dash-{{ dash.pk }}" style="display:none">
+      <div class="nb-viewer">
+        <div class="nb-toolbar">
+          <span class="nb-title">{{ dash.tab_label }}</span>
+          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            {% if dash.entry_url %}
+            <a href="{{ dash.entry_url }}" target="_blank" class="btn-outline" style="padding:4px 12px;font-size:11px">Open full screen ↗</a>
+            {% endif %}
+            {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+            <form method="post" action="{% url 'repository:delete_dashboard' dataset.slug dash.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button type="submit" class="col-del-btn" title="Remove dashboard tab" onclick="return confirm('Remove this dashboard tab?')">×</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        {% if dash.entry_url %}
+        <iframe src="{{ dash.entry_url }}"
+                style="width:100%;height:700px;border:none;display:block"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+                loading="lazy"
+                title="{{ dash.tab_label }}"></iframe>
+        {% else %}
+        <div style="padding:2rem;color:var(--text-muted);font-size:13px">
+          No <code>index.html</code> was found in the uploaded zip.
         </div>
         {% endif %}
       </div>

@@ -118,6 +118,21 @@ class Notebook(models.Model):
         return self.tab_label
 
 
+class Dashboard(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="dashboards")
+    tab_label = models.CharField(max_length=100, default="Dashboard")
+    zip_file = models.FileField(upload_to="datasets/dashboards/zips/")
+    extracted_path = models.CharField(max_length=500, blank=True)
+    entry_url = models.CharField(max_length=500, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["uploaded_at"]
+
+    def __str__(self):
+        return self.tab_label
+
+
 class SampleColumn(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="sample_columns")
     name = models.CharField(max_length=200)
