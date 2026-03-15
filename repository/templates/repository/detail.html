@@ -149,9 +149,23 @@
     {% endfor %}
 
     <!-- TAB: DASHBOARDS (one iframe tab per dashboard) -->
+    <style>
+      .detail-body.dashboard-active { max-width: 100%; grid-template-columns: 1fr; }
+      .detail-body.dashboard-active .detail-sidebar { display: none; }
+      .dash-frame-wrap {
+        width: calc(100vw - 3rem);
+        margin-left: calc(50% - 50vw + 1.5rem);
+      }
+      .dash-frame-wrap iframe {
+        width: 100%;
+        height: calc(100vh - 160px);
+        border: none;
+        display: block;
+      }
+    </style>
     {% for dash in dashboards %}
     <div id="tab-dash-{{ dash.pk }}" style="display:none">
-      <div class="nb-viewer">
+      <div class="nb-viewer dash-frame-wrap">
         <div class="nb-toolbar">
           <span class="nb-title">{{ dash.tab_label }}</span>
           <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -168,7 +182,6 @@
         </div>
         {% if dash.entry_url %}
         <iframe src="{{ dash.entry_url }}"
-                style="width:100%;height:700px;border:none;display:block"
                 sandbox="allow-scripts allow-same-origin allow-forms"
                 loading="lazy"
                 title="{{ dash.tab_label }}"></iframe>
@@ -491,7 +504,10 @@ function switchTab(el, tabId) {
   const target = document.getElementById(tabId);
   if (target) target.style.display = 'block';
   const body = document.querySelector('.detail-body');
-  if (body) body.classList.toggle('samples-active', tabId === 'tab-samples');
+  if (body) {
+    body.classList.toggle('samples-active', tabId === 'tab-samples');
+    body.classList.toggle('dashboard-active', tabId.startsWith('tab-dash-'));
+  }
   history.replaceState(null, '', '#' + tabId);
 }
 
