@@ -311,7 +311,7 @@ for g in groups:
 </body></html>"""
 
     page_path = os.path.join(OUT_DIR, "groups", f"{slug}.html")
-    with open(page_path, "w") as f:
+    with open(page_path, "w", encoding="utf-8") as f:
         f.write(page)
     size_kb = os.path.getsize(page_path) // 1024
     print(f"   {g}: {size_kb} KB  ({len(sp_s)} strength + {len(sp_m)} MOE specimens)")
@@ -374,7 +374,7 @@ index = f"""<!DOCTYPE html>
 </body></html>"""
 
 index_path = os.path.join(OUT_DIR, "index.html")
-with open(index_path, "w") as f:
+with open(index_path, "w", encoding="utf-8") as f:
     f.write(index)
 print(f"   index.html: {os.path.getsize(index_path)//1024} KB")
 
