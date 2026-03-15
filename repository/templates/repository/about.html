@@ -23,7 +23,7 @@
     {% if page.content %}
       <div style="color:var(--text-muted);font-size:14px;line-height:1.9">
         {% for para in page.content_paragraphs %}
-          <p style="margin:0 0 1rem">{{ para }}</p>
+          <p style="margin:0 0 1rem">{{ para|urlize }}</p>
         {% endfor %}
       </div>
     {% else %}
