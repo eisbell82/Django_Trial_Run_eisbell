@@ -45,6 +45,10 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
+            echo "==> Fixing ownership (root:root files in ubuntu-owned dir)..."
+            sudo chown -R ubuntu:www-data /srv/specimenbase
+            echo "==> Fetching latest code..."
             git -C /srv/specimenbase fetch origin claude/main
             git -C /srv/specimenbase reset --hard origin/claude/main
+            echo "==> Running deploy.sh..."
             DEPLOY_BRANCH=claude/main bash /srv/specimenbase/deploy/deploy.sh
