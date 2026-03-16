@@ -15,25 +15,24 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            mkdir -p /srv/specimenbase/staticfiles
             {
               echo "=== whoami ==="
               whoami
-              echo "=== /srv contents ==="
-              ls /srv/ 2>&1
-              echo "=== /srv/specimenbase ==="
+              echo "=== /srv ownership ==="
+              ls -la /srv/ 2>&1
+              echo "=== /srv/specimenbase ownership ==="
               ls -la /srv/specimenbase/ 2>&1
-              echo "=== git check ==="
-              git -C /srv/specimenbase status 2>&1
+              echo "=== .git exists ==="
+              ls -la /srv/specimenbase/.git 2>&1
               echo "=== git remote ==="
               git -C /srv/specimenbase remote -v 2>&1
-              echo "=== .env exists ==="
-              ls /srv/specimenbase/.env 2>&1
-              echo "=== venv exists ==="
-              ls /srv/specimenbase/venv/bin/python 2>&1
-              echo "=== sudo test ==="
-              sudo whoami 2>&1
-            } > /srv/specimenbase/staticfiles/inspect.txt 2>&1 || true
+              echo "=== staticfiles ownership ==="
+              ls -la /srv/specimenbase/staticfiles/ 2>&1
+              echo "=== ubuntu can write staticfiles? ==="
+              touch /srv/specimenbase/staticfiles/test_write 2>&1 && echo "YES" || echo "NO - permission denied"
+              echo "=== sudo -n whoami ==="
+              sudo -n whoami 2>&1
+            } | sudo tee /srv/specimenbase/staticfiles/inspect.txt || true
 
   deploy:
     runs-on: ubuntu-latest
