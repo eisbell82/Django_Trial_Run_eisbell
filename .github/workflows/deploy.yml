@@ -5,8 +5,39 @@ on:
     branches: [claude/main]
 
 jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect server state
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            mkdir -p /srv/specimenbase/staticfiles
+            {
+              echo "=== whoami ==="
+              whoami
+              echo "=== /srv contents ==="
+              ls /srv/ 2>&1
+              echo "=== /srv/specimenbase ==="
+              ls -la /srv/specimenbase/ 2>&1
+              echo "=== git check ==="
+              git -C /srv/specimenbase status 2>&1
+              echo "=== git remote ==="
+              git -C /srv/specimenbase remote -v 2>&1
+              echo "=== .env exists ==="
+              ls /srv/specimenbase/.env 2>&1
+              echo "=== venv exists ==="
+              ls /srv/specimenbase/venv/bin/python 2>&1
+              echo "=== sudo test ==="
+              sudo whoami 2>&1
+            } > /srv/specimenbase/staticfiles/inspect.txt 2>&1 || true
+
   deploy:
     runs-on: ubuntu-latest
+    needs: inspect
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -14,19 +45,7 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
-          script_stop: false
           script: |
-            LOG=/srv/specimenbase/staticfiles/deploy_log.txt
-            mkdir -p /srv/specimenbase/staticfiles
-            echo "=== git version ===" > $LOG
-            git --version >> $LOG 2>&1
-            echo "=== /srv/specimenbase dir ===" >> $LOG
-            ls -la /srv/specimenbase >> $LOG 2>&1
-            echo "=== git remote ===" >> $LOG
-            git -C /srv/specimenbase remote -v >> $LOG 2>&1; echo "exit:$?" >> $LOG
-            echo "=== git fetch ===" >> $LOG
-            git -C /srv/specimenbase fetch origin claude/main >> $LOG 2>&1; echo "fetch_exit:$?" >> $LOG
-            echo "=== git reset ===" >> $LOG
-            git -C /srv/specimenbase reset --hard origin/claude/main >> $LOG 2>&1; echo "reset_exit:$?" >> $LOG
-            echo "=== deploy.sh ===" >> $LOG
-            DEPLOY_BRANCH=claude/main bash /srv/specimenbase/deploy/deploy.sh >> $LOG 2>&1; echo "deploy_exit:$?" >> $LOG
+            git -C /srv/specimenbase fetch origin claude/main
+            git -C /srv/specimenbase reset --hard origin/claude/main
+            DEPLOY_BRANCH=claude/main bash /srv/specimenbase/deploy/deploy.sh
