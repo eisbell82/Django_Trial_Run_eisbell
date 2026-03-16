@@ -2,7 +2,7 @@ name: Deploy to AWS
 
 on:
   push:
-    branches: [claude/aws-deployment-setup-urqY9]
+    branches: [main]
 
 jobs:
   deploy:
@@ -15,6 +15,6 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            git -C /srv/specimenbase fetch origin claude/aws-deployment-setup-urqY9
-            git -C /srv/specimenbase reset --hard origin/claude/aws-deployment-setup-urqY9
-            DEPLOY_BRANCH=claude/aws-deployment-setup-urqY9 bash /srv/specimenbase/deploy/deploy.sh
+            git -C /srv/specimenbase fetch origin main
+            git -C /srv/specimenbase reset --hard origin/main
+            DEPLOY_BRANCH=main bash /srv/specimenbase/deploy/deploy.sh
