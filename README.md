@@ -101,9 +101,11 @@ Under the *Samples* tab → **Upload CSV**:
 
 ## Running Locally (Development)
 
+Requires Python 3.10 or newer.
+
 ```bash
 # 1. Clone and set up a virtual environment
-git clone <repo-url>
+git clone https://github.com/eisbell82/Django_Trial_Run_eisbell.git
 cd Django_Trial_Run_eisbell
 python -m venv .venv && source .venv/bin/activate
 
@@ -133,22 +135,42 @@ DEBUG=True
 ALLOWED_HOSTS=localhost 127.0.0.1
 ```
 
+> `ALLOWED_HOSTS` is space-separated (not comma-separated).
+
 ---
 
 ## Deployment
 
-The project ships with a `gunicorn.conf.py` for production use behind a reverse proxy (e.g. nginx).
+Deployment is automated via GitHub Actions. Pushing to the `claude/main` branch triggers `deploy.yml`, which SSHes into the server and runs `deploy/deploy.sh`.
+
+### Prerequisites
+
+The following GitHub Secrets must be set in the repository (`Settings → Secrets → Actions`):
+
+| Secret | Value |
+|--------|-------|
+| `AWS_HOST` | Server IP or hostname |
+| `AWS_USER` | SSH username (e.g. `ubuntu`) |
+| `AWS_SSH_KEY` | Private SSH key for the server |
+
+### First-time server setup
+
+Before the first deploy, create `/srv/specimenbase/.env` on the server (the deploy script will abort if it is missing):
 
 ```bash
-# Collect static files
-python manage.py collectstatic --no-input
-
-# Apply migrations
-python manage.py migrate
-
-# Start Gunicorn
-gunicorn -c gunicorn.conf.py specimenbase.wsgi:application
+sudo cp /srv/specimenbase/.env.example /srv/specimenbase/.env
+sudo nano /srv/specimenbase/.env   # fill in SECRET_KEY, ALLOWED_HOSTS, etc.
 ```
+
+### Deploying
+
+Push to `claude/main` — GitHub Actions handles the rest:
+
+```bash
+git push origin claude/main
+```
+
+The deploy script will pull the latest code, install dependencies, run migrations, collect static files, and restart gunicorn + nginx.
 
 ### Key environment variables
 
@@ -164,7 +186,7 @@ gunicorn -c gunicorn.conf.py specimenbase.wsgi:application
 
 ### PostgreSQL
 
-Uncomment the optional dependencies in `requirements.txt`, then install and set `DATABASE_URL`:
+Install the extra dependencies and set `DATABASE_URL`:
 
 ```bash
 pip install psycopg2-binary dj-database-url
