@@ -10,9 +10,15 @@ PYTHON="$VENV_DIR/bin/python"
 PIP="$VENV_DIR/bin/pip"
 
 echo "==> Pulling latest code..."
-git -C "$APP_DIR" fetch origin "${DEPLOY_BRANCH:-main}"
-git -C "$APP_DIR" reset --hard "origin/${DEPLOY_BRANCH:-main}"
+git -C "$APP_DIR" fetch origin "${DEPLOY_BRANCH:-claude/main}"
+git -C "$APP_DIR" reset --hard "origin/${DEPLOY_BRANCH:-claude/main}"
 git -C "$APP_DIR" rev-parse --short HEAD > "$APP_DIR/VERSION"
+
+echo "==> Checking .env exists..."
+if [ ! -f "$APP_DIR/.env" ]; then
+    echo "ERROR: $APP_DIR/.env not found. Create it from .env.example before deploying." >&2
+    exit 1
+fi
 
 echo "==> Ensuring Python virtualenv exists..."
 if [ ! -f "$VENV_DIR/bin/python" ]; then
