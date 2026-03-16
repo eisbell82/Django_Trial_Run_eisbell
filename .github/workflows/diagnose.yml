@@ -2,6 +2,8 @@ name: Diagnose Server
 
 on:
   workflow_dispatch:
+  push:
+    branches: [claude/aws-deployment-setup-uzrvx]
 
 jobs:
   diagnose:
@@ -48,3 +50,19 @@ jobs:
             echo ""
             echo "===== MEMORY ====="
             free -h
+
+            echo ""
+            echo "===== .ENV FILE (keys only, no values) ====="
+            grep -oP '^[A-Z_]+' /srv/specimenbase/.env 2>/dev/null || echo ".env missing"
+
+            echo ""
+            echo "===== ALLOWED_HOSTS ====="
+            grep ALLOWED_HOSTS /srv/specimenbase/.env 2>/dev/null || echo "not set"
+
+            echo ""
+            echo "===== SUPERUSER EXISTS ====="
+            cd /srv/specimenbase && venv/bin/python manage.py shell -c "from django.contrib.auth.models import User; admins=User.objects.filter(is_superuser=True); print(f'{admins.count()} superuser(s): {[u.username for u in admins]}')" 2>/dev/null || echo "shell failed"
+
+            echo ""
+            echo "===== RECENT AUTH FAILURES (gunicorn log) ====="
+            sudo journalctl -u specimenbase -n 200 --no-pager 2>/dev/null | grep -i "login\|auth\|403\|400\|csrf\|session" | tail -20 || true
