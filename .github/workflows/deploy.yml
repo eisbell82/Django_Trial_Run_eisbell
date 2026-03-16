@@ -15,5 +15,22 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            echo "SSH OK: $(whoami) @ $(hostname)"
-            echo "Dir check: $(ls /srv/ 2>&1)"
+            echo "=== 1. /srv contents ==="
+            ls /srv/ 2>&1 || true
+            echo "=== 2. /srv/specimenbase ==="
+            ls -la /srv/specimenbase 2>&1 || true
+            echo "=== 3. git status ==="
+            git -C /srv/specimenbase status 2>&1 || true
+            echo "=== 4. git remote ==="
+            git -C /srv/specimenbase remote -v 2>&1 || true
+            echo "=== 5. git fetch ==="
+            git -C /srv/specimenbase fetch origin claude/main 2>&1 || true
+            echo "=== 6. git reset ==="
+            git -C /srv/specimenbase reset --hard origin/claude/main 2>&1 || true
+            echo "=== 7. .env check ==="
+            ls -la /srv/specimenbase/.env 2>&1 || true
+            echo "=== 8. venv check ==="
+            ls /srv/specimenbase/venv/bin/python 2>&1 || true
+            echo "=== 9. sudo test ==="
+            sudo whoami 2>&1 || true
+            echo "=== DONE ==="
