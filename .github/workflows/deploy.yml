@@ -16,20 +16,17 @@ jobs:
           key: ${{ secrets.AWS_SSH_KEY }}
           script_stop: false
           script: |
-            rm -f /tmp/deploy_err.txt
-            git -C /srv/specimenbase fetch origin claude/main >> /tmp/deploy_err.txt 2>&1
-            echo "fetch_exit:$?" >> /tmp/deploy_err.txt
-            git -C /srv/specimenbase reset --hard origin/claude/main >> /tmp/deploy_err.txt 2>&1
-            echo "reset_exit:$?" >> /tmp/deploy_err.txt
-            DEPLOY_BRANCH=claude/main bash /srv/specimenbase/deploy/deploy.sh >> /tmp/deploy_err.txt 2>&1
-            echo "deploy_exit:$?" >> /tmp/deploy_err.txt
-      - name: Read error log
-        uses: appleboy/ssh-action@v1.0.3
-        if: always()
-        with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}
-          key: ${{ secrets.AWS_SSH_KEY }}
-          script: |
-            echo "=== /tmp/deploy_err.txt ==="
-            cat /tmp/deploy_err.txt 2>/dev/null || echo "(no error file)"
+            LOG=/srv/specimenbase/staticfiles/deploy_log.txt
+            mkdir -p /srv/specimenbase/staticfiles
+            echo "=== git version ===" > $LOG
+            git --version >> $LOG 2>&1
+            echo "=== /srv/specimenbase dir ===" >> $LOG
+            ls -la /srv/specimenbase >> $LOG 2>&1
+            echo "=== git remote ===" >> $LOG
+            git -C /srv/specimenbase remote -v >> $LOG 2>&1; echo "exit:$?" >> $LOG
+            echo "=== git fetch ===" >> $LOG
+            git -C /srv/specimenbase fetch origin claude/main >> $LOG 2>&1; echo "fetch_exit:$?" >> $LOG
+            echo "=== git reset ===" >> $LOG
+            git -C /srv/specimenbase reset --hard origin/claude/main >> $LOG 2>&1; echo "reset_exit:$?" >> $LOG
+            echo "=== deploy.sh ===" >> $LOG
+            DEPLOY_BRANCH=claude/main bash /srv/specimenbase/deploy/deploy.sh >> $LOG 2>&1; echo "deploy_exit:$?" >> $LOG
