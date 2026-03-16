@@ -15,6 +15,12 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
+            set -xe
+            echo "==> Checking /srv/specimenbase..."
+            ls -la /srv/specimenbase || echo "ERROR: /srv/specimenbase missing or inaccessible"
+            echo "==> Git remote..."
+            git -C /srv/specimenbase remote -v || echo "ERROR: not a git repo"
+            echo "==> Fetching..."
             git -C /srv/specimenbase fetch origin claude/main
             git -C /srv/specimenbase reset --hard origin/claude/main
             DEPLOY_BRANCH=claude/main bash /srv/specimenbase/deploy/deploy.sh
