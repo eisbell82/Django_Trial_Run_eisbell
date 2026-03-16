@@ -14,8 +14,22 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
+          script_stop: false
           script: |
-            git -C /srv/specimenbase fetch origin claude/main
-            git -C /srv/specimenbase reset --hard origin/claude/main
-            echo "=== git OK, running deploy.sh ==="
-            DEPLOY_BRANCH=claude/main bash /srv/specimenbase/deploy/deploy.sh
+            rm -f /tmp/deploy_err.txt
+            git -C /srv/specimenbase fetch origin claude/main >> /tmp/deploy_err.txt 2>&1
+            echo "fetch_exit:$?" >> /tmp/deploy_err.txt
+            git -C /srv/specimenbase reset --hard origin/claude/main >> /tmp/deploy_err.txt 2>&1
+            echo "reset_exit:$?" >> /tmp/deploy_err.txt
+            DEPLOY_BRANCH=claude/main bash /srv/specimenbase/deploy/deploy.sh >> /tmp/deploy_err.txt 2>&1
+            echo "deploy_exit:$?" >> /tmp/deploy_err.txt
+      - name: Read error log
+        uses: appleboy/ssh-action@v1.0.3
+        if: always()
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            echo "=== /tmp/deploy_err.txt ==="
+            cat /tmp/deploy_err.txt 2>/dev/null || echo "(no error file)"
