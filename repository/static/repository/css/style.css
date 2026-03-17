@@ -38,12 +38,18 @@ nav {
 }
 .nav-logo {
   font-family: 'Syne', sans-serif;
-  font-weight: 800; font-size: 13px;
-  color: var(--accent); letter-spacing: -0.5px;
   text-decoration: none;
   display: flex; align-items: center; gap: 8px;
 }
-.nav-logo span { color: var(--text-muted); font-weight: 400; }
+.nav-logo-text {
+  display: flex; flex-direction: column; line-height: 1.15;
+  font-weight: 700; font-size: 12px; letter-spacing: 0;
+  color: var(--accent);
+}
+.nav-logo-sub {
+  font-weight: 400; font-size: 9px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-muted);
+}
 .nav-mushroom { flex-shrink: 0; }
 .nav-links { display: flex; gap: 0; margin-left: auto; }
 .nav-links a {
