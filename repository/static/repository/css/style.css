@@ -372,6 +372,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
   border-collapse: collapse;
   font-size: clamp(9px, 1.1vw, 12px);
   width: auto;
+  margin: 0 auto;
 }
 .detail-body.samples-active { grid-template-columns: 1fr; max-width: 100%; padding: 2rem 0; }
 .detail-body.samples-active .detail-sidebar { display: none; }
