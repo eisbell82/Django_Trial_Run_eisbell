@@ -758,12 +758,19 @@ def upload_csv_samples(request, slug):
             )
             data_headers = [h for h in headers if h != sid_col]
 
-            # get_or_create columns (few per dataset, cheap)
+            # get_or_create columns — headers starting with "char_" (case-insensitive)
+            # are assigned to the characteristics group; the prefix is stripped from the name.
             col_map = {}
             for h in data_headers:
+                if h.strip().lower().startswith("char_"):
+                    col_name = h.strip()[5:].strip() or h.strip()
+                    col_group = "characteristics"
+                else:
+                    col_name = h.strip()
+                    col_group = "data"
                 col, _ = SampleColumn.objects.get_or_create(
-                    dataset=dataset, name=h,
-                    defaults={"order": dataset.sample_columns.count()},
+                    dataset=dataset, name=col_name,
+                    defaults={"order": dataset.sample_columns.count(), "group": col_group},
                 )
                 col_map[h] = col
 
