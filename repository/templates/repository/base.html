@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}SpecimenBase — Research Data Repository{% endblock %}</title>
+<title>{% block title %}Myco-material Database — Research Data Repository{% endblock %}</title>
 <link rel="icon" type="image/png" href="{% static 'repository/images/favicon.png' %}">
 <link rel="apple-touch-icon" href="{% static 'repository/images/apple-touch-icon.png' %}">
 <link rel="stylesheet" href="{% static 'repository/css/style.css' %}">
@@ -14,8 +14,8 @@
 
 <nav>
   <a class="nav-logo" href="{% url 'repository:home' %}">
-    <img class="nav-mushroom" src="{% static 'repository/images/mushroom.png' %}" width="28" height="28" alt="SpecimenBase mushroom logo">
-    Specimen<span>Base</span>
+    <img class="nav-mushroom" src="{% static 'repository/images/mushroom.png' %}" width="28" height="28" alt="Myco-material Database mushroom logo">
+    Myco-material<span> Database</span>
   </a>
   <span style="font-size:10px;color:var(--text-dim);letter-spacing:.05em">v{{ APP_VERSION }}</span>
   <div class="nav-links">
