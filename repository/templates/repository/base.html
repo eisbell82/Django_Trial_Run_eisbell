@@ -101,6 +101,44 @@
     pct.textContent   = '';
   }
 
+  /* Reusable XHR upload with progress overlay.
+     uploadWithProgress(url, formData, onSuccess)
+     onSuccess() is called once server returns 2xx/3xx. */
+  window.uploadWithProgress = function(url, formData, onSuccess) {
+    if (!overlay) init();
+    fill.classList.remove('upload-processing');
+    fill.style.background = '';
+    overlay.style.display = 'flex';
+    setBar(0, 'Uploading\u2026');
+
+    var xhr = new XMLHttpRequest();
+    var done = false;
+
+    xhr.upload.addEventListener('progress', function(ev) {
+      if (!ev.lengthComputable) return;
+      var p = Math.round(ev.loaded / ev.total * 100);
+      if (p >= 100) setProcessing(); else setBar(p, 'Uploading\u2026');
+    });
+    xhr.upload.addEventListener('load', function() { setProcessing(); });
+
+    function finish() {
+      if (done) return; done = true;
+      fill.classList.remove('upload-processing');
+      setBar(100, 'Done');
+      xhr.abort();
+      onSuccess();
+    }
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 2 && xhr.status >= 200 && xhr.status < 400) finish();
+    };
+    xhr.addEventListener('load', finish);
+    xhr.addEventListener('error',   function() { if (!done) errorBar('Upload failed \u2014 please try again'); });
+    xhr.addEventListener('timeout', function() { if (!done) errorBar('Request timed out \u2014 please try again'); });
+    xhr.timeout = 600000;
+    xhr.open('POST', url);
+    xhr.send(formData);
+  };
+
   document.addEventListener('DOMContentLoaded', function () {
     init();
     document.querySelectorAll('form[data-upload-form]').forEach(function (form) {

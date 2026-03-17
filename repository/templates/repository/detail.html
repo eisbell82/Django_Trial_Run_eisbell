@@ -532,11 +532,14 @@
 
     {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
     <div style="margin-top:1rem">
+      <input type="text" id="overview-photo-caption" placeholder="Caption (optional)"
+             style="width:100%;padding:.35rem .6rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;box-sizing:border-box;margin-bottom:.4rem">
       <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:.35rem .9rem;background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:11px">
         + Add overview photo
         <input type="file" accept="image/*" style="display:none"
                data-upload-url="{% url 'repository:upload_dataset_photo' dataset.slug %}"
                data-csrf="{{ csrf_token }}"
+               data-caption-input="overview-photo-caption"
                onchange="openPhotoEditor(this)">
       </label>
     </div>
@@ -626,13 +629,17 @@ document.addEventListener('keydown', function(e) {
 var _cropper = null;
 var _uploadUrl = null;
 var _csrfToken = null;
+var _caption   = '';
 var _cropperLoaded = false;
 
 function openPhotoEditor(input) {
   var file = input.files[0];
   if (!file) return;
-  _uploadUrl  = input.dataset.uploadUrl;
-  _csrfToken  = input.dataset.csrf;
+  _uploadUrl = input.dataset.uploadUrl;
+  _csrfToken = input.dataset.csrf;
+  // Read caption from an associated input if declared
+  var capId = input.dataset.captionInput;
+  _caption  = capId ? ((document.getElementById(capId) || {}).value || '') : '';
   input.value = '';
   var reader = new FileReader();
   reader.onload = function(e) {
@@ -681,12 +688,15 @@ function savePhoto() {
     var fd = new FormData();
     fd.append('photo', blob, 'photo.jpg');
     fd.append('csrfmiddlewaretoken', _csrfToken);
-    fetch(_uploadUrl, { method: 'POST', body: fd })
-      .then(function(r) {
-        if (r.ok || r.redirected) { location.reload(); }
-        else { btn.textContent = 'Save photo'; btn.disabled = false; alert('Upload failed.'); }
-      })
-      .catch(function() { btn.textContent = 'Save photo'; btn.disabled = false; alert('Upload failed.'); });
+    if (_caption) fd.append('caption', _caption);
+    closePhotoEditor();
+    if (window.uploadWithProgress) {
+      uploadWithProgress(_uploadUrl, fd, function() { location.reload(); });
+    } else {
+      fetch(_uploadUrl, { method: 'POST', body: fd })
+        .then(function(r) { if (r.ok || r.redirected) location.reload(); })
+        .catch(function() { alert('Upload failed.'); });
+    }
   }, 'image/jpeg', 0.92);
 }
 </script>
