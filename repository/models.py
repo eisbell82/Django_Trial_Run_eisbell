@@ -125,9 +125,14 @@ class Notebook(models.Model):
 
 
 class SampleColumn(models.Model):
+    GROUP_CHOICES = [
+        ("characteristics", "Sample characteristics"),
+        ("data", "Sample data"),
+    ]
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="sample_columns")
     name = models.CharField(max_length=200)
     unit = models.CharField(max_length=50, blank=True, default="")
+    group = models.CharField(max_length=20, choices=GROUP_CHOICES, default="data")
     order = models.PositiveIntegerField(default=0)
 
     class Meta:

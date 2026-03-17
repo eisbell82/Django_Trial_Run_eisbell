@@ -293,19 +293,31 @@
             </script>
             {% endif %}
           </div>
+          <select name="group" class="sample-col-input" style="width:auto;font-size:11px">
+            <option value="data">Sample data</option>
+            <option value="characteristics">Characteristics</option>
+          </select>
           <button type="submit" class="btn-outline" style="font-size:11px;padding:5px 12px">+ Add column</button>
         </form>
       </div>
       {% endif %}
 
       {% if sample_columns %}
+
+      {% if char_columns and data_columns %}
+      <div style="display:flex;gap:0;margin-bottom:.75rem;border:1px solid var(--border);border-radius:6px;overflow:hidden;width:fit-content">
+        <button id="toggle-char" type="button" onclick="setColumnGroup('characteristics')" style="padding:6px 16px;font-size:12px;border:none;cursor:pointer;background:var(--accent);color:#fff">Sample characteristics</button>
+        <button id="toggle-data" type="button" onclick="setColumnGroup('data')" style="padding:6px 16px;font-size:12px;border:none;cursor:pointer;background:var(--surface);color:var(--text)">Sample data</button>
+      </div>
+      {% endif %}
+
       <div class="sample-table-wrap">
         <table class="sample-table">
           <thead>
             <tr>
               <th>Sample ID</th>
               {% for col in sample_columns %}
-              <th>
+              <th data-group="{{ col.group }}">
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                 <span id="col-label-{{ col.id }}">{{ col.name }}</span>
                 <button type="button" id="col-rename-btn-{{ col.id }}" class="col-del-btn edit-ctrl" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
@@ -340,6 +352,15 @@
                     <input type="text" name="unit" id="col-unit-input-{{ col.id }}" value="{{ col.unit }}" autocomplete="off" placeholder="e.g. °C, mm, kg" style="font-size:10px;width:80px;padding:2px 5px;background:var(--surface);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
                     <button type="submit" class="col-del-btn" style="color:var(--accent)">✓</button>
                     <button type="button" class="col-del-btn" onclick="hideColUnit({{ col.id }})">✕</button>
+                  </form>
+                </div>
+                <div class="edit-ctrl" style="margin-top:2px">
+                  <form method="post" action="{% url 'repository:set_column_group' dataset.slug col.id %}" style="display:inline">
+                    {% csrf_token %}
+                    <select name="group" onchange="this.form.submit()" style="font-size:10px;padding:2px 4px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text-dim)">
+                      <option value="characteristics" {% if col.group == 'characteristics' %}selected{% endif %}>Characteristics</option>
+                      <option value="data" {% if col.group == 'data' %}selected{% endif %}>Data</option>
+                    </select>
                   </form>
                 </div>
                 {% else %}
@@ -379,7 +400,7 @@
                   {% endif %}
                 </div>
               </td>
-              {% for col, val in s.row_with_cols %}<td>{{ val }}{% if val and col.unit %} <span style="font-size:10px;opacity:.65;font-style:italic">{{ col.unit }}</span>{% endif %}</td>{% endfor %}
+              {% for col, val in s.row_with_cols %}<td data-group="{{ col.group }}">{{ val }}{% if val and col.unit %} <span style="font-size:10px;opacity:.65;font-style:italic">{{ col.unit }}</span>{% endif %}</td>{% endfor %}
               {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
               <td class="edit-ctrl" style="white-space:nowrap">
                 <a href="{% url 'repository:edit_sample' dataset.slug s.pk %}" class="col-del-btn" title="Edit sample" style="text-decoration:none;opacity:.6">✎</a>
@@ -565,6 +586,19 @@
 </div>
 
 <script>
+function setColumnGroup(group) {
+  var btnChar = document.getElementById('toggle-char');
+  var btnData = document.getElementById('toggle-data');
+  if (btnChar) { btnChar.style.background = group === 'characteristics' ? 'var(--accent)' : 'var(--surface)'; btnChar.style.color = group === 'characteristics' ? '#fff' : 'var(--text)'; }
+  if (btnData) { btnData.style.background = group === 'data' ? 'var(--accent)' : 'var(--surface)'; btnData.style.color = group === 'data' ? '#fff' : 'var(--text)'; }
+  document.querySelectorAll('#tab-samples [data-group]').forEach(function(el) {
+    el.style.display = el.dataset.group === group ? '' : 'none';
+  });
+}
+{% if char_columns and data_columns %}
+document.addEventListener('DOMContentLoaded', function() { setColumnGroup('characteristics'); });
+{% endif %}
+
 function toggleSamplesEdit() {
   var tab = document.getElementById('tab-samples');
   var btn = document.getElementById('samples-edit-toggle');

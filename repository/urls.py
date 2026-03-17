@@ -28,6 +28,7 @@ urlpatterns = [
     path("datasets/<slug:slug>/samples/<int:pk>/edit/", views.edit_sample, name="edit_sample"),
     path("datasets/<slug:slug>/columns/<int:col_id>/rename/", views.rename_sample_column, name="rename_sample_column"),
     path("datasets/<slug:slug>/columns/<int:col_id>/unit/", views.set_column_unit, name="set_column_unit"),
+    path("datasets/<slug:slug>/columns/<int:col_id>/group/", views.set_column_group, name="set_column_group"),
     path("datasets/<slug:slug>/samples/upload-csv/", views.upload_csv_samples, name="upload_csv_samples"),
     path("datasets/<slug:slug>/samples/<int:pk>/photo/", views.upload_sample_photo, name="upload_sample_photo"),
     path("datasets/<slug:slug>/access/add/", views.add_dataset_access, name="add_dataset_access"),

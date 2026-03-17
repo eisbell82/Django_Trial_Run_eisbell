@@ -145,11 +145,16 @@ def dataset_detail(request, slug):
     for col in columns:
         col.unit_suggestions = unit_sugs_by_name.get(col.name, [])
 
+    char_columns = [c for c in columns if c.group == "characteristics"]
+    data_columns  = [c for c in columns if c.group == "data"]
+
     notebooks = list(dataset.notebooks.all())
     context = {
         "dataset": dataset,
         "notebooks": notebooks,
         "sample_columns": columns,
+        "char_columns": char_columns,
+        "data_columns": data_columns,
         "samples": samples,
         "suggested_column_names": existing_col_names,
     }
@@ -597,9 +602,12 @@ def add_sample_column(request, slug):
         return _redirect_to_tab(slug, "tab-samples")
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
+        group = request.POST.get("group", "data")
+        if group not in ("characteristics", "data"):
+            group = "data"
         if name:
             order = dataset.sample_columns.count()
-            SampleColumn.objects.get_or_create(dataset=dataset, name=name, defaults={"order": order})
+            SampleColumn.objects.get_or_create(dataset=dataset, name=name, defaults={"order": order, "group": group})
     return _redirect_to_tab(slug, "tab-samples")
 
 
@@ -716,6 +724,19 @@ def set_column_unit(request, slug, col_id):
     if request.method == "POST":
         unit = request.POST.get("unit", "").strip()
         SampleColumn.objects.filter(id=col_id, dataset=dataset).update(unit=unit)
+    return _redirect_to_tab(slug, "tab-samples")
+
+
+@login_required
+def set_column_group(request, slug, col_id):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return _redirect_to_tab(slug, "tab-samples")
+    if request.method == "POST":
+        group = request.POST.get("group", "data")
+        if group in ("characteristics", "data"):
+            SampleColumn.objects.filter(id=col_id, dataset=dataset).update(group=group)
     return _redirect_to_tab(slug, "tab-samples")
 
 
