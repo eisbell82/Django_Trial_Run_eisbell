@@ -799,10 +799,7 @@ def upload_csv_samples(request, slug):
             text = request.FILES["csv_file"].read().decode("utf-8-sig")
             reader = csv.DictReader(io.StringIO(text))
             headers = list(reader.fieldnames or [])
-            sid_col = next(
-                (h for h in headers if h.strip().lower() in ("sample_id", "sample id", "id")),
-                headers[0] if headers else None,
-            )
+            sid_col = headers[0] if headers else None
             data_headers = [h for h in headers if h != sid_col]
 
             # Read all rows up-front so we can detect dominant data type per column
