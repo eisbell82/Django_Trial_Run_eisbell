@@ -367,17 +367,13 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
   width: 180px;
 }
 .sample-col-input:focus { outline: none; border-color: var(--accent); }
-.sample-table-wrap {
-  width: 96vw;
-  margin-left: calc(50% - 48vw);
-  overflow-x: auto;
-}
+.sample-table-wrap { overflow-x: auto; padding: 0 2vw; }
 .sample-table {
   border-collapse: collapse;
   font-size: clamp(9px, 1.1vw, 12px);
   width: auto;
 }
-.detail-body.samples-active { grid-template-columns: 1fr; }
+.detail-body.samples-active { grid-template-columns: 1fr; max-width: 100%; padding: 2rem 0; }
 .detail-body.samples-active .detail-sidebar { display: none; }
 .sample-table th {
   text-align: left; padding: clamp(4px, 0.55vw, 7px) clamp(5px, 0.9vw, 12px);

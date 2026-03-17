@@ -5,7 +5,8 @@
 {% block nav_samples %}active{% endblock %}
 
 {% block content %}
-<div class="section" style="padding-top:3rem">
+<div style="padding-top:3rem;padding-bottom:4rem">
+<div class="section" style="padding-top:0;padding-bottom:1.5rem">
 
   <div style="margin-bottom:2rem">
     <form method="get" action="{% url 'repository:samples' %}" id="samples-filter-form">
@@ -122,6 +123,7 @@
        style="font-size:12px;padding:6px 14px;margin-left:auto;text-decoration:none"
        download>&#8595; Download CSV</a>
   </div>
+</div>
 
   <div class="sample-table-wrap">
     <table class="sample-table">
