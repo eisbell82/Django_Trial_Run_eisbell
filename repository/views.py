@@ -113,13 +113,45 @@ def dataset_detail(request, slug):
         dataset.save(update_fields=["download_count"])
         return redirect("repository:detail", slug=slug)
 
+    sort_col  = request.GET.get("sort_col", "")
+    sort_dir  = request.GET.get("sort_dir", "asc")
+    try:
+        per_page = int(request.GET.get("per_page", 25))
+        if per_page not in (25, 50, 100):
+            per_page = 25
+    except ValueError:
+        per_page = 25
+    try:
+        page_num = int(request.GET.get("page", 1))
+    except ValueError:
+        page_num = 1
+
     columns = list(dataset.sample_columns.all())
-    samples = list(dataset.samples.prefetch_related("values", "photos").all())
-    # Build row data from prefetch cache — avoids N×M individual queries
-    for s in samples:
+    col_name_map = {col.name: col for col in columns}
+    all_samples = list(dataset.samples.prefetch_related("values", "photos").all())
+
+    # Build row data
+    for s in all_samples:
         val_map = {v.column_id: v.value for v in s.values.all()}
         s.row_with_cols = [(col, val_map.get(col.pk, "")) for col in columns]
         s.photos_list = list(s.photos.all())
+
+    # Sort
+    reverse = sort_dir == "desc"
+    if sort_col == "sample_id":
+        all_samples.sort(key=lambda s: _sort_key(s.sample_id), reverse=reverse)
+    elif sort_col in col_name_map:
+        col_obj = col_name_map[sort_col]
+        all_samples.sort(
+            key=lambda s: _sort_key(next((val for c, val in s.row_with_cols if c.pk == col_obj.pk), "")),
+            reverse=reverse,
+        )
+
+    # Paginate
+    from django.core.paginator import Paginator
+    paginator = Paginator(all_samples, per_page)
+    page_obj = paginator.get_page(page_num)
+    samples = list(page_obj)
 
     # Column names already used in other datasets of the same category (for suggestions)
     existing_col_names = list(
@@ -157,6 +189,12 @@ def dataset_detail(request, slug):
         "char_columns": char_columns,
         "data_columns": data_columns,
         "samples": samples,
+        "page_obj": page_obj,
+        "total_samples": paginator.count,
+        "per_page": per_page,
+        "sort_col": sort_col,
+        "sort_dir": sort_dir,
+        "page_sizes": [25, 50, 100],
         "suggested_column_names": existing_col_names,
     }
     return render(request, "repository/detail.html", context)
