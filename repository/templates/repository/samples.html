@@ -150,7 +150,7 @@
             </a>
           </th>
           {% for col, col_unit in show_cols_zip %}
-          <th>
+          <th data-col="{{ col }}">
             <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category %}category={{ active_category }}&{% endif %}{% for c in show_columns %}cols={{ c }}&{% endfor %}{% if f_species %}filter_species={{ f_species }}&{% endif %}{% if f_substrate %}filter_substrate={{ f_substrate }}&{% endif %}{% if f_coating %}filter_coating={{ f_coating }}&{% endif %}{% if filter_col %}filter_col={{ filter_col }}&{% endif %}{% if filter_col_val %}filter_col_val={{ filter_col_val|urlencode }}&{% endif %}per_page={{ per_page }}&sort_col={{ col|urlencode }}&sort_dir={% if sort_col == col and sort_dir == 'asc' %}desc{% else %}asc{% endif %}" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:4px">
               {{ col }}{% if col_unit %} <span style="font-size:10px;opacity:.6;font-weight:normal">[{{ col_unit }}]</span>{% endif %} <span class="sort-ind" style="opacity:{% if sort_col == col %}1{% else %}.3{% endif %}">{% if sort_col == col and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
             </a>
@@ -282,8 +282,28 @@ document.addEventListener('click', function(e) {
   var _colUrl = '{% url "repository:column_values" %}';
   var _cat    = '{{ active_category|escapejs }}';
 
+  function cvTableVals(colName) {
+    var th = document.querySelector('.sample-table thead th[data-col="' + colName.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]');
+    if (!th) return null;
+    var ci = Array.from(th.parentNode.children).indexOf(th);
+    var seen = {}, vals = [];
+    document.querySelectorAll('.sample-table tbody tr').forEach(function(tr) {
+      if (tr.cells.length > 1 && tr.cells[ci]) {
+        var v = tr.cells[ci].textContent.trim();
+        if (v && !seen[v]) { seen[v] = true; vals.push(v); }
+      }
+    });
+    return vals.sort();
+  }
+
   function cvFetch(colName, initVal) {
     if (!colName) { _vals = []; cvRender(''); return; }
+    var fromTable = cvTableVals(colName);
+    if (fromTable !== null) {
+      _vals = fromTable;
+      cvRender(initVal != null ? initVal : '');
+      return;
+    }
     fetch(_colUrl + '?column=' + encodeURIComponent(colName) + (_cat ? '&category=' + encodeURIComponent(_cat) : ''))
       .then(function(r){ return r.json(); })
       .then(function(d){ _vals = d.values || []; cvRender(initVal != null ? initVal : ''); });
