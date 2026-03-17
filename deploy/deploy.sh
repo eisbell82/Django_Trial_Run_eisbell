@@ -9,6 +9,11 @@ VENV_DIR="$APP_DIR/venv"
 PYTHON="$VENV_DIR/bin/python"
 PIP="$VENV_DIR/bin/pip"
 
+echo "==> Ensuring correct ownership (prevents git dubious-ownership errors)..."
+# Files can end up root:root if a previous deploy ran commands as root.
+# This must run before git operations or git will refuse to work.
+sudo chown -R ubuntu:www-data "$APP_DIR"
+
 echo "==> Pulling latest code..."
 git -C "$APP_DIR" fetch origin "${DEPLOY_BRANCH:-claude/main}"
 git -C "$APP_DIR" reset --hard "origin/${DEPLOY_BRANCH:-claude/main}"

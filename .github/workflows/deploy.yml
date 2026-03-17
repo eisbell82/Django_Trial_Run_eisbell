@@ -5,38 +5,8 @@ on:
     branches: [claude/main]
 
 jobs:
-  inspect:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Inspect server state
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}
-          key: ${{ secrets.AWS_SSH_KEY }}
-          script: |
-            {
-              echo "=== whoami ==="
-              whoami
-              echo "=== /srv ownership ==="
-              ls -la /srv/ 2>&1
-              echo "=== /srv/specimenbase ownership ==="
-              ls -la /srv/specimenbase/ 2>&1
-              echo "=== .git exists ==="
-              ls -la /srv/specimenbase/.git 2>&1
-              echo "=== git remote ==="
-              git -C /srv/specimenbase remote -v 2>&1
-              echo "=== staticfiles ownership ==="
-              ls -la /srv/specimenbase/staticfiles/ 2>&1
-              echo "=== ubuntu can write staticfiles? ==="
-              touch /srv/specimenbase/staticfiles/test_write 2>&1 && echo "YES" || echo "NO - permission denied"
-              echo "=== sudo -n whoami ==="
-              sudo -n whoami 2>&1
-            } | sudo tee /srv/specimenbase/staticfiles/inspect.txt || true
-
   deploy:
     runs-on: ubuntu-latest
-    needs: inspect
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -45,10 +15,6 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            echo "==> Fixing ownership (root:root files in ubuntu-owned dir)..."
-            sudo chown -R ubuntu:www-data /srv/specimenbase
-            echo "==> Fetching latest code..."
             git -C /srv/specimenbase fetch origin claude/main
             git -C /srv/specimenbase reset --hard origin/claude/main
-            echo "==> Running deploy.sh..."
             DEPLOY_BRANCH=claude/main bash /srv/specimenbase/deploy/deploy.sh
