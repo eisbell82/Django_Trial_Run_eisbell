@@ -337,7 +337,7 @@
                 </a>
               </th>
               {% for col in sample_columns %}
-              <th data-group="{{ col.group }}">
+              <th data-group="{{ col.group }}" data-sortcol="{{ col.name|escapejs }}">
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                 <span id="col-label-{{ col.id }}">{{ col.name }}</span><span class="sort-ind read-ctrl" style="opacity:.3;margin-left:3px">↑</span>
                 <button type="button" id="col-rename-btn-{{ col.id }}" class="col-del-btn edit-ctrl" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
@@ -646,11 +646,11 @@
 
     {% if overview_photos %}
     <div style="margin-top:1rem">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.5rem">
+      <div style="display:flex;flex-direction:column;gap:.75rem">
         {% for photo in overview_photos %}
         <div style="position:relative">
           <img src="{{ photo.image.url }}" alt="{{ photo.caption }}"
-               style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer"
+               style="width:100%;border-radius:6px;border:1px solid var(--border);cursor:pointer"
                onclick='openPhotoViewer(["{{ photo.image.url|escapejs }}"])'>
           {% if photo.caption %}
           <p style="font-size:10px;color:var(--text-dim);margin:.3rem 0 0;text-align:center">{{ photo.caption }}</p>
@@ -670,14 +670,15 @@
     {% endif %}
 
     {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-    <form method="post" action="{% url 'repository:upload_dataset_photo' dataset.slug %}" enctype="multipart/form-data" style="margin-top:1rem">
-      {% csrf_token %}
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:.4rem">Add overview photo</div>
-      <input type="file" name="image" accept="image/*" required style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.4rem">
-      <input type="text" name="caption" placeholder="Caption (optional)"
-             style="width:100%;padding:.35rem .6rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;box-sizing:border-box;margin-bottom:.4rem">
-      <button type="submit" style="padding:.35rem .9rem;background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:11px;cursor:pointer">Upload</button>
-    </form>
+    <div style="margin-top:1rem">
+      <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:.35rem .9rem;background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:11px">
+        + Add overview photo
+        <input type="file" accept="image/*" style="display:none"
+               data-upload-url="{% url 'repository:upload_dataset_photo' dataset.slug %}"
+               data-csrf="{{ csrf_token }}"
+               onchange="openPhotoEditor(this)">
+      </label>
+    </div>
     {% endif %}
 
     {% if dataset.uploaded_by %}
@@ -698,55 +699,25 @@
 </div>
 
 <script>
-/* ── Client-side column sort ── */
-(function () {
-  var _sc = -1, _sd = 'asc';
-
-  function sortByCI(ci) {
-    var dir = (_sc === ci && _sd === 'asc') ? 'desc' : 'asc';
-    _sc = ci; _sd = dir;
-
-    var tbody = document.querySelector('#tab-samples .sample-table tbody');
-    if (!tbody) return;
-    var rows = Array.from(tbody.querySelectorAll('tr')).filter(function (r) { return r.cells.length > 1; });
-
-    rows.sort(function (a, b) {
-      var at = (a.cells[ci] ? a.cells[ci].textContent.trim() : '');
-      var bt = (b.cells[ci] ? b.cells[ci].textContent.trim() : '');
-      if (!at && !bt) return 0;
-      if (!at) return 1;
-      if (!bt) return -1;
-      var an = parseFloat(at), bn = parseFloat(bt);
-      var cmp = (!isNaN(an) && !isNaN(bn)) ? (an - bn) : at.toLowerCase().localeCompare(bt.toLowerCase());
-      return dir === 'asc' ? cmp : -cmp;
-    });
-    rows.forEach(function (r) { tbody.appendChild(r); });
-
-    document.querySelectorAll('#tab-samples .sample-table thead th').forEach(function (th, i) {
-      var ind = th.querySelector('.sort-ind');
-      if (!ind) return;
-      if (i === ci) { ind.textContent = dir === 'asc' ? '↑' : '↓'; ind.style.opacity = '1'; }
-      else { ind.textContent = '↑'; ind.style.opacity = '.3'; }
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    var thead = document.querySelector('#tab-samples .sample-table thead tr');
-    if (!thead) return;
-    thead.querySelectorAll('th').forEach(function (th) { th.style.cursor = 'pointer'; });
-    thead.addEventListener('click', function (e) {
-      if (e.target.closest('button, form, select, input')) return;
-      var a = e.target.closest('a[href]');
-      if (a) {
-        if (a.href.indexOf('sort_col') !== -1) e.preventDefault();
-        else return;
-      }
-      var th = e.target.closest('th');
-      if (!th) return;
-      sortByCI(Array.from(thead.querySelectorAll('th')).indexOf(th));
-    });
+/* ── Column sort (server-side navigation) ── */
+document.addEventListener('DOMContentLoaded', function () {
+  var thead = document.querySelector('#tab-samples .sample-table thead tr');
+  if (!thead) return;
+  thead.querySelectorAll('th[data-sortcol]').forEach(function (th) { th.style.cursor = 'pointer'; });
+  thead.addEventListener('click', function (e) {
+    if (e.target.closest('button, form, select, input')) return;
+    var a = e.target.closest('a[href]');
+    if (a && a.href.indexOf('sort_col') !== -1) return;
+    if (a) return;
+    var th = e.target.closest('th[data-sortcol]');
+    if (!th) return;
+    var col = th.dataset.sortcol;
+    var p = new URLSearchParams(window.location.search);
+    var newDir = (p.get('sort_col') === col && p.get('sort_dir') === 'asc') ? 'desc' : 'asc';
+    p.set('sort_col', col); p.set('sort_dir', newDir); p.delete('page');
+    window.location.search = p.toString();
   });
-})();
+});
 
 function setColumnGroup(group) {
   var btnChar = document.getElementById('toggle-char');

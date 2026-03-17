@@ -1296,7 +1296,7 @@ def upload_dataset_photo(request, slug):
         messages.error(request, "Permission denied.")
         return redirect("repository:detail", slug=slug)
     if request.method == "POST":
-        img = request.FILES.get("image")
+        img = request.FILES.get("photo") or request.FILES.get("image")
         if img:
             caption = request.POST.get("caption", "").strip()
             order = dataset.overview_photos.count()
