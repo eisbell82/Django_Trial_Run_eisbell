@@ -304,7 +304,6 @@
           <thead>
             <tr>
               <th>Sample ID</th>
-              <th>Photo</th>
               {% for col in sample_columns %}
               <th>
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
@@ -357,26 +356,28 @@
           <tbody>
             {% for s in samples %}
             <tr>
-              <td class="sample-id-cell">{{ s.sample_id }}</td>
-              <td style="text-align:center;width:60px">
-                {% if s.image %}
-                  <img src="{{ s.image.url }}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;display:block;margin:0 auto">
-                  {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-                  <form method="post" action="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}" class="edit-ctrl" style="display:none;margin-top:2px">
-                    {% csrf_token %}
-                    <input type="hidden" name="remove" value="1">
-                    <button type="submit" class="col-del-btn" title="Remove photo" onclick="return confirm('Remove photo?')">× remove</button>
-                  </form>
-                  {% endif %}
-                {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+              <td class="sample-id-cell">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                  <span>{{ s.sample_id }}</span>
+                  {% if s.image %}
+                    <img src="{{ s.image.url }}" style="width:28px;height:28px;object-fit:cover;border-radius:3px;flex-shrink:0">
+                    {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                    <form method="post" action="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}" class="edit-ctrl" style="display:none">
+                      {% csrf_token %}
+                      <input type="hidden" name="remove" value="1">
+                      <button type="submit" class="col-del-btn" title="Remove photo" onclick="return confirm('Remove photo?')">×</button>
+                    </form>
+                    {% endif %}
+                  {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                   <form method="post" action="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}" enctype="multipart/form-data" class="edit-ctrl" style="display:none">
                     {% csrf_token %}
                     <label class="col-del-btn" style="cursor:pointer;opacity:.6" title="Add photo">
-                      +
+                      + photo
                       <input type="file" name="photo" accept="image/*" style="display:none" onchange="this.form.submit()">
                     </label>
                   </form>
-                {% endif %}
+                  {% endif %}
+                </div>
               </td>
               {% for col, val in s.row_with_cols %}<td>{{ val }}{% if val and col.unit %} <span style="font-size:10px;opacity:.65;font-style:italic">{{ col.unit }}</span>{% endif %}</td>{% endfor %}
               {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
@@ -390,7 +391,7 @@
               {% endif %}
             </tr>
             {% empty %}
-            <tr><td colspan="{{ sample_columns|length|add:3 }}" style="color:var(--text-dim);text-align:center;padding:1.5rem">No samples yet.</td></tr>
+            <tr><td colspan="{{ sample_columns|length|add:2 }}" style="color:var(--text-dim);text-align:center;padding:1.5rem">No samples yet.</td></tr>
             {% endfor %}
           </tbody>
         </table>
