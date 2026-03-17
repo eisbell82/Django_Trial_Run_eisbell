@@ -1083,6 +1083,17 @@ def samples_view(request):
     filter_col_val  = request.GET.get("filter_col_val", "")
     sort_col        = request.GET.get("sort_col", "")
     sort_dir        = request.GET.get("sort_dir", "asc")
+    page_sizes      = [25, 50, 100]
+    try:
+        per_page = int(request.GET.get("per_page", 25))
+    except ValueError:
+        per_page = 25
+    if per_page not in page_sizes:
+        per_page = 25
+    try:
+        page_num = int(request.GET.get("page", 1))
+    except ValueError:
+        page_num = 1
 
     samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, filter_col, filter_col_val, user=request.user)
 
@@ -1107,7 +1118,13 @@ def samples_view(request):
 
     show_cols_zip = [(col, col_unit_map.get(col, "")) for col in show_columns]
 
-    samples = _apply_sort_and_build_rows(samples_qs, show_columns, col_unit_map, sort_col, sort_dir)
+    all_samples = _apply_sort_and_build_rows(samples_qs, show_columns, col_unit_map, sort_col, sort_dir)
+    total_results = len(all_samples)
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(all_samples, per_page)
+    page_obj = paginator.get_page(page_num)
+    samples = list(page_obj)
 
     category_values = (
         _visible_datasets(request.user).filter(samples__isnull=False)
@@ -1126,13 +1143,16 @@ def samples_view(request):
 
     return render(request, "repository/samples.html", {
         "samples": samples,
+        "page_obj": page_obj,
+        "per_page": per_page,
+        "page_sizes": page_sizes,
         "show_columns": show_columns,
         "show_cols_zip": show_cols_zip,
         "available_columns": available_columns,
         "query": query,
         "active_category": active_category,
         "categories_with_samples": categories_with_samples,
-        "total_results": len(samples),
+        "total_results": total_results,
         "f_species": f_species,
         "f_substrate": f_substrate,
         "f_coating": f_coating,
