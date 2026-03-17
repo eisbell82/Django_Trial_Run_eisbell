@@ -360,22 +360,22 @@
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                   <span>{{ s.sample_id }}</span>
                   {% if s.image %}
-                    <img src="{{ s.image.url }}" style="width:28px;height:28px;object-fit:cover;border-radius:3px;flex-shrink:0">
+                    <button type="button" class="col-del-btn" style="opacity:.7;font-size:13px" title="View photo" onclick="openPhotoViewer('{{ s.image.url|escapejs }}')">🖼</button>
                     {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                     <form method="post" action="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}" class="edit-ctrl" style="display:none">
                       {% csrf_token %}
                       <input type="hidden" name="remove" value="1">
-                      <button type="submit" class="col-del-btn" title="Remove photo" onclick="return confirm('Remove photo?')">×</button>
+                      <button type="submit" class="col-del-btn" title="Remove photo" onclick="return confirm('Remove photo?')">× photo</button>
                     </form>
                     {% endif %}
                   {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-                  <form method="post" action="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}" enctype="multipart/form-data" class="edit-ctrl" style="display:none">
-                    {% csrf_token %}
-                    <label class="col-del-btn" style="cursor:pointer;opacity:.6" title="Add photo">
-                      + photo
-                      <input type="file" name="photo" accept="image/*" style="display:none" onchange="this.form.submit()">
-                    </label>
-                  </form>
+                  <label class="col-del-btn edit-ctrl" style="display:none;cursor:pointer;opacity:.6" title="Add photo">
+                    + photo
+                    <input type="file" accept="image/*" style="display:none"
+                           data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
+                           data-csrf="{{ csrf_token }}"
+                           onchange="openPhotoEditor(this)">
+                  </label>
                   {% endif %}
                 </div>
               </td>
@@ -401,6 +401,122 @@
         <p class="muted">No columns defined yet.{% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %} Add a column above to start building your sample table.{% endif %}</p>
       </div>
       {% endif %}
+
+      <!-- Photo viewer modal -->
+      <div id="photo-viewer-modal" onclick="closePhotoViewer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center">
+        <div onclick="event.stopPropagation()" style="position:relative;max-width:90vw;max-height:90vh">
+          <img id="photo-viewer-img" src="" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:6px;display:block">
+          <button onclick="closePhotoViewer()" style="position:absolute;top:-12px;right:-12px;background:var(--surface);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--text);display:flex;align-items:center;justify-content:center">×</button>
+        </div>
+      </div>
+
+      <!-- Photo editor modal -->
+      <div id="photo-editor-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1001;align-items:center;justify-content:center">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;max-width:560px;width:95vw;display:flex;flex-direction:column;gap:12px">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">Edit photo</div>
+          <div style="max-height:55vh;overflow:hidden;border-radius:4px;background:#111">
+            <img id="photo-editor-img" src="" style="display:block;max-width:100%">
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button type="button" onclick="editorRotate(-90)" class="btn-outline" style="font-size:12px;padding:5px 12px">↺ Rotate left</button>
+            <button type="button" onclick="editorRotate(90)"  class="btn-outline" style="font-size:12px;padding:5px 12px">↻ Rotate right</button>
+            <button type="button" onclick="editorFlipX()"     class="btn-outline" style="font-size:12px;padding:5px 12px">⇔ Flip H</button>
+            <button type="button" onclick="editorFlipY()"     class="btn-outline" style="font-size:12px;padding:5px 12px">⇕ Flip V</button>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button type="button" onclick="closePhotoEditor()" class="btn-outline" style="font-size:12px;padding:5px 12px">Cancel</button>
+              <button type="button" id="photo-editor-save" onclick="savePhoto()" class="btn-accent" style="font-size:12px;padding:5px 14px">Save photo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+      // ── Photo viewer ──────────────────────────────────────────
+      function openPhotoViewer(url) {
+        var m = document.getElementById('photo-viewer-modal');
+        document.getElementById('photo-viewer-img').src = url;
+        m.style.display = 'flex';
+      }
+      function closePhotoViewer() {
+        document.getElementById('photo-viewer-modal').style.display = 'none';
+      }
+
+      // ── Photo editor (Cropper.js) ─────────────────────────────
+      var _cropper = null;
+      var _uploadUrl = null;
+      var _csrfToken = null;
+      var _cropperLoaded = false;
+
+      function openPhotoEditor(input) {
+        var file = input.files[0];
+        if (!file) return;
+        _uploadUrl  = input.dataset.uploadUrl;
+        _csrfToken  = input.dataset.csrf;
+        // Reset input so same file can be re-selected
+        input.value = '';
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var img = document.getElementById('photo-editor-img');
+          img.src = e.target.result;
+          document.getElementById('photo-editor-modal').style.display = 'flex';
+          _initCropper(img);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function _initCropper(img) {
+        function _boot() {
+          if (_cropper) { _cropper.destroy(); _cropper = null; }
+          _cropper = new Cropper(img, {
+            aspectRatio: NaN,
+            viewMode: 1,
+            autoCropArea: 0.9,
+            movable: true,
+            zoomable: true,
+          });
+        }
+        if (_cropperLoaded) { _boot(); return; }
+        // Lazy-load Cropper.js CSS + JS
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css';
+        document.head.appendChild(link);
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js';
+        script.onload = function() { _cropperLoaded = true; _boot(); };
+        document.head.appendChild(script);
+      }
+
+      function editorRotate(deg) { if (_cropper) _cropper.rotate(deg); }
+      function editorFlipX()     { if (_cropper) _cropper.scaleX(_cropper.getData().scaleX === -1 ? 1 : -1); }
+      function editorFlipY()     { if (_cropper) _cropper.scaleY(_cropper.getData().scaleY === -1 ? 1 : -1); }
+
+      function closePhotoEditor() {
+        document.getElementById('photo-editor-modal').style.display = 'none';
+        if (_cropper) { _cropper.destroy(); _cropper = null; }
+      }
+
+      function savePhoto() {
+        if (!_cropper) return;
+        var btn = document.getElementById('photo-editor-save');
+        btn.textContent = 'Saving…';
+        btn.disabled = true;
+        var canvas = _cropper.getCroppedCanvas({ maxWidth: 1600, maxHeight: 1600 });
+        canvas.toBlob(function(blob) {
+          var fd = new FormData();
+          fd.append('photo', blob, 'photo.jpg');
+          fd.append('csrfmiddlewaretoken', _csrfToken);
+          fetch(_uploadUrl, { method: 'POST', body: fd })
+            .then(function(r) {
+              if (r.ok || r.redirected) { location.reload(); }
+              else { btn.textContent = 'Save photo'; btn.disabled = false; alert('Upload failed.'); }
+            })
+            .catch(function() { btn.textContent = 'Save photo'; btn.disabled = false; alert('Upload failed.'); });
+        }, 'image/jpeg', 0.92);
+      }
+      </script>
+
     </div>
 
   </div>
