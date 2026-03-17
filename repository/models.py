@@ -1,6 +1,14 @@
+import os
+import uuid
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+
+
+def _unique_photo_path(instance, filename):
+    ext = os.path.splitext(filename)[1].lower() or ".jpg"
+    return f"samples/photos/{uuid.uuid4().hex}{ext}"
 
 
 class Tag(models.Model):
@@ -206,7 +214,7 @@ class AboutPhoto(models.Model):
 
 class SamplePhoto(models.Model):
     sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name="photos")
-    image = models.ImageField(upload_to="samples/photos/")
+    image = models.ImageField(upload_to=_unique_photo_path)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
