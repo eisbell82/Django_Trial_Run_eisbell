@@ -42,7 +42,7 @@
       <a href="{% url 'repository:add_notebook' dataset.slug %}" class="dtab" style="color:var(--accent);text-decoration:none">+ Code Analysis</a>
       {% endif %}
       {% endif %}
-      <div class="dtab" onclick="switchTab(this,'tab-samples')">Samples ({{ samples|length }})</div>
+      <div class="dtab" onclick="switchTab(this,'tab-samples')">Samples ({{ total_samples }})</div>
     </div>
   </div>
 </div>
