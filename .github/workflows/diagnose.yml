@@ -3,7 +3,7 @@ name: Diagnose Server
 on:
   workflow_dispatch:
   push:
-    branches: [claude/main, claude/aws-deployment-setup-uzrvx]
+    branches: [claude/main]
 
 jobs:
   diagnose:

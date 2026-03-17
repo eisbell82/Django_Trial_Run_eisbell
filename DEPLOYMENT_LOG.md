@@ -14,7 +14,7 @@ Push to `claude/main` triggers two GitHub Actions workflows:
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Deploy to AWS | `deploy.yml` | push to `claude/main` | Runs inspect job then deploy job |
+| Deploy to AWS | `deploy.yml` | push to `claude/main` | SSH deploy job |
 | Diagnose Server | `diagnose.yml` | push to `claude/main` or `workflow_dispatch` | Full server health check |
 
 ### Deploy job sequence
@@ -26,7 +26,6 @@ Push to `claude/main` triggers two GitHub Actions workflows:
 - Live site: https://www.stanfordmycomaterials.org
 - Django admin: https://www.stanfordmycomaterials.org/admin/
 - GitHub Actions: https://github.com/eisbell82/Django_Trial_Run_eisbell/actions
-- Server state snapshot: https://www.stanfordmycomaterials.org/static/inspect.txt
 
 ## GitHub Secrets Required
 
@@ -58,8 +57,8 @@ security check blocked all git operations with "detected dubious ownership in re
   (before git fetch — must run first or git refuses to operate)
 - Also added to the `deploy.yml` inline script for belt-and-suspenders
 
-**How to detect recurrence:** If deploy fails in <2 seconds, run inspect.yml or check
-`/static/inspect.txt` for ownership info. Look for `root:root` on `.git/` or app files.
+**How to detect recurrence:** If deploy fails in <2 seconds, run `diagnose.yml` via
+`workflow_dispatch` and check the Actions log. Look for `root:root` on `.git/` or app files.
 
 ## Server Notes
 

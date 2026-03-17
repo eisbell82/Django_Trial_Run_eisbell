@@ -206,5 +206,3 @@ DATABASE_URL=postgres://specimenbase:password@localhost/specimenbase
 ## Admin
 
 The Django admin interface is available at `/admin/`. Log in with a superuser account to manage all users, datasets, tags, and sample data directly.
-
-<!-- Claude Code commit/push test: 2026-03-16 -->

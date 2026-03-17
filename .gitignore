@@ -27,3 +27,12 @@ env/
 *.DS_Store
 *.swp
 *.swo
+
+# Claude Code local settings (per-developer, not shared)
+.claude/
+
+# Loose files that don't belong in the repo
+assets/*.zip
+assets/*.ipynb
+*.png
+research_db_demo.html

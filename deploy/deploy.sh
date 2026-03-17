@@ -68,4 +68,7 @@ sudo ln -sf /etc/nginx/sites-available/specimenbase /etc/nginx/sites-enabled/spe
 echo "==> Reloading nginx..."
 sudo nginx -t && sudo systemctl reload nginx
 
+echo "==> Cleaning up stale artifacts..."
+rm -f "$APP_DIR/staticfiles/inspect.txt"
+
 echo "==> Done."
