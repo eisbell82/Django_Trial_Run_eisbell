@@ -1,9 +1,16 @@
 import os
 import uuid
 
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+
+ALLOWED_IMAGE_EXTENSIONS = [
+    "jpg", "jpeg", "png", "gif", "bmp", "webp",
+    "tif", "tiff", "svg", "ico", "heic", "heif",
+]
+_image_validator = FileExtensionValidator(allowed_extensions=ALLOWED_IMAGE_EXTENSIONS)
 
 
 def _unique_photo_path(instance, filename):
@@ -48,7 +55,7 @@ class Dataset(models.Model):
     lab = models.CharField(max_length=200, blank=True)
     institution = models.CharField(max_length=200, blank=True)
     file_size_display = models.CharField(max_length=50, blank=True, help_text="e.g. 14.2 MB")
-    image = models.ImageField(upload_to="datasets/images/", null=True, blank=True)
+    image = models.FileField(upload_to="datasets/images/", null=True, blank=True, validators=[_image_validator])
     download_count = models.PositiveIntegerField(default=0)
     is_private = models.BooleanField(default=False)
     allowed_users = models.ManyToManyField(
@@ -201,7 +208,7 @@ class AboutPage(models.Model):
 
 class AboutPhoto(models.Model):
     page = models.ForeignKey(AboutPage, on_delete=models.CASCADE, related_name="photos")
-    image = models.ImageField(upload_to="about/photos/")
+    image = models.FileField(upload_to="about/photos/", validators=[_image_validator])
     caption = models.CharField(max_length=300, blank=True)
     order = models.PositiveIntegerField(default=0)
 
@@ -214,7 +221,7 @@ class AboutPhoto(models.Model):
 
 class SamplePhoto(models.Model):
     sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name="photos")
-    image = models.ImageField(upload_to=_unique_photo_path)
+    image = models.FileField(upload_to=_unique_photo_path, validators=[_image_validator])
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
