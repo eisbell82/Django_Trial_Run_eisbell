@@ -381,7 +381,7 @@
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                   <span>{{ s.sample_id }}</span>
                   {% if s.image %}
-                    <button type="button" class="col-del-btn" style="opacity:.7;font-size:13px" title="View photo" onclick="openPhotoViewer('{{ s.image.url|escapejs }}')">🖼</button>
+                    <button type="button" title="View photo" onclick="openPhotoViewer('{{ s.image.url|escapejs }}')" style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.02em">1 photo</button>
                     {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                     <form method="post" action="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}" class="edit-ctrl" style="display:none">
                       {% csrf_token %}
