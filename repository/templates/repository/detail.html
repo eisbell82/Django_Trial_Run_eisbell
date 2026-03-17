@@ -310,7 +310,7 @@
         <div style="margin-left:auto;display:flex;gap:4px;align-items:center">
           <span style="font-size:11px;color:var(--text-dim)">Show</span>
           {% for n in page_sizes %}
-          <a href="?per_page={{ n }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}"
+          <a href="?per_page={{ n }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples"
              style="font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);text-decoration:none;{% if per_page == n %}background:var(--accent);color:#fff;border-color:var(--accent){% else %}color:var(--text-dim){% endif %}">{{ n }}</a>
           {% endfor %}
         </div>
@@ -328,7 +328,7 @@
           <thead>
             <tr>
               <th>
-                <a href="?sort_col=sample_id&sort_dir={% if sort_col == 'sample_id' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:4px">
+                <a href="?sort_col=sample_id&sort_dir={% if sort_col == 'sample_id' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}#tab-samples" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:4px">
                   Sample ID <span style="opacity:{% if sort_col == 'sample_id' %}1{% else %}.3{% endif %}">{% if sort_col == 'sample_id' and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
                 </a>
               </th>
@@ -380,7 +380,7 @@
                   </form>
                 </div>
                 {% else %}
-                <a href="?sort_col={{ col.name|urlencode }}&sort_dir={% if sort_col == col.name and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+                <a href="?sort_col={{ col.name|urlencode }}&sort_dir={% if sort_col == col.name and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}#tab-samples" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
                   {{ col.name }}{% if col.unit %} <span style="font-size:10px;opacity:.6;font-weight:normal">[{{ col.unit }}]</span>{% endif %}
                   <span style="opacity:{% if sort_col == col.name %}1{% else %}.3{% endif %}">{% if sort_col == col.name and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
                 </a>
@@ -444,19 +444,19 @@
       {% if page_obj.paginator.num_pages > 1 %}
       <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:.75rem;flex-wrap:wrap">
         {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:var(--text-dim)">‹ Prev</a>
+        <a href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:var(--text-dim)">‹ Prev</a>
         {% endif %}
         {% for num in page_obj.paginator.page_range %}
           {% if num == page_obj.number %}
           <span style="font-size:11px;padding:3px 10px;border-radius:4px;background:var(--accent);color:#fff">{{ num }}</span>
           {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
-          <a href="?page={{ num }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:var(--text-dim)">{{ num }}</a>
+          <a href="?page={{ num }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:var(--text-dim)">{{ num }}</a>
           {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
           <span style="font-size:11px;color:var(--text-dim)">…</span>
           {% endif %}
         {% endfor %}
         {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:var(--text-dim)">Next ›</a>
+        <a href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:var(--text-dim)">Next ›</a>
         {% endif %}
       </div>
       {% endif %}
