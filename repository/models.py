@@ -40,6 +40,7 @@ class Dataset(models.Model):
     lab = models.CharField(max_length=200, blank=True)
     institution = models.CharField(max_length=200, blank=True)
     file_size_display = models.CharField(max_length=50, blank=True, help_text="e.g. 14.2 MB")
+    image = models.ImageField(upload_to="datasets/images/", null=True, blank=True)
     download_count = models.PositiveIntegerField(default=0)
     is_private = models.BooleanField(default=False)
     allowed_users = models.ManyToManyField(
@@ -140,6 +141,7 @@ class SampleColumn(models.Model):
 class Sample(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="samples")
     sample_id = models.CharField(max_length=200)
+    image = models.ImageField(upload_to="samples/photos/", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
