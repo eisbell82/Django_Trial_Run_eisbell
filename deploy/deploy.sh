@@ -61,6 +61,15 @@ sudo systemctl enable specimenbase
 echo "==> Restarting gunicorn..."
 sudo systemctl restart specimenbase
 
+echo "==> Ensuring SSL certificate..."
+CERT=/etc/letsencrypt/live/stanfordmycomaterials.org/fullchain.pem
+if [ ! -f "$CERT" ]; then
+    sudo apt-get install -y -q certbot python3-certbot-nginx
+    sudo certbot --nginx -d stanfordmycomaterials.org \
+        --non-interactive --agree-tos \
+        -m admin@stanfordmycomaterials.org
+fi
+
 echo "==> Updating nginx config..."
 sudo cp "$APP_DIR/deploy/nginx.conf" /etc/nginx/sites-available/specimenbase
 sudo ln -sf /etc/nginx/sites-available/specimenbase /etc/nginx/sites-enabled/specimenbase
