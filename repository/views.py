@@ -17,7 +17,7 @@ from django.db.models import Q, Count
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.conf import settings
 
-from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, SamplePhoto, TodoItem, AboutPage, AboutPhoto
+from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, SamplePhoto, TodoItem, AboutPage, AboutPhoto, DocsPage
 from .forms import DatasetUploadForm, DataFileForm, NotebookForm
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
@@ -1274,7 +1274,18 @@ def samples_csv_view(request):
 
 
 def docs_view(request):
-    return render(request, "repository/docs.html")
+    page, _ = DocsPage.objects.get_or_create(pk=1, defaults={"title": "Documentation", "content": ""})
+    if request.method == "POST":
+        if not (request.user.is_authenticated and request.user.is_staff):
+            from django.http import Http404
+            raise Http404
+        page.title = request.POST.get("title", page.title).strip() or page.title
+        page.content = request.POST.get("content", "").strip()
+        page.save()
+        messages.success(request, "Docs page updated.")
+        return redirect(reverse("repository:docs") + "?edit=1")
+    edit_open = request.GET.get("edit") == "1"
+    return render(request, "repository/docs.html", {"page": page, "edit_open": edit_open})
 
 
 def about_view(request):

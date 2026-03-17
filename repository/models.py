@@ -206,6 +206,21 @@ class AboutPage(models.Model):
         return [p.strip() for p in re.split(r"\n\s*\n", self.content) if p.strip()]
 
 
+class DocsPage(models.Model):
+    """Singleton model — only one row ever exists (pk=1)."""
+    title = models.CharField(max_length=200, default="Documentation")
+    content = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def content_paragraphs(self):
+        import re
+        return [p.strip() for p in re.split(r"\n\s*\n", self.content) if p.strip()]
+
+
 class AboutPhoto(models.Model):
     page = models.ForeignKey(AboutPage, on_delete=models.CASCADE, related_name="photos")
     image = models.FileField(upload_to="about/photos/", validators=[_image_validator])

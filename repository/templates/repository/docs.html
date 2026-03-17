@@ -9,15 +9,56 @@
 <div style="max-width:760px;margin:3rem auto;padding:0 2rem">
 
   <div style="margin-bottom:2.5rem">
-    <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-dim);margin-bottom:.75rem">// Documentation</div>
-    <h1 style="font-family:'Instrument Serif',serif;font-size:42px;line-height:1.1;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem">
-      <img src="{% static 'repository/images/mushroom.png' %}" style="width:52px;height:52px;object-fit:contain" alt="">
-      Myco-material Database
-    </h1>
-    <p style="color:var(--text-muted);font-size:14px;line-height:1.8">
-      A curated repository for myco-material research experiments. Upload, discover, and cite research-grade data with associated sample records, provenance metadata, and analysis notebooks.
-    </p>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem">
+      <div>
+        <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-dim);margin-bottom:.75rem">// Documentation</div>
+        <h1 style="font-family:'Instrument Serif',serif;font-size:42px;line-height:1.1;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem">
+          <img src="{% static 'repository/images/mushroom.png' %}" style="width:52px;height:52px;object-fit:contain" alt="">
+          {{ page.title }}
+        </h1>
+      </div>
+      {% if user.is_staff %}
+        <button id="edit-toggle"
+                onclick="document.getElementById('edit-panel').style.display=document.getElementById('edit-panel').style.display==='none'?'block':'none';this.textContent=this.textContent==='Edit'?'Done':'Edit'"
+                style="flex-shrink:0;margin-top:2.25rem;padding:.35rem .9rem;background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text-muted);font-size:12px;cursor:pointer">{% if edit_open %}Done{% else %}Edit{% endif %}</button>
+      {% endif %}
+    </div>
+    {% if page.content %}
+      <div style="color:var(--text-muted);font-size:14px;line-height:1.9">
+        {% for para in page.content_paragraphs %}
+          <p style="margin:0 0 1rem">{{ para|urlize }}</p>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color:var(--text-muted);font-size:14px;line-height:1.8">
+        A curated repository for myco-material research experiments. Upload, discover, and cite research-grade data with associated sample records, provenance metadata, and analysis notebooks.
+      </p>
+    {% endif %}
   </div>
+
+  {% if user.is_staff %}
+    <div id="edit-panel" style="display:{% if edit_open %}block{% else %}none{% endif %}">
+    <hr class="divider">
+    <div style="margin-bottom:3rem">
+      <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-dim);margin-bottom:1.25rem">// Admin — Edit Page</div>
+      <form method="post" style="margin-bottom:2rem">
+        {% csrf_token %}
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:.3rem">Page title</label>
+          <input type="text" name="title" value="{{ page.title }}"
+                 style="width:100%;padding:.5rem .75rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:.3rem">Introduction <span style="color:var(--text-dim)">(blank lines create new paragraphs)</span></label>
+          <textarea name="content" rows="6"
+                    style="width:100%;padding:.5rem .75rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;line-height:1.7;resize:vertical;box-sizing:border-box">{{ page.content }}</textarea>
+        </div>
+        <button type="submit"
+                style="padding:.45rem 1.1rem;background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer">Save</button>
+      </form>
+    </div>
+    </div>
+  {% endif %}
 
   <hr class="divider">
 
