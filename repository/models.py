@@ -206,6 +206,20 @@ class AboutPage(models.Model):
         return [p.strip() for p in re.split(r"\n\s*\n", self.content) if p.strip()]
 
 
+class DatasetPhoto(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="overview_photos")
+    image = models.FileField(upload_to="datasets/overview_photos/", validators=[_image_validator])
+    caption = models.CharField(max_length=300, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "uploaded_at"]
+
+    def __str__(self):
+        return f"Photo for {self.dataset.title}"
+
+
 class DocsPage(models.Model):
     """Singleton model — only one row ever exists (pk=1)."""
     title = models.CharField(max_length=200, default="Documentation")

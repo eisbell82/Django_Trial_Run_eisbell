@@ -17,7 +17,7 @@ from django.db.models import Q, Count
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.conf import settings
 
-from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, SamplePhoto, TodoItem, AboutPage, AboutPhoto, DocsPage
+from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, SamplePhoto, TodoItem, AboutPage, AboutPhoto, DocsPage, DatasetPhoto
 from .forms import DatasetUploadForm, DataFileForm, NotebookForm
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
@@ -221,6 +221,7 @@ def dataset_detail(request, slug):
         "sort_dir": sort_dir,
         "page_sizes": [25, 50, 100],
         "suggested_column_names": existing_col_names,
+        "overview_photos": dataset.overview_photos.all(),
     }
     return render(request, "repository/detail.html", context)
 
@@ -1286,6 +1287,32 @@ def docs_view(request):
         return redirect(reverse("repository:docs") + "?edit=1")
     edit_open = request.GET.get("edit") == "1"
     return render(request, "repository/docs.html", {"page": page, "edit_open": edit_open})
+
+
+@login_required
+def upload_dataset_photo(request, slug):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        img = request.FILES.get("image")
+        if img:
+            caption = request.POST.get("caption", "").strip()
+            order = dataset.overview_photos.count()
+            DatasetPhoto.objects.create(dataset=dataset, image=_to_web_image(img), caption=caption, order=order)
+    return redirect(reverse("repository:detail", kwargs={"slug": slug}))
+
+
+@login_required
+def delete_dataset_photo(request, slug, photo_pk):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    photo = get_object_or_404(DatasetPhoto, pk=photo_pk, dataset=dataset)
+    photo.delete()
+    return redirect(reverse("repository:detail", kwargs={"slug": slug}))
 
 
 def about_view(request):
