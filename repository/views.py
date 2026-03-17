@@ -1122,6 +1122,59 @@ def samples_view(request):
     })
 
 
+def column_values_view(request):
+    """AJAX: distinct non-empty values for a given column (for filter dropdown/autocomplete)."""
+    col_name = request.GET.get("column", "").strip()
+    category = request.GET.get("category", "").strip()
+    if not col_name:
+        return JsonResponse({"values": []})
+    ds_qs = _visible_datasets(request.user)
+    if category:
+        ds_qs = ds_qs.filter(category=category)
+    raw = (SampleValue.objects
+           .filter(column__name=col_name, column__dataset__in=ds_qs)
+           .exclude(value="")
+           .values_list("value", flat=True)[:500])
+    return JsonResponse({"values": sorted(set(raw))})
+
+
+def samples_suggest_view(request):
+    """AJAX: autocomplete suggestions for the main samples search bar."""
+    q = request.GET.get("q", "").strip()
+    category = request.GET.get("category", "").strip()
+    if len(q) < 2:
+        return JsonResponse({"samples": [], "columns": [], "values": []})
+    ds_qs = _visible_datasets(request.user)
+    if category:
+        ds_qs = ds_qs.filter(category=category)
+    # Sample IDs
+    sample_rows = (Sample.objects
+                   .filter(dataset__in=ds_qs, sample_id__icontains=q)
+                   .select_related("dataset")[:8])
+    samples = [{"id": s.sample_id, "slug": s.dataset.slug} for s in sample_rows]
+    # Column names (deduplicated)
+    col_rows = (SampleColumn.objects
+                .filter(dataset__in=ds_qs, name__icontains=q)
+                .values("name", "unit").distinct()[:20])
+    seen_cols, columns = set(), []
+    for c in col_rows:
+        if c["name"] not in seen_cols and len(columns) < 8:
+            seen_cols.add(c["name"])
+            columns.append({"name": c["name"], "unit": c["unit"] or ""})
+    # Unique column values
+    val_rows = (SampleValue.objects
+                .filter(column__dataset__in=ds_qs, value__icontains=q)
+                .exclude(value="")
+                .values("column__name", "value").distinct()[:30])
+    seen_vals, values = set(), []
+    for v in val_rows:
+        key = (v["column__name"], v["value"])
+        if key not in seen_vals and len(values) < 8:
+            seen_vals.add(key)
+            values.append({"column": v["column__name"], "value": v["value"]})
+    return JsonResponse({"samples": samples, "columns": columns, "values": values})
+
+
 def samples_csv_view(request):
     """Return the currently-filtered + sorted samples table as a CSV download."""
     query           = request.GET.get("q", "")

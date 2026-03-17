@@ -11,9 +11,10 @@
   <div style="margin-bottom:2rem">
     <form method="get" action="{% url 'repository:samples' %}" id="samples-filter-form">
 
-      <div class="search-input-wrap" style="margin-bottom:10px">
-        <input class="search-input" type="text" name="q" value="{{ query }}" placeholder="Search sample IDs, experiments, values…">
+      <div class="search-input-wrap" style="margin-bottom:10px;position:relative">
+        <input class="search-input" type="text" name="q" id="samples-q" value="{{ query }}" placeholder="Search sample IDs, column names, values…" autocomplete="off">
         <button class="btn-accent" type="submit">Search</button>
+        <div id="sq-drop" style="display:none;position:absolute;top:100%;left:0;right:60px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:500;margin-top:2px;max-height:320px;overflow-y:auto"></div>
       </div>
 
       {% if categories_with_samples %}
@@ -87,13 +88,16 @@
           <div class="adv-filter-group">
             <label class="adv-label">Column value</label>
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-              <select name="filter_col" class="adv-select" style="width:auto">
+              <select name="filter_col" id="filter-col-select" class="adv-select" style="width:auto" onchange="cvColChanged(this.value)">
                 <option value="">Any column</option>
                 {% for col in available_columns %}
                 <option value="{{ col }}" {% if filter_col == col %}selected{% endif %}>{{ col }}</option>
                 {% endfor %}
               </select>
-              <input type="text" name="filter_col_val" class="adv-select" value="{{ filter_col_val }}" placeholder="contains…" style="width:120px">
+              <div id="col-val-wrap" style="position:relative">
+                <input type="text" name="filter_col_val" id="col-val-input" class="adv-select" value="{{ filter_col_val }}" placeholder="contains…" style="width:140px" autocomplete="off">
+                <div id="col-val-drop" style="display:none;position:absolute;top:100%;left:0;min-width:160px;max-height:200px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:400;margin-top:2px"></div>
+              </div>
             </div>
           </div>
           {% endif %}
@@ -105,10 +109,7 @@
           {% endif %}
 
         </div>
-        {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
         {% if active_category %}<input type="hidden" name="category" value="{{ active_category }}">{% endif %}
-        {% if filter_col %}<input type="hidden" name="filter_col" value="{{ filter_col }}">{% endif %}
-        {% if filter_col_val %}<input type="hidden" name="filter_col_val" value="{{ filter_col_val }}">{% endif %}
       </details>
 
     </form>
@@ -171,15 +172,12 @@
 </div>
 
 <script>
+/* ── Column selector dropdown ── */
 function toggleColDrop() {
   var panel = document.getElementById('col-drop-panel');
   var open = panel.style.display === 'flex';
-  if (open) {
-    panel.style.display = 'none';
-    document.getElementById('samples-filter-form').submit();
-  } else {
-    panel.style.display = 'flex';
-  }
+  if (open) { panel.style.display = 'none'; document.getElementById('samples-filter-form').submit(); }
+  else { panel.style.display = 'flex'; }
 }
 document.addEventListener('click', function(e) {
   var btn = document.getElementById('col-drop-btn');
@@ -189,6 +187,181 @@ document.addEventListener('click', function(e) {
     document.getElementById('samples-filter-form').submit();
   }
 });
+
+/* ── Column value filter: dropdown or fuzzy autocomplete ── */
+(function() {
+  var _vals = [];
+  var _colUrl = '{% url "repository:column_values" %}';
+  var _cat    = '{{ active_category|escapejs }}';
+
+  function cvFetch(colName, initVal) {
+    if (!colName) { _vals = []; cvRender(''); return; }
+    fetch(_colUrl + '?column=' + encodeURIComponent(colName) + (_cat ? '&category=' + encodeURIComponent(_cat) : ''))
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _vals = d.values || []; cvRender(initVal != null ? initVal : ''); });
+  }
+
+  function cvRender(cur) {
+    var wrap = document.getElementById('col-val-wrap');
+    if (!wrap) return;
+    if (_vals.length > 0 && _vals.length <= 5) {
+      var sel = document.createElement('select');
+      sel.name = 'filter_col_val'; sel.className = 'adv-select'; sel.style.width = 'auto';
+      sel.onchange = function(){ document.getElementById('samples-filter-form').submit(); };
+      var o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Any'; sel.appendChild(o0);
+      _vals.forEach(function(v){
+        var o = document.createElement('option'); o.value = v; o.textContent = v;
+        if (v === cur) o.selected = true;
+        sel.appendChild(o);
+      });
+      wrap.innerHTML = ''; wrap.appendChild(sel);
+    } else {
+      var inp = document.createElement('input');
+      inp.type = 'text'; inp.name = 'filter_col_val'; inp.id = 'col-val-input';
+      inp.className = 'adv-select'; inp.value = cur; inp.placeholder = 'contains\u2026';
+      inp.autocomplete = 'off'; inp.style.width = '140px';
+      var drop = document.createElement('div'); drop.id = 'col-val-drop';
+      drop.style.cssText = 'display:none;position:absolute;top:100%;left:0;min-width:160px;max-height:200px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:400;margin-top:2px';
+      wrap.innerHTML = ''; wrap.appendChild(inp); wrap.appendChild(drop);
+      cvBindInput(inp, drop);
+    }
+  }
+
+  function cvLev(a, b) {
+    var m=a.length,n=b.length,dp=[],i,j;
+    for(i=0;i<=m;i++){dp[i]=[i];}for(j=0;j<=n;j++){dp[0][j]=j;}
+    for(i=1;i<=m;i++)for(j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+
+  function cvSuggest(q) {
+    if (!q) return [];
+    var ql = q.toLowerCase(), out = [];
+    _vals.forEach(function(v){
+      var vl = v.toLowerCase();
+      if (vl.indexOf(ql) !== -1) { out.push({v:v,s:2}); }
+      else if (cvLev(ql, vl.substring(0, Math.min(vl.length, ql.length+2))) <= Math.ceil(ql.length/3)) { out.push({v:v,s:1}); }
+    });
+    out.sort(function(a,b){ return b.s-a.s || a.v.localeCompare(b.v); });
+    return out.slice(0,8).map(function(r){ return r.v; });
+  }
+
+  function cvBindInput(inp, drop) {
+    inp.addEventListener('input', function(){
+      var sug = cvSuggest(this.value);
+      if (!this.value || !sug.length) { drop.style.display='none'; return; }
+      drop.innerHTML = '';
+      sug.forEach(function(v){
+        var item = document.createElement('div');
+        item.textContent = v;
+        item.style.cssText = 'padding:6px 10px;cursor:pointer;font-size:12px;color:var(--text);white-space:nowrap';
+        item.onmouseenter=function(){this.style.background='var(--tag-bg)';}; item.onmouseleave=function(){this.style.background='';};
+        item.onmousedown=function(e){ e.preventDefault(); inp.value=v; drop.style.display='none'; document.getElementById('samples-filter-form').submit(); };
+        drop.appendChild(item);
+      });
+      drop.style.display='block';
+    });
+    inp.addEventListener('blur', function(){ setTimeout(function(){ drop.style.display='none'; }, 150); });
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') drop.style.display='none'; });
+  }
+
+  window.cvColChanged = function(colName) { cvFetch(colName, ''); };
+
+  /* init on page load if column already selected */
+  var initCol = '{{ filter_col|escapejs }}';
+  var initVal = '{{ filter_col_val|escapejs }}';
+  if (initCol) cvFetch(initCol, initVal);
+  else {
+    var inp = document.getElementById('col-val-input');
+    var drop = document.getElementById('col-val-drop');
+    if (inp && drop) cvBindInput(inp, drop);
+  }
+})();
+
+/* ── Main search bar autocomplete ── */
+(function() {
+  var _sugUrl = '{% url "repository:samples_suggest" %}';
+  var _cat    = '{{ active_category|escapejs }}';
+  var _timer  = null;
+
+  var inp  = document.getElementById('samples-q');
+  var drop = document.getElementById('sq-drop');
+  if (!inp || !drop) return;
+
+  function sqFetch(q) {
+    var url = _sugUrl + '?q=' + encodeURIComponent(q) + (_cat ? '&category=' + encodeURIComponent(_cat) : '');
+    fetch(url).then(function(r){ return r.json(); }).then(sqRender);
+  }
+
+  function sqMakeItem(label, sublabel, onclick) {
+    var item = document.createElement('div');
+    item.style.cssText = 'padding:7px 12px;cursor:pointer;display:flex;align-items:baseline;gap:8px';
+    var main = document.createElement('span'); main.style.cssText = 'font-size:12px;color:var(--text)'; main.textContent = label;
+    item.appendChild(main);
+    if (sublabel) { var sub = document.createElement('span'); sub.style.cssText = 'font-size:10px;color:var(--text-dim)'; sub.textContent = sublabel; item.appendChild(sub); }
+    item.onmouseenter=function(){this.style.background='var(--tag-bg)';}; item.onmouseleave=function(){this.style.background='';};
+    item.onmousedown=function(e){ e.preventDefault(); drop.style.display='none'; onclick(); };
+    return item;
+  }
+
+  function sqSection(title) {
+    var hdr = document.createElement('div');
+    hdr.style.cssText = 'padding:5px 12px 3px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);border-top:1px solid var(--border)';
+    hdr.textContent = title; return hdr;
+  }
+
+  function sqRender(d) {
+    drop.innerHTML = '';
+    var any = false;
+    if (d.samples && d.samples.length) {
+      drop.appendChild(sqSection('Sample IDs'));
+      d.samples.forEach(function(s){
+        drop.appendChild(sqMakeItem(s.id, '', function(){
+          inp.value = s.id; document.getElementById('samples-filter-form').submit();
+        }));
+        any = true;
+      });
+    }
+    if (d.columns && d.columns.length) {
+      drop.appendChild(sqSection('Column names'));
+      d.columns.forEach(function(c){
+        drop.appendChild(sqMakeItem(c.name, c.unit ? '['+c.unit+']' : '', function(){
+          /* navigate with filter_col set */
+          var params = new URLSearchParams(window.location.search);
+          params.set('filter_col', c.name); params.delete('filter_col_val');
+          window.location.search = params.toString();
+        }));
+        any = true;
+      });
+    }
+    if (d.values && d.values.length) {
+      drop.appendChild(sqSection('Column values'));
+      d.values.forEach(function(v){
+        drop.appendChild(sqMakeItem(v.value, v.column, function(){
+          var params = new URLSearchParams(window.location.search);
+          params.set('filter_col', v.column); params.set('filter_col_val', v.value);
+          window.location.search = params.toString();
+        }));
+        any = true;
+      });
+    }
+    drop.style.display = any ? 'block' : 'none';
+  }
+
+  inp.addEventListener('input', function(){
+    clearTimeout(_timer);
+    var q = this.value.trim();
+    if (q.length < 2) { drop.style.display='none'; return; }
+    _timer = setTimeout(function(){ sqFetch(q); }, 200);
+  });
+  inp.addEventListener('blur', function(){ setTimeout(function(){ drop.style.display='none'; }, 150); });
+  inp.addEventListener('focus', function(){ if (this.value.trim().length >= 2) this.dispatchEvent(new Event('input')); });
+  inp.addEventListener('keydown', function(e){
+    if (e.key==='Escape') { drop.style.display='none'; }
+    if (e.key==='Enter') { drop.style.display='none'; }
+  });
+})();
 </script>
 
 {% endblock %}
