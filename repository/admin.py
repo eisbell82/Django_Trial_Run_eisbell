@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Dataset, Tag, DataFile, Notebook,
-    Sample, SampleColumn, SampleValue,
+    Sample, SampleColumn, SampleValue, SamplePhoto,
     AboutPage, AboutPhoto, TodoItem,
 )
 
@@ -47,12 +47,17 @@ class SampleValueInline(admin.TabularInline):
     fields = ["column", "value"]
 
 
+class SamplePhotoInline(admin.TabularInline):
+    model = SamplePhoto
+    extra = 1
+
+
 @admin.register(Sample)
 class SampleAdmin(admin.ModelAdmin):
     list_display = ["sample_id", "dataset"]
     list_filter = ["dataset"]
     search_fields = ["sample_id", "values__value"]
-    inlines = [SampleValueInline]
+    inlines = [SampleValueInline, SamplePhotoInline]
 
 
 @admin.register(SampleColumn)

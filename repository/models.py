@@ -146,7 +146,6 @@ class SampleColumn(models.Model):
 class Sample(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="samples")
     sample_id = models.CharField(max_length=200)
-    image = models.ImageField(upload_to="samples/photos/", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -203,6 +202,18 @@ class AboutPhoto(models.Model):
 
     def __str__(self):
         return self.caption or f"Photo {self.pk}"
+
+
+class SamplePhoto(models.Model):
+    sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name="photos")
+    image = models.ImageField(upload_to="samples/photos/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["uploaded_at"]
+
+    def __str__(self):
+        return f"Photo {self.pk} for {self.sample.sample_id}"
 
 
 class SampleValue(models.Model):

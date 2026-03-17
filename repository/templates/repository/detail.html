@@ -380,16 +380,22 @@
               <td class="sample-id-cell">
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                   <span>{{ s.sample_id }}</span>
-                  {% if s.image %}
-                    <button type="button" title="View photo" onclick="openPhotoViewer('{{ s.image.url|escapejs }}')" style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.02em">1 photo</button>
+                  {% if s.photos_list %}
+                    <button type="button"
+                      onclick='openPhotoViewer([{% for p in s.photos_list %}"{{ p.image.url|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}])'
+                      style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.02em">
+                      {{ s.photos_list|length }} photo{{ s.photos_list|length|pluralize }}
+                    </button>
                     {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-                    <form method="post" action="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}" class="edit-ctrl" style="display:none">
+                    {% for p in s.photos_list %}
+                    <form method="post" action="{% url 'repository:delete_sample_photo' dataset.slug s.pk p.pk %}" class="edit-ctrl" style="display:none">
                       {% csrf_token %}
-                      <input type="hidden" name="remove" value="1">
-                      <button type="submit" class="col-del-btn" title="Remove photo" onclick="return confirm('Remove photo?')">× photo</button>
+                      <button type="submit" class="col-del-btn" title="Remove photo {{ forloop.counter }}" onclick="return confirm('Remove photo {{ forloop.counter }}?')">× p{{ forloop.counter }}</button>
                     </form>
+                    {% endfor %}
                     {% endif %}
-                  {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                  {% endif %}
+                  {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                   <label class="col-del-btn edit-ctrl" style="display:none;cursor:pointer;opacity:.6" title="Add photo">
                     + photo
                     <input type="file" accept="image/*" style="display:none"
@@ -424,10 +430,15 @@
       {% endif %}
 
       <!-- Photo viewer modal -->
-      <div id="photo-viewer-modal" onclick="closePhotoViewer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center">
-        <div onclick="event.stopPropagation()" style="position:relative;max-width:90vw;max-height:90vh">
+      <div id="photo-viewer-modal" onclick="closePhotoViewer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+        <div onclick="event.stopPropagation()" style="position:relative">
           <img id="photo-viewer-img" src="" style="height:70vh;width:auto;max-width:90vw;object-fit:contain;border-radius:6px;display:block">
           <button onclick="closePhotoViewer()" style="position:absolute;top:-12px;right:-12px;background:var(--surface);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--text);display:flex;align-items:center;justify-content:center">×</button>
+        </div>
+        <div id="photo-nav" onclick="event.stopPropagation()" style="display:none;align-items:center;gap:16px">
+          <button onclick="prevPhoto()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer">‹</button>
+          <span id="photo-counter" style="color:#fff;font-size:12px;font-family:'DM Mono',monospace"></span>
+          <button onclick="nextPhoto()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer">›</button>
         </div>
       </div>
 
@@ -453,14 +464,33 @@
 
       <script>
       // ── Photo viewer ──────────────────────────────────────────
-      function openPhotoViewer(url) {
-        var m = document.getElementById('photo-viewer-modal');
-        document.getElementById('photo-viewer-img').src = url;
-        m.style.display = 'flex';
+      var _photoUrls = [];
+      var _photoIdx  = 0;
+
+      function openPhotoViewer(urls) {
+        _photoUrls = urls;
+        _showPhoto(0);
+        document.getElementById('photo-viewer-modal').style.display = 'flex';
       }
+      function _showPhoto(idx) {
+        _photoIdx = idx;
+        document.getElementById('photo-viewer-img').src = _photoUrls[idx];
+        var nav = document.getElementById('photo-nav');
+        nav.style.display = _photoUrls.length > 1 ? 'flex' : 'none';
+        document.getElementById('photo-counter').textContent = (idx + 1) + ' / ' + _photoUrls.length;
+      }
+      function prevPhoto() { _showPhoto((_photoIdx - 1 + _photoUrls.length) % _photoUrls.length); }
+      function nextPhoto() { _showPhoto((_photoIdx + 1) % _photoUrls.length); }
       function closePhotoViewer() {
         document.getElementById('photo-viewer-modal').style.display = 'none';
       }
+      document.addEventListener('keydown', function(e) {
+        if (document.getElementById('photo-viewer-modal').style.display === 'flex') {
+          if (e.key === 'ArrowLeft')  prevPhoto();
+          else if (e.key === 'ArrowRight') nextPhoto();
+          else if (e.key === 'Escape') closePhotoViewer();
+        }
+      });
 
       // ── Photo editor (Cropper.js) ─────────────────────────────
       var _cropper = null;

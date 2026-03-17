@@ -17,7 +17,7 @@ from django.db.models import Q, Count
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.conf import settings
 
-from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, TodoItem, AboutPage, AboutPhoto
+from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, SamplePhoto, TodoItem, AboutPage, AboutPhoto
 from .forms import DatasetUploadForm, DataFileForm, NotebookForm
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
@@ -114,11 +114,12 @@ def dataset_detail(request, slug):
         return redirect("repository:detail", slug=slug)
 
     columns = list(dataset.sample_columns.all())
-    samples = list(dataset.samples.prefetch_related("values").all())
+    samples = list(dataset.samples.prefetch_related("values", "photos").all())
     # Build row data from prefetch cache — avoids N×M individual queries
     for s in samples:
         val_map = {v.column_id: v.value for v in s.values.all()}
         s.row_with_cols = [(col, val_map.get(col.pk, "")) for col in columns]
+        s.photos_list = list(s.photos.all())
 
     # Column names already used in other datasets of the same category (for suggestions)
     existing_col_names = list(
@@ -691,14 +692,22 @@ def upload_sample_photo(request, slug, pk):
         return _redirect_to_tab(slug, "tab-samples")
     sample = get_object_or_404(Sample, pk=pk, dataset=dataset)
     if request.method == "POST":
-        if request.POST.get("remove"):
-            if sample.image:
-                sample.image.delete(save=True)
-        else:
-            photo = request.FILES.get("photo")
-            if photo:
-                sample.image = photo
-                sample.save()
+        photo = request.FILES.get("photo")
+        if photo:
+            SamplePhoto.objects.create(sample=sample, image=photo)
+    return _redirect_to_tab(slug, "tab-samples")
+
+
+@login_required
+def delete_sample_photo(request, slug, sample_pk, photo_pk):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return _redirect_to_tab(slug, "tab-samples")
+    photo = get_object_or_404(SamplePhoto, pk=photo_pk, sample__pk=sample_pk, sample__dataset=dataset)
+    if request.method == "POST":
+        photo.image.delete(save=False)
+        photo.delete()
     return _redirect_to_tab(slug, "tab-samples")
 
 
@@ -758,24 +767,32 @@ def upload_csv_samples(request, slug):
             )
             data_headers = [h for h in headers if h != sid_col]
 
-            # get_or_create columns — headers starting with "char_" (case-insensitive)
-            # are assigned to the characteristics group; the prefix is stripped from the name.
+            # Read all rows up-front so we can detect dominant data type per column
+            rows = [r for r in reader if sid_col and r.get(sid_col, "").strip()]
+
+            def _is_numeric(val):
+                try:
+                    float(str(val).strip().replace(",", ""))
+                    return True
+                except (ValueError, AttributeError):
+                    return False
+
+            def _detect_group(header):
+                vals = [r.get(header, "").strip() for r in rows if r.get(header, "").strip()]
+                if not vals:
+                    return "data"
+                return "data" if sum(_is_numeric(v) for v in vals) / len(vals) > 0.5 else "characteristics"
+
+            # get_or_create columns — group is auto-detected from dominant data type
             col_map = {}
             for h in data_headers:
-                if h.strip().lower().startswith("char_"):
-                    col_name = h.strip()[5:].strip() or h.strip()
-                    col_group = "characteristics"
-                else:
-                    col_name = h.strip()
-                    col_group = "data"
+                col_name = h.strip()
+                col_group = _detect_group(h)
                 col, _ = SampleColumn.objects.get_or_create(
                     dataset=dataset, name=col_name,
                     defaults={"order": dataset.sample_columns.count(), "group": col_group},
                 )
                 col_map[h] = col
-
-            # Read all rows up-front
-            rows = [r for r in reader if sid_col and r.get(sid_col, "").strip()]
             all_sids = [r[sid_col].strip() for r in rows]
 
             # Fetch existing samples in one query, bulk-create new ones
