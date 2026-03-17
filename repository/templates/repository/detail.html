@@ -475,145 +475,6 @@
       </div>
       {% endif %}
 
-      <!-- Photo viewer modal -->
-      <div id="photo-viewer-modal" onclick="closePhotoViewer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:12px">
-        <div onclick="event.stopPropagation()" style="position:relative">
-          <img id="photo-viewer-img" src="" style="height:70vh;width:auto;max-width:90vw;object-fit:contain;border-radius:8px;display:block;background:rgba(255,255,255,0.5)">
-          <button onclick="closePhotoViewer()" style="position:absolute;top:-12px;right:-12px;background:var(--surface);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--text);display:flex;align-items:center;justify-content:center">×</button>
-        </div>
-        <div id="photo-nav" onclick="event.stopPropagation()" style="display:none;align-items:center;gap:16px">
-          <button onclick="prevPhoto()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer">‹</button>
-          <span id="photo-counter" style="color:#fff;font-size:12px;font-family:'DM Mono',monospace"></span>
-          <button onclick="nextPhoto()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer">›</button>
-        </div>
-      </div>
-
-      <!-- Photo editor modal -->
-      <div id="photo-editor-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1001;align-items:center;justify-content:center">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;max-width:560px;width:95vw;display:flex;flex-direction:column;gap:12px">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">Edit photo</div>
-          <div style="max-height:55vh;overflow:hidden;border-radius:4px;background:#111">
-            <img id="photo-editor-img" src="" style="display:block;max-width:100%">
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button type="button" onclick="editorRotate(-90)" class="btn-outline" style="font-size:12px;padding:5px 12px">↺ Rotate left</button>
-            <button type="button" onclick="editorRotate(90)"  class="btn-outline" style="font-size:12px;padding:5px 12px">↻ Rotate right</button>
-            <button type="button" onclick="editorFlipX()"     class="btn-outline" style="font-size:12px;padding:5px 12px">⇔ Flip H</button>
-            <button type="button" onclick="editorFlipY()"     class="btn-outline" style="font-size:12px;padding:5px 12px">⇕ Flip V</button>
-            <div style="margin-left:auto;display:flex;gap:8px">
-              <button type="button" onclick="closePhotoEditor()" class="btn-outline" style="font-size:12px;padding:5px 12px">Cancel</button>
-              <button type="button" id="photo-editor-save" onclick="savePhoto()" class="btn-accent" style="font-size:12px;padding:5px 14px">Save photo</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <script>
-      // ── Photo viewer ──────────────────────────────────────────
-      var _photoUrls = [];
-      var _photoIdx  = 0;
-
-      function openPhotoViewer(urls) {
-        _photoUrls = urls;
-        _showPhoto(0);
-        document.getElementById('photo-viewer-modal').style.display = 'flex';
-      }
-      function _showPhoto(idx) {
-        _photoIdx = idx;
-        document.getElementById('photo-viewer-img').src = _photoUrls[idx];
-        var nav = document.getElementById('photo-nav');
-        nav.style.display = _photoUrls.length > 1 ? 'flex' : 'none';
-        document.getElementById('photo-counter').textContent = (idx + 1) + ' / ' + _photoUrls.length;
-      }
-      function prevPhoto() { _showPhoto((_photoIdx - 1 + _photoUrls.length) % _photoUrls.length); }
-      function nextPhoto() { _showPhoto((_photoIdx + 1) % _photoUrls.length); }
-      function closePhotoViewer() {
-        document.getElementById('photo-viewer-modal').style.display = 'none';
-      }
-      document.addEventListener('keydown', function(e) {
-        if (document.getElementById('photo-viewer-modal').style.display === 'flex') {
-          if (e.key === 'ArrowLeft')  prevPhoto();
-          else if (e.key === 'ArrowRight') nextPhoto();
-          else if (e.key === 'Escape') closePhotoViewer();
-        }
-      });
-
-      // ── Photo editor (Cropper.js) ─────────────────────────────
-      var _cropper = null;
-      var _uploadUrl = null;
-      var _csrfToken = null;
-      var _cropperLoaded = false;
-
-      function openPhotoEditor(input) {
-        var file = input.files[0];
-        if (!file) return;
-        _uploadUrl  = input.dataset.uploadUrl;
-        _csrfToken  = input.dataset.csrf;
-        // Reset input so same file can be re-selected
-        input.value = '';
-
-        var reader = new FileReader();
-        reader.onload = function(e) {
-          var img = document.getElementById('photo-editor-img');
-          img.src = e.target.result;
-          document.getElementById('photo-editor-modal').style.display = 'flex';
-          _initCropper(img);
-        };
-        reader.readAsDataURL(file);
-      }
-
-      function _initCropper(img) {
-        function _boot() {
-          if (_cropper) { _cropper.destroy(); _cropper = null; }
-          _cropper = new Cropper(img, {
-            aspectRatio: NaN,
-            viewMode: 1,
-            autoCropArea: 0.9,
-            movable: true,
-            zoomable: true,
-          });
-        }
-        if (_cropperLoaded) { _boot(); return; }
-        // Lazy-load Cropper.js CSS + JS
-        var link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css';
-        document.head.appendChild(link);
-        var script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js';
-        script.onload = function() { _cropperLoaded = true; _boot(); };
-        document.head.appendChild(script);
-      }
-
-      function editorRotate(deg) { if (_cropper) _cropper.rotate(deg); }
-      function editorFlipX()     { if (_cropper) _cropper.scaleX(_cropper.getData().scaleX === -1 ? 1 : -1); }
-      function editorFlipY()     { if (_cropper) _cropper.scaleY(_cropper.getData().scaleY === -1 ? 1 : -1); }
-
-      function closePhotoEditor() {
-        document.getElementById('photo-editor-modal').style.display = 'none';
-        if (_cropper) { _cropper.destroy(); _cropper = null; }
-      }
-
-      function savePhoto() {
-        if (!_cropper) return;
-        var btn = document.getElementById('photo-editor-save');
-        btn.textContent = 'Saving…';
-        btn.disabled = true;
-        var canvas = _cropper.getCroppedCanvas({ maxWidth: 1600, maxHeight: 1600 });
-        canvas.toBlob(function(blob) {
-          var fd = new FormData();
-          fd.append('photo', blob, 'photo.jpg');
-          fd.append('csrfmiddlewaretoken', _csrfToken);
-          fetch(_uploadUrl, { method: 'POST', body: fd })
-            .then(function(r) {
-              if (r.ok || r.redirected) { location.reload(); }
-              else { btn.textContent = 'Save photo'; btn.disabled = false; alert('Upload failed.'); }
-            })
-            .catch(function() { btn.textContent = 'Save photo'; btn.disabled = false; alert('Upload failed.'); });
-        }, 'image/jpeg', 0.92);
-      }
-      </script>
-
     </div>
 
   </div>
@@ -697,6 +558,138 @@
 
   </div>
 </div>
+
+<!-- Photo viewer modal -->
+<div id="photo-viewer-modal" onclick="closePhotoViewer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div onclick="event.stopPropagation()" style="position:relative">
+    <img id="photo-viewer-img" src="" style="height:70vh;width:auto;max-width:90vw;object-fit:contain;border-radius:8px;display:block;background:rgba(255,255,255,0.5)">
+    <button onclick="closePhotoViewer()" style="position:absolute;top:-12px;right:-12px;background:var(--surface);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--text);display:flex;align-items:center;justify-content:center">×</button>
+  </div>
+  <div id="photo-nav" onclick="event.stopPropagation()" style="display:none;align-items:center;gap:16px">
+    <button onclick="prevPhoto()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer">‹</button>
+    <span id="photo-counter" style="color:#fff;font-size:12px;font-family:'DM Mono',monospace"></span>
+    <button onclick="nextPhoto()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer">›</button>
+  </div>
+</div>
+
+<!-- Photo editor modal -->
+<div id="photo-editor-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1001;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;max-width:560px;width:95vw;display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:13px;font-weight:600;color:var(--text)">Edit photo</div>
+    <div style="max-height:55vh;overflow:hidden;border-radius:4px;background:#111">
+      <img id="photo-editor-img" src="" style="display:block;max-width:100%">
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button type="button" onclick="editorRotate(-90)" class="btn-outline" style="font-size:12px;padding:5px 12px">↺ Rotate left</button>
+      <button type="button" onclick="editorRotate(90)"  class="btn-outline" style="font-size:12px;padding:5px 12px">↻ Rotate right</button>
+      <button type="button" onclick="editorFlipX()"     class="btn-outline" style="font-size:12px;padding:5px 12px">⇔ Flip H</button>
+      <button type="button" onclick="editorFlipY()"     class="btn-outline" style="font-size:12px;padding:5px 12px">⇕ Flip V</button>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button type="button" onclick="closePhotoEditor()" class="btn-outline" style="font-size:12px;padding:5px 12px">Cancel</button>
+        <button type="button" id="photo-editor-save" onclick="savePhoto()" class="btn-accent" style="font-size:12px;padding:5px 14px">Save photo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Photo viewer ──────────────────────────────────────────
+var _photoUrls = [];
+var _photoIdx  = 0;
+
+function openPhotoViewer(urls) {
+  _photoUrls = urls;
+  _showPhoto(0);
+  document.getElementById('photo-viewer-modal').style.display = 'flex';
+}
+function _showPhoto(idx) {
+  _photoIdx = idx;
+  document.getElementById('photo-viewer-img').src = _photoUrls[idx];
+  var nav = document.getElementById('photo-nav');
+  nav.style.display = _photoUrls.length > 1 ? 'flex' : 'none';
+  document.getElementById('photo-counter').textContent = (idx + 1) + ' / ' + _photoUrls.length;
+}
+function prevPhoto() { _showPhoto((_photoIdx - 1 + _photoUrls.length) % _photoUrls.length); }
+function nextPhoto() { _showPhoto((_photoIdx + 1) % _photoUrls.length); }
+function closePhotoViewer() {
+  document.getElementById('photo-viewer-modal').style.display = 'none';
+}
+document.addEventListener('keydown', function(e) {
+  if (document.getElementById('photo-viewer-modal').style.display === 'flex') {
+    if (e.key === 'ArrowLeft')  prevPhoto();
+    else if (e.key === 'ArrowRight') nextPhoto();
+    else if (e.key === 'Escape') closePhotoViewer();
+  }
+});
+
+// ── Photo editor (Cropper.js) ─────────────────────────────
+var _cropper = null;
+var _uploadUrl = null;
+var _csrfToken = null;
+var _cropperLoaded = false;
+
+function openPhotoEditor(input) {
+  var file = input.files[0];
+  if (!file) return;
+  _uploadUrl  = input.dataset.uploadUrl;
+  _csrfToken  = input.dataset.csrf;
+  input.value = '';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = document.getElementById('photo-editor-img');
+    img.src = e.target.result;
+    document.getElementById('photo-editor-modal').style.display = 'flex';
+    _initCropper(img);
+  };
+  reader.readAsDataURL(file);
+}
+
+function _initCropper(img) {
+  function _boot() {
+    if (_cropper) { _cropper.destroy(); _cropper = null; }
+    _cropper = new Cropper(img, {
+      aspectRatio: NaN, viewMode: 1, autoCropArea: 0.9, movable: true, zoomable: true,
+    });
+  }
+  if (_cropperLoaded) { _boot(); return; }
+  var link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css';
+  document.head.appendChild(link);
+  var script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js';
+  script.onload = function() { _cropperLoaded = true; _boot(); };
+  document.head.appendChild(script);
+}
+
+function editorRotate(deg) { if (_cropper) _cropper.rotate(deg); }
+function editorFlipX()     { if (_cropper) _cropper.scaleX(_cropper.getData().scaleX === -1 ? 1 : -1); }
+function editorFlipY()     { if (_cropper) _cropper.scaleY(_cropper.getData().scaleY === -1 ? 1 : -1); }
+
+function closePhotoEditor() {
+  document.getElementById('photo-editor-modal').style.display = 'none';
+  if (_cropper) { _cropper.destroy(); _cropper = null; }
+}
+
+function savePhoto() {
+  if (!_cropper) return;
+  var btn = document.getElementById('photo-editor-save');
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+  var canvas = _cropper.getCroppedCanvas({ maxWidth: 1600, maxHeight: 1600 });
+  canvas.toBlob(function(blob) {
+    var fd = new FormData();
+    fd.append('photo', blob, 'photo.jpg');
+    fd.append('csrfmiddlewaretoken', _csrfToken);
+    fetch(_uploadUrl, { method: 'POST', body: fd })
+      .then(function(r) {
+        if (r.ok || r.redirected) { location.reload(); }
+        else { btn.textContent = 'Save photo'; btn.disabled = false; alert('Upload failed.'); }
+      })
+      .catch(function() { btn.textContent = 'Save photo'; btn.disabled = false; alert('Upload failed.'); });
+  }, 'image/jpeg', 0.92);
+}
+</script>
 
 <script>
 /* ── Column sort (server-side navigation) ── */
