@@ -1,12 +1,12 @@
 {% extends "repository/base.html" %}
 
-{% block title %}Delete Dataset — Myco-material Database{% endblock %}
+{% block title %}Delete Experiment — Myco-material Database{% endblock %}
 
 {% block content %}
 <div class="section" style="padding-top:4rem;max-width:540px;margin:0 auto">
   <h2 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:0.5rem">Delete dataset</h2>
   <p style="color:var(--text-muted);font-size:13px;margin-bottom:2rem">
-    Are you sure you want to delete <strong>{{ dataset.title }}</strong>? This will permanently remove the dataset and all associated files. This cannot be undone.
+    Are you sure you want to delete <strong>{{ dataset.title }}</strong>? This will permanently remove the experiment and all associated files. This cannot be undone.
   </p>
   <div style="display:flex;gap:12px">
     <form method="post">

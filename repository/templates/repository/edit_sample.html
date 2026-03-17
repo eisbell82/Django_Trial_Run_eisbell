@@ -20,7 +20,7 @@
       <input type="text" name="col_{{ col.id }}" class="form-input" value="{{ val }}" placeholder="{% if col.unit %}{{ col.unit }}{% endif %}">
     </div>
     {% empty %}
-    <p style="color:var(--text-dim);font-size:12px;margin-bottom:1rem">No columns defined for this dataset yet.</p>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:1rem">No columns defined for this experiment yet.</p>
     {% endfor %}
     <div style="display:flex;gap:12px;margin-top:1.5rem">
       <button type="submit" class="btn-accent">Save changes</button>

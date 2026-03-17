@@ -15,7 +15,7 @@
       Myco-material Database
     </h1>
     <p style="color:var(--text-muted);font-size:14px;line-height:1.8">
-      A curated open repository for biological specimen datasets. Upload, discover, and cite research-grade data with associated provenance records and analysis notebooks.
+      A curated repository for myco-material research experiments. Upload, discover, and cite research-grade data with associated sample records, provenance metadata, and analysis notebooks.
     </p>
   </div>
 
@@ -24,23 +24,35 @@
   <div style="margin-bottom:2rem">
     <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Getting Started</h2>
     <div class="info-block">
-      <div class="info-row"><span class="info-key">Browse datasets</span><span class="info-val">No account required</span></div>
+      <div class="info-row"><span class="info-key">Browse experiments</span><span class="info-val">No account required</span></div>
       <div class="info-row"><span class="info-key">Download files</span><span class="info-val">No account required</span></div>
-      <div class="info-row"><span class="info-key">Upload datasets</span><span class="info-val">Account required</span></div>
-      <div class="info-row"><span class="info-key">Manage datasets</span><span class="info-val">Admin access required</span></div>
+      <div class="info-row"><span class="info-key">Upload experiments</span><span class="info-val">Account required</span></div>
+      <div class="info-row"><span class="info-key">Manage experiments</span><span class="info-val">Admin access required</span></div>
     </div>
   </div>
 
   <div style="margin-bottom:2rem">
-    <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Uploading a Dataset</h2>
+    <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Uploading an Experiment</h2>
     <ol style="color:var(--text-muted);font-size:13px;line-height:2;padding-left:1.25rem">
       <li><a href="{% url 'repository:register' %}" style="color:var(--accent-dim)">Create an account</a> or sign in</li>
       <li>Click <strong style="color:var(--text)">+ Upload</strong> in the navigation bar</li>
-      <li>Fill in the dataset title, abstract, category, and license</li>
-      <li>Attach your data file (CSV, XLSX, JSON, TIFF, ZIP — max 150 MB)</li>
+      <li>Fill in the experiment title, abstract, category, and license</li>
+      <li>Attach your data file (CSV, XLSX, JSON, ZIP — max 150 MB)</li>
       <li>Optionally attach an analysis notebook (.ipynb)</li>
-      <li>Submit — your dataset will appear immediately</li>
+      <li>Submit — your experiment will appear immediately</li>
     </ol>
+  </div>
+
+  <div style="margin-bottom:2rem">
+    <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Sample Records</h2>
+    <p style="color:var(--text-muted);font-size:13px;line-height:1.9;margin-bottom:.75rem">
+      Each experiment can have a structured sample table. Columns are grouped as <strong style="color:var(--text)">Sample characteristics</strong> (descriptive fields) or <strong style="color:var(--text)">Sample data</strong> (numeric measurements). Samples can be added manually, imported via CSV, or browsed globally across all experiments from the Samples tab.
+    </p>
+    <div class="info-block">
+      <div class="info-row"><span class="info-key">Add samples</span><span class="info-val">Manually or via CSV upload</span></div>
+      <div class="info-row"><span class="info-key">Sample photos</span><span class="info-val">Multiple images per sample</span></div>
+      <div class="info-row"><span class="info-key">Global search</span><span class="info-val">Filter across all experiments</span></div>
+    </div>
   </div>
 
   <div style="margin-bottom:2rem">
@@ -48,9 +60,9 @@
     <div class="info-block">
       <div class="info-row"><span class="info-key">Tabular data</span><span class="info-val">CSV, TSV, XLSX</span></div>
       <div class="info-row"><span class="info-key">Structured data</span><span class="info-val">JSON</span></div>
-      <div class="info-row"><span class="info-key">Imaging</span><span class="info-val">TIFF</span></div>
       <div class="info-row"><span class="info-key">Archives</span><span class="info-val">ZIP</span></div>
       <div class="info-row"><span class="info-key">Notebooks</span><span class="info-val">.ipynb (Jupyter)</span></div>
+      <div class="info-row"><span class="info-key">Images</span><span class="info-val">JPG, PNG, WebP, TIFF, SVG, HEIC and more</span></div>
       <div class="info-row"><span class="info-key">Max file size</span><span class="info-val">150 MB per file</span></div>
     </div>
   </div>

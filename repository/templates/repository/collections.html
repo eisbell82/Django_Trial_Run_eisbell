@@ -68,7 +68,7 @@
   <!-- Section header with sort controls -->
   <div class="section-header">
     <span class="section-title">Collections</span>
-    <span class="section-count">{{ total_results }} dataset{{ total_results|pluralize }}</span>
+    <span class="section-count">{{ total_results }} experiment{{ total_results|pluralize }}</span>
     <div class="sort-controls">
       {% for s_key, s_label in sort_options %}
         {% if sort == s_key %}
@@ -84,7 +84,7 @@
   <div style="margin-bottom:2.5rem">
     <div style="display:flex;align-items:baseline;gap:1rem;margin-bottom:1rem">
       <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700">{{ col.label }}</h2>
-      <span class="section-count">{{ col.total }} dataset{{ col.total|pluralize }}</span>
+      <span class="section-count">{{ col.total }} experiment{{ col.total|pluralize }}</span>
     </div>
 
     <div class="dataset-grid">
@@ -112,9 +112,9 @@
   </div>
   {% empty %}
   <div class="empty-state">
-    <p>No datasets found{% if query %} for "{{ query }}"{% endif %}.</p>
+    <p>No experiments found{% if query %} for "{{ query }}"{% endif %}.</p>
     {% if user.is_authenticated %}
-      <a href="{% url 'repository:upload' %}" class="btn-accent">Upload the first dataset →</a>
+      <a href="{% url 'repository:upload' %}" class="btn-accent">Upload the first experiment →</a>
     {% endif %}
   </div>
   {% endfor %}

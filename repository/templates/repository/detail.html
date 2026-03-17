@@ -9,7 +9,7 @@
 <div class="detail-header">
   <div class="detail-inner">
     <div class="breadcrumb">
-      <a href="{% url 'repository:home' %}">Datasets</a>
+      <a href="{% url 'repository:home' %}">Experiments</a>
       <span>›</span>
       <a href="{% url 'repository:home' %}?category={{ dataset.category }}">{{ dataset.get_category_display }}</a>
       <span>›</span>
@@ -623,7 +623,7 @@
     <form method="post">
       {% csrf_token %}
       <input type="hidden" name="download" value="1">
-      <button type="submit" class="dl-btn">↓ Download Dataset{% if dataset.file_size_display %} ({{ dataset.file_size_display }}){% endif %}</button>
+      <button type="submit" class="dl-btn">↓ Download Experiment{% if dataset.file_size_display %} ({{ dataset.file_size_display }}){% endif %}</button>
     </form>
     {% endif %}
     {% for nb in dataset.notebooks.all %}

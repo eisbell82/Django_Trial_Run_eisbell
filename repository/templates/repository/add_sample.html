@@ -20,7 +20,7 @@
       <input type="text" name="col_{{ col.id }}" class="form-input" placeholder="{{ col.name }}{% if col.unit %} ({{ col.unit }}){% endif %}">
     </div>
     {% empty %}
-    <p style="color:var(--text-dim);font-size:12px;margin-bottom:1rem">No columns defined for this dataset yet. <a href="{% url 'repository:detail' dataset.slug %}">Add columns first</a>.</p>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:1rem">No columns defined for this experiment yet. <a href="{% url 'repository:detail' dataset.slug %}">Add columns first</a>.</p>
     {% endfor %}
     <div style="display:flex;gap:12px;margin-top:1.5rem">
       <button type="submit" class="btn-accent">Save sample</button>

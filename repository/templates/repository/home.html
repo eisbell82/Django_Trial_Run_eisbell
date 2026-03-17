@@ -10,15 +10,15 @@
   <div>
     <div class="hero-label">// Open Research Repository</div>
     <h1>Find, cite &amp;<br><em>build on</em><br>specimen data.</h1>
-    <p>A curated archive of biological specimen datasets with associated notebooks, provenance records, and download-ready exports.</p>
+    <p>A curated archive of myco-material experiments with associated notebooks, provenance records, and download-ready exports.</p>
     <div class="hero-stats">
-      <div class="stat"><div class="stat-n">{{ total_count }}</div><div class="stat-label">Datasets</div></div>
+      <div class="stat"><div class="stat-n">{{ total_count }}</div><div class="stat-label">Experiments</div></div>
       <div class="stat"><div class="stat-n">{{ notebook_count }}</div><div class="stat-label">Notebooks</div></div>
       <div class="stat"><div class="stat-n">{{ contributor_count }}</div><div class="stat-label">Contributors</div></div>
     </div>
   </div>
   <div class="hero-search">
-    <div class="search-title">// Search datasets</div>
+    <div class="search-title">// Search experiments</div>
     <form method="get" action="{% url 'repository:home' %}">
       <div class="search-input-wrap">
         <input class="search-input" type="text" name="q" value="{{ query }}" placeholder="e.g. Mus musculus femur CT">
@@ -31,7 +31,7 @@
 <div class="section">
   <div class="section-header">
     <span class="section-title">
-      {% if query %}Search: "{{ query }}"{% else %}Recent Datasets{% endif %}
+      {% if query %}Search: "{{ query }}"{% else %}Recent Experiments{% endif %}
     </span>
     <span class="section-count">{{ datasets|length }} result{{ datasets|length|pluralize }}</span>
   </div>
@@ -72,9 +72,9 @@
   </div>
   {% else %}
   <div class="empty-state">
-    <p>No datasets found{% if query %} for "{{ query }}"{% endif %}.</p>
+    <p>No experiments found{% if query %} for "{{ query }}"{% endif %}.</p>
     {% if user.is_authenticated %}
-      <a href="{% url 'repository:upload' %}" class="btn-accent">Upload the first dataset →</a>
+      <a href="{% url 'repository:upload' %}" class="btn-accent">Upload the first experiment →</a>
     {% else %}
       <a href="{% url 'repository:login' %}" class="btn-outline">Sign in to upload</a>
     {% endif %}
