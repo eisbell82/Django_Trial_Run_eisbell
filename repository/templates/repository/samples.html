@@ -314,11 +314,13 @@ document.addEventListener('click', function(e) {
   function sqRender(d) {
     drop.innerHTML = '';
     var any = false;
-    if (d.samples && d.samples.length) {
-      drop.appendChild(sqSection('Sample IDs'));
-      d.samples.forEach(function(s){
-        drop.appendChild(sqMakeItem(s.id, '', function(){
-          inp.value = s.id; document.getElementById('samples-filter-form').submit();
+    if (d.values && d.values.length) {
+      drop.appendChild(sqSection('Column values'));
+      d.values.forEach(function(v){
+        drop.appendChild(sqMakeItem(v.value, v.column, function(){
+          var params = new URLSearchParams(window.location.search);
+          params.set('filter_col', v.column); params.set('filter_col_val', v.value);
+          window.location.search = params.toString();
         }));
         any = true;
       });
@@ -327,7 +329,6 @@ document.addEventListener('click', function(e) {
       drop.appendChild(sqSection('Column names'));
       d.columns.forEach(function(c){
         drop.appendChild(sqMakeItem(c.name, c.unit ? '['+c.unit+']' : '', function(){
-          /* navigate with filter_col set */
           var params = new URLSearchParams(window.location.search);
           params.set('filter_col', c.name); params.delete('filter_col_val');
           window.location.search = params.toString();
@@ -335,13 +336,11 @@ document.addEventListener('click', function(e) {
         any = true;
       });
     }
-    if (d.values && d.values.length) {
-      drop.appendChild(sqSection('Column values'));
-      d.values.forEach(function(v){
-        drop.appendChild(sqMakeItem(v.value, v.column, function(){
-          var params = new URLSearchParams(window.location.search);
-          params.set('filter_col', v.column); params.set('filter_col_val', v.value);
-          window.location.search = params.toString();
+    if (d.samples && d.samples.length) {
+      drop.appendChild(sqSection('Sample IDs'));
+      d.samples.forEach(function(s){
+        drop.appendChild(sqMakeItem(s.id, '', function(){
+          inp.value = s.id; document.getElementById('samples-filter-form').submit();
         }));
         any = true;
       });
