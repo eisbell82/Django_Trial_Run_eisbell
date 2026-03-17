@@ -44,6 +44,7 @@ def _to_web_image(uploaded_file):
     img = Image.open(uploaded_file)
     if img.mode not in ("RGB", "L"):
         img = img.convert("RGB")
+    img.thumbnail((2000, 2000), Image.LANCZOS)
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=92)
     base = os.path.splitext(uploaded_file.name)[0]
@@ -1270,12 +1271,17 @@ def about_view(request):
             messages.success(request, "About page updated.")
         elif action == "upload_photo":
             img = request.FILES.get("image")
+            is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
             if img:
                 caption = request.POST.get("caption", "").strip()
                 order = AboutPhoto.objects.filter(page=page).count()
                 AboutPhoto.objects.create(page=page, image=_to_web_image(img), caption=caption, order=order)
+                if is_ajax:
+                    return JsonResponse({"ok": True})
                 messages.success(request, "Photo uploaded.")
             else:
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "No image selected."}, status=400)
                 messages.error(request, "No image selected.")
         return redirect(reverse("repository:about") + "?edit=1")
     edit_open = request.GET.get("edit") == "1"

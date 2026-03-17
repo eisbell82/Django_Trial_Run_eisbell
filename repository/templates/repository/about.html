@@ -82,7 +82,7 @@
                 style="padding:.45rem 1.1rem;background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer">Save content</button>
       </form>
 
-      <form method="post" enctype="multipart/form-data">
+      <form id="about-photo-form" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="hidden" name="action" value="upload_photo">
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">Upload photo</div>
@@ -91,7 +91,7 @@
                  style="font-size:12px;color:var(--text-muted)">
           <input type="text" name="caption" placeholder="Caption (optional)"
                  style="flex:1;min-width:160px;padding:.45rem .7rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px">
-          <button type="submit"
+          <button type="submit" id="about-upload-btn"
                   style="padding:.45rem 1.1rem;background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer">Upload</button>
         </div>
       </form>
@@ -100,5 +100,64 @@
   {% endif %}
 
 </div>
+
+<script>
+(function () {
+  var form = document.getElementById('about-photo-form');
+  if (!form) return;
+  var btn = document.getElementById('about-upload-btn');
+  var fileInput = form.querySelector('input[name="image"]');
+  var MAX_DIM = 1600;
+  var CANVAS_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp']);
+
+  function resizeToJpeg(file) {
+    return new Promise(function (resolve) {
+      if (!CANVAS_TYPES.has(file.type)) { resolve(file); return; }
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        var w = img.naturalWidth, h = img.naturalHeight;
+        if (w <= MAX_DIM && h <= MAX_DIM) { resolve(file); return; }
+        if (w > h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+        else       { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function (blob) { resolve(blob); }, 'image/jpeg', 0.88);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var file = fileInput.files[0];
+    if (!file) return;
+    btn.textContent = 'Uploading\u2026';
+    btn.disabled = true;
+
+    resizeToJpeg(file).then(function (blob) {
+      var fd = new FormData();
+      fd.append('csrfmiddlewaretoken', form.querySelector('[name=csrfmiddlewaretoken]').value);
+      fd.append('action', 'upload_photo');
+      fd.append('caption', form.querySelector('[name=caption]').value);
+      var fname = (blob === file) ? file.name : file.name.replace(/\.[^.]+$/, '.jpg');
+      fd.append('image', blob, fname);
+      return fetch(window.location.href, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: fd
+      });
+    }).then(function (r) {
+      if (r.ok) { location.reload(); }
+      else { btn.textContent = 'Upload'; btn.disabled = false; alert('Upload failed.'); }
+    }).catch(function () {
+      btn.textContent = 'Upload'; btn.disabled = false; alert('Upload failed.');
+    });
+  });
+})();
+</script>
 
 {% endblock %}
