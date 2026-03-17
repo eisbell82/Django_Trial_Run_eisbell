@@ -676,6 +676,25 @@ def edit_sample(request, slug, pk):
 
 
 @login_required
+def upload_sample_photo(request, slug, pk):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return _redirect_to_tab(slug, "tab-samples")
+    sample = get_object_or_404(Sample, pk=pk, dataset=dataset)
+    if request.method == "POST":
+        if request.POST.get("remove"):
+            if sample.image:
+                sample.image.delete(save=True)
+        else:
+            photo = request.FILES.get("photo")
+            if photo:
+                sample.image = photo
+                sample.save()
+    return _redirect_to_tab(slug, "tab-samples")
+
+
+@login_required
 def rename_sample_column(request, slug, col_id):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):
@@ -872,7 +891,7 @@ def _sort_key(val):
         return (1, 0.0, v.lower())
 
 
-def _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, user=None):
+def _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, filter_col="", filter_col_val="", user=None):
     """Return a filtered (but not yet evaluated) Sample queryset."""
     visible_ids = _visible_datasets(user).values_list("id", flat=True)
     qs = Sample.objects.select_related("dataset").filter(dataset_id__in=visible_ids)
@@ -890,6 +909,8 @@ def _build_samples_qs(query, active_category, f_species, f_substrate, f_coating,
         qs = qs.filter(values__column__name__iexact="substrate", values__value=f_substrate)
     if f_coating:
         qs = qs.filter(values__column__name__iexact="coating", values__value=f_coating)
+    if filter_col and filter_col_val:
+        qs = qs.filter(values__column__name__iexact=filter_col, values__value__icontains=filter_col_val)
     return qs
 
 
@@ -953,10 +974,12 @@ def samples_view(request):
     f_species       = request.GET.get("filter_species", "")
     f_substrate     = request.GET.get("filter_substrate", "")
     f_coating       = request.GET.get("filter_coating", "")
+    filter_col      = request.GET.get("filter_col", "")
+    filter_col_val  = request.GET.get("filter_col_val", "")
     sort_col        = request.GET.get("sort_col", "")
     sort_dir        = request.GET.get("sort_dir", "asc")
 
-    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, user=request.user)
+    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, filter_col, filter_col_val, user=request.user)
 
     available_columns = []
     if active_category:
@@ -994,7 +1017,7 @@ def samples_view(request):
     ]
 
     adv_filter_values = _col_values_bulk(["species", "substrate", "coating"], active_category)
-    adv_active = bool(show_columns or f_species or f_substrate or f_coating)
+    adv_active = bool(show_columns or f_species or f_substrate or f_coating or (filter_col and filter_col_val))
 
     return render(request, "repository/samples.html", {
         "samples": samples,
@@ -1008,6 +1031,8 @@ def samples_view(request):
         "f_species": f_species,
         "f_substrate": f_substrate,
         "f_coating": f_coating,
+        "filter_col": filter_col,
+        "filter_col_val": filter_col_val,
         "species_values": adv_filter_values["species"],
         "substrate_values": adv_filter_values["substrate"],
         "coating_values": adv_filter_values["coating"],
@@ -1025,10 +1050,12 @@ def samples_csv_view(request):
     f_species       = request.GET.get("filter_species", "")
     f_substrate     = request.GET.get("filter_substrate", "")
     f_coating       = request.GET.get("filter_coating", "")
+    filter_col      = request.GET.get("filter_col", "")
+    filter_col_val  = request.GET.get("filter_col_val", "")
     sort_col        = request.GET.get("sort_col", "")
     sort_dir        = request.GET.get("sort_dir", "asc")
 
-    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, user=request.user)
+    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, filter_col, filter_col_val, user=request.user)
 
     available_columns = []
     if active_category:

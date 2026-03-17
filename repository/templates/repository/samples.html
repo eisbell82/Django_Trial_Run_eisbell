@@ -82,6 +82,21 @@
           </div>
           {% endif %}
 
+          {% if available_columns %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Column value</label>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <select name="filter_col" class="adv-select" style="width:auto">
+                <option value="">Any column</option>
+                {% for col in available_columns %}
+                <option value="{{ col }}" {% if filter_col == col %}selected{% endif %}>{{ col }}</option>
+                {% endfor %}
+              </select>
+              <input type="text" name="filter_col_val" class="adv-select" value="{{ filter_col_val }}" placeholder="contains…" style="width:120px">
+            </div>
+          </div>
+          {% endif %}
+
           {% if adv_active %}
           <div class="adv-filter-group" style="display:flex;align-items:flex-end">
             <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category %}category={{ active_category }}{% endif %}" class="btn-outline" style="font-size:11px;padding:6px 12px">Clear filters ×</a>
@@ -91,6 +106,8 @@
         </div>
         {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
         {% if active_category %}<input type="hidden" name="category" value="{{ active_category }}">{% endif %}
+        {% if filter_col %}<input type="hidden" name="filter_col" value="{{ filter_col }}">{% endif %}
+        {% if filter_col_val %}<input type="hidden" name="filter_col_val" value="{{ filter_col_val }}">{% endif %}
       </details>
 
     </form>
