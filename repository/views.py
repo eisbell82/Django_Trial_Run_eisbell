@@ -25,6 +25,30 @@ ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", 
 ADMIN_UPLOAD_LIMIT = 500 * 1024 * 1024   # 500 MB
 USER_UPLOAD_LIMIT  = 150 * 1024 * 1024   # 150 MB
 
+# Formats browsers cannot render in <img> tags — convert to JPEG on upload
+_NON_WEB_IMAGE_EXTS = {".tif", ".tiff", ".heic", ".heif"}
+
+
+def _to_web_image(uploaded_file):
+    """
+    If uploaded_file has a non-web-renderable extension, convert it to JPEG
+    using Pillow and return a Django ContentFile with a .jpg name.
+    Otherwise return the original file unchanged.
+    """
+    ext = os.path.splitext(uploaded_file.name)[1].lower()
+    if ext not in _NON_WEB_IMAGE_EXTS:
+        return uploaded_file
+    from PIL import Image
+    from django.core.files.base import ContentFile
+    import io
+    img = Image.open(uploaded_file)
+    if img.mode not in ("RGB", "L"):
+        img = img.convert("RGB")
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=92)
+    base = os.path.splitext(uploaded_file.name)[0]
+    return ContentFile(buf.getvalue(), name=f"{base}.jpg")
+
 
 def _upload_limit(user):
     return ADMIN_UPLOAD_LIMIT if (user and user.is_staff) else USER_UPLOAD_LIMIT
@@ -732,7 +756,7 @@ def upload_sample_photo(request, slug, pk):
     if request.method == "POST":
         photo = request.FILES.get("photo")
         if photo:
-            SamplePhoto.objects.create(sample=sample, image=photo)
+            SamplePhoto.objects.create(sample=sample, image=_to_web_image(photo))
     return _redirect_to_tab(slug, "tab-samples")
 
 
@@ -1249,7 +1273,7 @@ def about_view(request):
             if img:
                 caption = request.POST.get("caption", "").strip()
                 order = AboutPhoto.objects.filter(page=page).count()
-                AboutPhoto.objects.create(page=page, image=img, caption=caption, order=order)
+                AboutPhoto.objects.create(page=page, image=_to_web_image(img), caption=caption, order=order)
                 messages.success(request, "Photo uploaded.")
             else:
                 messages.error(request, "No image selected.")
