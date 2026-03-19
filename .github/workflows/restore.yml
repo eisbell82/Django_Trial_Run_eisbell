@@ -1,0 +1,50 @@
+name: Restore Database from Backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_date:
+        description: 'Date of backup to restore (YYYY-MM-DD), e.g. 2026-03-19'
+        required: true
+        type: string
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore database from S3 snapshot
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            DATE="${{ github.event.inputs.backup_date }}"
+            BUCKET="specimenbase-backups-318270726326-us-east-1-an"
+            BACKUP_KEY="snapshots/db-$DATE.sqlite3"
+            APP_DIR="/srv/specimenbase"
+
+            rm -f ~/.aws/credentials
+
+            echo "==> Checking backup exists: s3://$BUCKET/$BACKUP_KEY ..."
+            aws s3 ls "s3://$BUCKET/$BACKUP_KEY" || { echo "ERROR: backup not found"; exit 1; }
+
+            echo "==> Saving current database as pre-restore backup..."
+            aws s3 cp "$APP_DIR/db.sqlite3" \
+              "s3://$BUCKET/pre-restore/db-pre-restore-$(date +%Y-%m-%dT%H-%M-%S).sqlite3"
+
+            echo "==> Stopping gunicorn..."
+            sudo systemctl stop specimenbase
+
+            echo "==> Downloading backup..."
+            aws s3 cp "s3://$BUCKET/$BACKUP_KEY" "$APP_DIR/db.sqlite3"
+
+            echo "==> Fixing permissions..."
+            sudo chown ubuntu:www-data "$APP_DIR/db.sqlite3"
+            sudo chmod 664 "$APP_DIR/db.sqlite3"
+
+            echo "==> Restarting gunicorn..."
+            sudo systemctl start specimenbase
+
+            echo "==> Done. Restored db-$DATE.sqlite3"
