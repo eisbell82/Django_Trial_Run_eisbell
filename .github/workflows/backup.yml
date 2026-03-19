@@ -1,9 +1,9 @@
-name: Bi-weekly Backup
+name: Scheduled Backup
 
 on:
   schedule:
-    - cron: '0 3 1,15 * *'  # 3am UTC on the 1st and 15th of every month
-  workflow_dispatch:          # allow manual trigger from Actions tab
+    - cron: '0 3 * * *'   # 3am UTC every day
+  workflow_dispatch:        # allow manual trigger from Actions tab
 
 jobs:
   backup:
@@ -18,29 +18,45 @@ jobs:
           script: |
             set -euo pipefail
             DATE=$(date +%Y-%m-%d)
+            DAY=$(date +%-d)
             BUCKET="specimenbase-backups-318270726326-us-east-1-an"
 
             # Use instance IAM role, not any stored user credentials
             rm -f ~/.aws/credentials
 
-            echo "==> Backing up database (db-$DATE.sqlite3)..."
+            # ── Daily backup (kept 7 days) ────────────────────────────────
+            echo "==> Daily backup: daily/db-$DATE.sqlite3 ..."
             aws s3 cp /srv/specimenbase/db.sqlite3 \
-              "s3://$BUCKET/snapshots/db-$DATE.sqlite3"
+              "s3://$BUCKET/daily/db-$DATE.sqlite3"
 
-            echo "==> Backing up media (snapshots/media-$DATE/)..."
-            aws s3 sync /srv/specimenbase/media/ \
-              "s3://$BUCKET/snapshots/media-$DATE/"
+            # ── Bi-weekly snapshot (kept 60 days) — runs on 1st and 15th ─
+            if [ "$DAY" = "1" ] || [ "$DAY" = "15" ]; then
+              echo "==> Bi-weekly snapshot: snapshots/db-$DATE.sqlite3 ..."
+              aws s3 cp /srv/specimenbase/db.sqlite3 \
+                "s3://$BUCKET/snapshots/db-$DATE.sqlite3"
+              echo "==> Bi-weekly media snapshot: snapshots/media-$DATE/ ..."
+              aws s3 sync /srv/specimenbase/media/ \
+                "s3://$BUCKET/snapshots/media-$DATE/"
+            fi
 
-            echo "==> Setting 60-day expiry on snapshots/..."
+            # ── Lifecycle rules (idempotent, safe to set every run) ───────
             aws s3api put-bucket-lifecycle-configuration \
               --bucket "$BUCKET" \
               --lifecycle-configuration '{
-                "Rules": [{
-                  "ID": "expire-snapshots-60-days",
-                  "Filter": {"Prefix": "snapshots/"},
-                  "Status": "Enabled",
-                  "Expiration": {"Days": 60}
-                }]
+                "Rules": [
+                  {
+                    "ID": "expire-daily-7-days",
+                    "Filter": {"Prefix": "daily/"},
+                    "Status": "Enabled",
+                    "Expiration": {"Days": 7}
+                  },
+                  {
+                    "ID": "expire-snapshots-60-days",
+                    "Filter": {"Prefix": "snapshots/"},
+                    "Status": "Enabled",
+                    "Expiration": {"Days": 60}
+                  }
+                ]
               }'
 
-            echo "==> Done. Backup stored at s3://$BUCKET/snapshots/db-$DATE.sqlite3"
+            echo "==> Done."

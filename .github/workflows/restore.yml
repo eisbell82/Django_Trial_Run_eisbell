@@ -7,6 +7,14 @@ on:
         description: 'Date of backup to restore (YYYY-MM-DD), e.g. 2026-03-19'
         required: true
         type: string
+      backup_type:
+        description: 'daily (last 7 days) or snapshots (bi-weekly, last 60 days)'
+        required: true
+        default: 'daily'
+        type: choice
+        options:
+          - daily
+          - snapshots
 
 jobs:
   restore:
@@ -22,7 +30,7 @@ jobs:
             set -euo pipefail
             DATE="${{ github.event.inputs.backup_date }}"
             BUCKET="specimenbase-backups-318270726326-us-east-1-an"
-            BACKUP_KEY="snapshots/db-$DATE.sqlite3"
+            BACKUP_KEY="${{ github.event.inputs.backup_type }}/db-$DATE.sqlite3"
             APP_DIR="/srv/specimenbase"
 
             rm -f ~/.aws/credentials
