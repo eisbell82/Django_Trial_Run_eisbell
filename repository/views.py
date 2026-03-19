@@ -740,7 +740,7 @@ def add_sample(request, slug):
         sample_id = request.POST.get("sample_id", "").strip()
         if sample_id:
             sample, _ = Sample.objects.get_or_create(dataset=dataset, sample_id=sample_id)
-            sample.notes = request.POST.get("notes", "").strip()
+            sample.notes = request.POST.get("notes", "").strip()[:250]
             sample.save()
             for col in columns:
                 val = request.POST.get(f"col_{col.id}", "").strip()
@@ -786,7 +786,7 @@ def edit_sample(request, slug, pk):
         sample_id = request.POST.get("sample_id", "").strip()
         if sample_id:
             sample.sample_id = sample_id
-            sample.notes = request.POST.get("notes", "").strip()
+            sample.notes = request.POST.get("notes", "").strip()[:250]
             sample.save()
             for col in columns:
                 val = request.POST.get(f"col_{col.id}", "").strip()
