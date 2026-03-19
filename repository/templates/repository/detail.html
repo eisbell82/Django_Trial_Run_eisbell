@@ -353,6 +353,7 @@
           <thead>
             <tr>
               <th class="sample-photo-th"></th>
+              <th class="expanded-data-th"></th>
               <th>
                 <a href="?sort_col=sample_id&sort_dir={% if sort_col == 'sample_id' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}#tab-samples" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:4px">
                   Sample ID <span class="sort-ind" style="opacity:{% if sort_col == 'sample_id' %}1{% else %}.3{% endif %}">{% if sort_col == 'sample_id' and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
@@ -428,6 +429,15 @@
                      onclick='openPhotoViewer([{% for p in s.photos_list %}"{{ p.image.url|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}])'
                      alt="">
                 {% endif %}
+              </td>
+              <td class="expanded-data-td">
+                <div style="font-size:14px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">{{ s.sample_id }}</div>
+                {% for col, val in s.row_with_cols %}
+                <div class="exp-row">
+                  <span class="exp-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
+                  <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
+                </div>
+                {% endfor %}
               </td>
               <td class="sample-id-cell">
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -734,9 +744,35 @@ function savePhoto() {
 <style>
 /* ── Expanded photo view ── */
 .sample-photo-th, .sample-photo-td { display:none; }
-.sample-table.expanded-view .sample-photo-th,
-.sample-table.expanded-view .sample-photo-td { display:table-cell; }
-.sample-table.expanded-view td { vertical-align:top; }
+.expanded-data-th, .expanded-data-td { display:none; }
+
+/* Compact: normal table */
+.sample-table:not(.expanded-view) .sample-photo-th,
+.sample-table:not(.expanded-view) .sample-photo-td { display:none; }
+
+/* Expanded: flex card layout — break out of table */
+.sample-table.expanded-view thead { display:none; }
+.sample-table.expanded-view,
+.sample-table.expanded-view tbody { display:block; width:100%; }
+.sample-table.expanded-view tbody tr {
+  display:flex; align-items:flex-start; gap:20px;
+  border-bottom:1px solid var(--border); padding:20px 0;
+}
+.sample-table.expanded-view tbody tr td { display:none !important; }
+.sample-table.expanded-view tbody tr .sample-photo-td {
+  display:block !important; flex-shrink:0; padding:0;
+}
+.sample-table.expanded-view .sample-photo-td img {
+  width:400px !important; height:400px !important;
+  object-fit:cover; border-radius:8px; display:block; cursor:pointer;
+}
+.sample-table.expanded-view tbody tr .expanded-data-td {
+  display:block !important; flex:1; padding:0; min-width:0;
+}
+.exp-row { display:flex; gap:10px; padding:4px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.exp-row:last-child { border-bottom:none; }
+.exp-label { color:var(--text-dim); flex-shrink:0; width:140px; font-weight:600; }
+.exp-val { flex:1; min-width:0; }
 </style>
 
 <script>
