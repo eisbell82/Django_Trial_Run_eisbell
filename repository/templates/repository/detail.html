@@ -468,7 +468,7 @@
                     {% endfor %}
                     {% endif %}
                   {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-                    <label style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.4">
+                    <label style="background:none;border:none;color:var(--text-dim);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;opacity:.7;padding:0 2px">
                       + photo
                       <input type="file" accept="image/*" style="display:none"
                              data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
@@ -483,7 +483,7 @@
                   {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                   <button type="button"
                     onclick="showNotesEditor('{% url 'repository:save_sample_notes' dataset.slug s.pk %}', '')"
-                    style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.4">+ notes</button>
+                    style="background:none;border:none;color:var(--text-dim);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;opacity:.7;padding:0 2px">+ notes</button>
                   {% endif %}
                 </div>
               </td>
