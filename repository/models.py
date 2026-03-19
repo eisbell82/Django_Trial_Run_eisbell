@@ -36,6 +36,7 @@ class Dataset(models.Model):
         ("mechanical", "Mechanical"),
         ("chemical", "Chemical"),
         ("imaging", "Imaging"),
+        ("systems_analysis", "Systems Analysis"),
     ]
     LICENSE_CHOICES = [
         ("cc_by_4", "CC BY 4.0"),
