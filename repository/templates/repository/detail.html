@@ -802,6 +802,9 @@ function toggleSamplesEdit() {
   var btn = document.getElementById('samples-edit-toggle');
   var editing = tab.classList.toggle('samples-edit-active');
   btn.textContent = editing ? '✓ Done' : '✎ Edit';
+  if (!editing) {
+    location.reload();
+  }
 }
 
 function confirmDelCol(name) {

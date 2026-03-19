@@ -64,7 +64,8 @@
       </div>
       <div class="ds-right">
         {% if ds.file_size_display %}<div class="ds-size">{{ ds.file_size_display }}</div>{% endif %}
-        <div class="ds-date">{{ ds.created_at|timesince }} ago</div>
+        <div class="ds-date">{{ ds.created_at|date:"M j, Y" }}</div>
+        <div class="ds-date" style="font-size:11px;opacity:.6">{{ ds.created_at|timesince }} ago</div>
       </div>
     </a>
     {% endfor %}
