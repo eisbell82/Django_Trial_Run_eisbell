@@ -204,14 +204,16 @@ def dataset_detail(request, slug):
 
     samples = page_samples
 
-    # Column names already used in other datasets of the same category (for suggestions)
-    existing_col_names = list(
-        SampleColumn.objects.filter(dataset__category=dataset.category)
-        .exclude(dataset=dataset)
-        .values_list("name", flat=True)
-        .distinct()
-        .order_by("name")
-    )
+    # Column names across all same-category experiments, sorted by how many experiments use them
+    existing_col_names = [
+        row["name"]
+        for row in (
+            SampleColumn.objects.filter(dataset__category=dataset.category)
+            .values("name")
+            .annotate(cnt=Count("dataset", distinct=True))
+            .order_by("-cnt", "name")
+        )
+    ]
 
     # Units previously used for columns sharing the same name (for per-column unit suggestions)
     col_names = [col.name for col in columns]
@@ -247,6 +249,7 @@ def dataset_detail(request, slug):
         "sort_dir": sort_dir,
         "page_sizes": [25, 50, 100],
         "suggested_column_names": existing_col_names,
+        "current_col_names": [col.name for col in columns],
         "overview_photos": dataset.overview_photos.all(),
     }
     return render(request, "repository/detail.html", context)

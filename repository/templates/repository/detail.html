@@ -213,13 +213,15 @@
             {% if suggested_column_names %}
             <div id="col-suggestions-drop" style="display:none;position:absolute;top:100%;left:0;min-width:220px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:200;margin-top:3px;overflow:hidden">
               <div style="padding:6px 10px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);border-bottom:1px solid var(--border);white-space:nowrap">
-                Existing columns — {{ dataset.get_category_display }} experiments
+                Column names — all {{ dataset.get_category_display }} experiments · sorted by use
               </div>
               <ul id="col-suggestions-list" style="margin:0;padding:4px 0;list-style:none;max-height:180px;overflow-y:auto"></ul>
             </div>
             <script>
             // Shared fuzzy suggestion data and helpers (used by add-column + rename inputs)
             window._colSugs = [{% for col_name in suggested_column_names %}"{{ col_name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+            window._colCurrentNames = new Set([{% for n in current_col_names %}"{{ n|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]);
+            window._colCategory = "{{ dataset.get_category_display|escapejs }}";
 
             window._colLev = function(a, b) {
               var m = a.length, n = b.length, dp = [], i, j;
@@ -256,17 +258,34 @@
 
             window._colRender = function(listEl, dropEl, inputEl, items, q) {
               listEl.innerHTML = '';
-              if (!items.length) { dropEl.style.display = 'none'; return; }
+              if (!items.length) {
+                if (q) {
+                  var warn = document.createElement('li');
+                  warn.style.cssText = 'padding:7px 10px;font-size:11px;color:var(--text-dim);font-style:italic';
+                  warn.textContent = '\u26a0 New name \u2014 not used in any ' + (window._colCategory || '') + ' experiment';
+                  listEl.appendChild(warn);
+                  dropEl.style.display = 'block';
+                } else {
+                  dropEl.style.display = 'none';
+                }
+                return;
+              }
               items.forEach(function(name) {
                 var li = document.createElement('li');
+                var isCurrent = window._colCurrentNames && window._colCurrentNames.has(name);
+                var html = '';
                 if (q && name.toLowerCase().includes(q)) {
                   var idx = name.toLowerCase().indexOf(q);
-                  li.innerHTML = name.slice(0, idx) +
+                  html = name.slice(0, idx) +
                     '<strong style="color:var(--accent)">' + name.slice(idx, idx + q.length) + '</strong>' +
                     name.slice(idx + q.length);
                 } else {
-                  li.textContent = name;
+                  html = name;
                 }
+                if (isCurrent) {
+                  html += '<span style="font-size:10px;opacity:.45;margin-left:6px;font-style:italic">this experiment</span>';
+                }
+                li.innerHTML = html;
                 li.style.cssText = 'padding:6px 10px;cursor:pointer;font-size:11px;color:var(--text)';
                 li.addEventListener('mousedown', function(e) { e.preventDefault(); inputEl.value = name; dropEl.style.display = 'none'; });
                 li.addEventListener('mouseover', function() { this.style.background = 'var(--border)'; });
