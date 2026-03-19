@@ -773,7 +773,7 @@ function savePhoto() {
 /* Expanded: flex card layout — break out of table */
 .sample-table.expanded-view thead { display:none; }
 .sample-table.expanded-view,
-.sample-table.expanded-view tbody { display:block; width:100%; max-width:900px; margin:0 auto; }
+.sample-table.expanded-view tbody { display:block; width:100%; max-width:1200px; margin:0 auto; }
 .sample-table.expanded-view tbody tr {
   display:flex; align-items:flex-start; gap:20px;
   border-bottom:3px solid var(--text); padding:20px 0;
@@ -784,9 +784,8 @@ function savePhoto() {
   display:block !important; flex-shrink:0; padding:0;
 }
 .sample-table.expanded-view .sample-photo-td img {
-  width:600px !important; height:400px !important;
-  object-fit:contain; background:var(--tag-bg);
-  border-radius:8px; display:block; cursor:pointer;
+  display:block; cursor:pointer; border-radius:8px;
+  max-width:600px; max-height:400px; width:auto; height:auto;
 }
 .sample-table.expanded-view tbody tr .expanded-data-td {
   display:block !important; flex:1; padding:0; min-width:0;
