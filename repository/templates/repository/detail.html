@@ -213,7 +213,7 @@
             {% if suggested_column_names %}
             <div id="col-suggestions-drop" style="display:none;position:absolute;top:100%;left:0;min-width:220px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:200;margin-top:3px;overflow:hidden">
               <div style="padding:6px 10px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);border-bottom:1px solid var(--border);white-space:nowrap">
-                Column names — all {{ dataset.get_category_display }} experiments · sorted by use
+                Column names — all experiments · sorted by use
               </div>
               <ul id="col-suggestions-list" style="margin:0;padding:4px 0;list-style:none;max-height:180px;overflow-y:auto"></ul>
             </div>
@@ -262,7 +262,7 @@
                 if (q) {
                   var warn = document.createElement('li');
                   warn.style.cssText = 'padding:7px 10px;font-size:11px;color:var(--text-dim);font-style:italic';
-                  warn.textContent = '\u26a0 New name \u2014 not used in any ' + (window._colCategory || '') + ' experiment';
+                  warn.textContent = '\u26a0 New name \u2014 not used in any existing experiment';
                   listEl.appendChild(warn);
                   dropEl.style.display = 'block';
                 } else {

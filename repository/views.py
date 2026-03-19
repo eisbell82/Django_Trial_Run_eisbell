@@ -204,12 +204,11 @@ def dataset_detail(request, slug):
 
     samples = page_samples
 
-    # Column names across all same-category experiments, sorted by how many experiments use them
+    # Column names across all experiments, sorted by how many experiments use them
     existing_col_names = [
         row["name"]
         for row in (
-            SampleColumn.objects.filter(dataset__category=dataset.category)
-            .values("name")
+            SampleColumn.objects.values("name")
             .annotate(cnt=Count("dataset", distinct=True))
             .order_by("-cnt", "name")
         )
