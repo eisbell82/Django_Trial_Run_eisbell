@@ -740,6 +740,8 @@ def add_sample(request, slug):
         sample_id = request.POST.get("sample_id", "").strip()
         if sample_id:
             sample, _ = Sample.objects.get_or_create(dataset=dataset, sample_id=sample_id)
+            sample.notes = request.POST.get("notes", "").strip()
+            sample.save()
             for col in columns:
                 val = request.POST.get(f"col_{col.id}", "").strip()
                 SampleValue.objects.update_or_create(
@@ -784,6 +786,7 @@ def edit_sample(request, slug, pk):
         sample_id = request.POST.get("sample_id", "").strip()
         if sample_id:
             sample.sample_id = sample_id
+            sample.notes = request.POST.get("notes", "").strip()
             sample.save()
             for col in columns:
                 val = request.POST.get(f"col_{col.id}", "").strip()
@@ -891,7 +894,8 @@ def upload_csv_samples(request, slug):
             reader = csv.DictReader(io.StringIO(text))
             headers = list(reader.fieldnames or [])
             sid_col = headers[0] if headers else None
-            data_headers = [h for h in headers if h != sid_col]
+            notes_col = next((h for h in headers if h.strip().lower() == "sample notes"), None)
+            data_headers = [h for h in headers if h != sid_col and h != notes_col]
 
             # Read all rows up-front so we can detect dominant data type per column
             rows = [r for r in reader if sid_col and r.get(sid_col, "").strip()]
@@ -926,10 +930,17 @@ def upload_csv_samples(request, slug):
                 s.sample_id: s
                 for s in Sample.objects.filter(dataset=dataset, sample_id__in=all_sids)
             }
+            # Build notes lookup from rows for bulk_create
+            notes_by_sid = {}
+            if notes_col:
+                for r in rows:
+                    sid = r[sid_col].strip()
+                    notes_by_sid[sid] = r.get(notes_col, "").strip()
+
             new_sids = [sid for sid in dict.fromkeys(all_sids) if sid not in existing_samples]
             if new_sids:
                 Sample.objects.bulk_create(
-                    [Sample(dataset=dataset, sample_id=sid) for sid in new_sids],
+                    [Sample(dataset=dataset, sample_id=sid, notes=notes_by_sid.get(sid, "")) for sid in new_sids],
                     ignore_conflicts=True,
                 )
                 existing_samples = {
@@ -947,12 +958,18 @@ def upload_csv_samples(request, slug):
                 )
             }
 
+            notes_to_update = []
             to_create, to_update = [], []
             for row in rows:
                 sid = row[sid_col].strip()
                 sample = existing_samples.get(sid)
                 if not sample:
                     continue
+                if notes_col:
+                    new_notes = row.get(notes_col, "").strip()
+                    if sample.notes != new_notes:
+                        sample.notes = new_notes
+                        notes_to_update.append(sample)
                 for h, col in col_map.items():
                     val = row.get(h, "").strip()
                     key = (sample.pk, col.pk)
@@ -963,6 +980,8 @@ def upload_csv_samples(request, slug):
                             to_update.append(sv)
                     else:
                         to_create.append(SampleValue(sample=sample, column=col, value=val))
+            if notes_to_update:
+                Sample.objects.bulk_update(notes_to_update, ["notes"])
 
             if to_create:
                 SampleValue.objects.bulk_create(to_create, ignore_conflicts=True)

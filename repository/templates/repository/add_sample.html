@@ -14,6 +14,10 @@
       <label class="form-label">Sample ID <span style="color:var(--accent)">*</span></label>
       <input type="text" name="sample_id" class="form-input" placeholder="e.g. S001" required>
     </div>
+    <div class="form-group">
+      <label class="form-label">Notes <span style="font-size:10px;font-weight:normal;opacity:.5">optional</span></label>
+      <textarea name="notes" class="form-input" rows="2" placeholder="Any notes about this sample…" style="resize:vertical"></textarea>
+    </div>
     {% for col in columns %}
     <div class="form-group">
       <label class="form-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.6">[{{ col.unit }}]</span>{% endif %}</label>

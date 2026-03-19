@@ -359,6 +359,7 @@
                   Sample ID <span class="sort-ind" style="opacity:{% if sort_col == 'sample_id' %}1{% else %}.3{% endif %}">{% if sort_col == 'sample_id' and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
                 </a>
               </th>
+              <th style="font-size:11px;font-weight:600;color:var(--text-dim)">Notes</th>
               {% for col in sample_columns %}
               <th data-group="{{ col.group }}" data-sortcol="{{ col.name }}">
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
@@ -432,6 +433,12 @@
               </td>
               <td class="expanded-data-td">
                 <div style="font-size:14px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">{{ s.sample_id }}</div>
+                {% if s.notes %}
+                <div class="exp-row" style="margin-bottom:6px">
+                  <span class="exp-label">Notes</span>
+                  <span class="exp-val" style="font-style:italic">{{ s.notes }}</span>
+                </div>
+                {% endif %}
                 {% for col, val in s.row_with_cols %}
                 <div class="exp-row">
                   <span class="exp-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
@@ -468,6 +475,7 @@
                   {% endif %}
                 </div>
               </td>
+              <td style="font-size:12px;color:var(--text-dim);max-width:200px">{{ s.notes }}</td>
               {% for col, val in s.row_with_cols %}<td data-group="{{ col.group }}">{{ val }}{% if val and col.unit %} <span style="font-size:10px;opacity:.65;font-style:italic">{{ col.unit }}</span>{% endif %}</td>{% endfor %}
               {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
               <td class="edit-ctrl" style="white-space:nowrap">
