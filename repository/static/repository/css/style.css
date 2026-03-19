@@ -391,7 +391,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; 
   .upload-wrap { padding: 0 1rem; margin: 1.5rem auto; }
 
   /* Expanded view: shrink photo to fit phone */
-  .sample-table.expanded-view .sample-photo-td img { height: 120px !important; width: auto; max-width: 120px; }
+  .sample-table.expanded-view .sample-photo-td img { width: 120px !important; height: auto; }
   .sample-table.expanded-view tbody tr { gap: 12px; padding: 14px 0; }
   .sample-table.expanded-view, .sample-table.expanded-view tbody { max-width: 100%; }
 }
