@@ -10,6 +10,7 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register_view, name="register"),
+    path("collections/", views.collections_view, name="collections"),
     path("docs/", views.docs_view, name="docs"),
     path("datasets/<slug:slug>/delete/", views.delete_dataset, name="delete"),
     path("datasets/<slug:slug>/edit/", views.edit_dataset, name="edit"),
