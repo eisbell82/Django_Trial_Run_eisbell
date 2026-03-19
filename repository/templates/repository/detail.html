@@ -781,7 +781,7 @@ function savePhoto() {
 .sample-table.expanded-view tbody tr:first-child { border-top:3px solid var(--text); }
 .sample-table.expanded-view tbody tr td { display:none !important; }
 .sample-table.expanded-view tbody tr .sample-photo-td {
-  display:block !important; flex-shrink:0; padding:0;
+  display:flex !important; flex:1; justify-content:flex-end; align-items:flex-start; padding:0;
 }
 .sample-table.expanded-view .sample-photo-td img {
   display:block !important; cursor:pointer; border-radius:8px;
