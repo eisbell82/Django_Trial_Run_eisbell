@@ -16,7 +16,7 @@
     </div>
     {% for col, val in column_values %}
     <div class="form-group">
-      <label class="form-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.6">[{{ col.unit }}]</span>{% endif %}</label>
+      <label class="form-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.6">[{{ col.unit }}]</span>{% endif %} <span style="font-size:10px;font-weight:normal;opacity:.4;text-transform:uppercase;letter-spacing:.05em">{{ col.group }}</span></label>
       <input type="text" name="col_{{ col.id }}" class="form-input" value="{{ val }}" placeholder="{% if col.unit %}{{ col.unit }}{% endif %}">
     </div>
     {% empty %}
