@@ -813,6 +813,19 @@ def edit_sample(request, slug, pk):
 
 
 @login_required
+def save_sample_notes(request, slug, pk):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        return HttpResponse(status=403)
+    if request.method == "POST":
+        sample = get_object_or_404(Sample, pk=pk, dataset=dataset)
+        sample.notes = request.POST.get("notes", "").strip()[:250]
+        sample.save()
+        return HttpResponse(status=204)
+    return HttpResponse(status=405)
+
+
+@login_required
 def upload_sample_photo(request, slug, pk):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not _can_edit(request.user, dataset):

@@ -33,6 +33,7 @@ urlpatterns = [
     path("datasets/<slug:slug>/columns/<int:col_id>/group/", views.set_column_group, name="set_column_group"),
     path("datasets/<slug:slug>/samples/clear/", views.clear_samples, name="clear_samples"),
     path("datasets/<slug:slug>/samples/upload-csv/", views.upload_csv_samples, name="upload_csv_samples"),
+    path("datasets/<slug:slug>/samples/<int:pk>/notes/", views.save_sample_notes, name="save_sample_notes"),
     path("datasets/<slug:slug>/samples/<int:pk>/photo/", views.upload_sample_photo, name="upload_sample_photo"),
     path("datasets/<slug:slug>/samples/<int:sample_pk>/photo/<int:photo_pk>/delete/", views.delete_sample_photo, name="delete_sample_photo"),
     path("datasets/<slug:slug>/access/add/", views.add_dataset_access, name="add_dataset_access"),
