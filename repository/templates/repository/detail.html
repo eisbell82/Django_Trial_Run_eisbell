@@ -451,12 +451,12 @@
                 </div>
               </td>
               <td class="sample-id-cell">
-                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
                   <span>{{ s.sample_id }}</span>
                   {% if s.photos_list %}
                     <button type="button"
                       onclick='openPhotoViewer([{% for p in s.photos_list %}"{{ p.image.url|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}])'
-                      style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.02em">
+                      style="background:var(--accent);color:#fff;border:1px solid transparent;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.4">
                       {{ s.photos_list|length }} photo{{ s.photos_list|length|pluralize }}
                     </button>
                     {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
@@ -467,22 +467,23 @@
                     </form>
                     {% endfor %}
                     {% endif %}
+                  {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                    <label style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.4">
+                      + photo
+                      <input type="file" accept="image/*" style="display:none"
+                             data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
+                             data-csrf="{{ csrf_token }}"
+                             onchange="openPhotoEditor(this)">
+                    </label>
                   {% endif %}
                   {% if s.notes %}
                   <button type="button" class="notes-peek-btn"
                     onclick="showNotesPopup('{{ s.notes|escapejs }}')"
-                    style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer">···</button>
-                  {% endif %}
-                  {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-                  <label class="col-del-btn" style="cursor:pointer;opacity:.6" title="Add photo">
-                    + photo
-                    <input type="file" accept="image/*" style="display:none"
-                           data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
-                           data-csrf="{{ csrf_token }}"
-                           onchange="openPhotoEditor(this)">
-                  </label>
-                  <button type="button" class="col-del-btn edit-ctrl" style="opacity:.6"
-                    onclick="showNotesEditor('{% url 'repository:save_sample_notes' dataset.slug s.pk %}', '{{ s.notes|escapejs }}')">+ notes</button>
+                    style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.4">···</button>
+                  {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                  <button type="button"
+                    onclick="showNotesEditor('{% url 'repository:save_sample_notes' dataset.slug s.pk %}', '')"
+                    style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.4">+ notes</button>
                   {% endif %}
                 </div>
               </td>
