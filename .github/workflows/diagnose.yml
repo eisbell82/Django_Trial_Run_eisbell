@@ -66,3 +66,23 @@ jobs:
             echo ""
             echo "===== RECENT AUTH FAILURES (gunicorn log) ====="
             sudo journalctl -u specimenbase -n 200 --no-pager 2>/dev/null | grep -i "login\|auth\|403\|400\|csrf\|session" | tail -20 || true
+
+            echo ""
+            echo "===== AWS CLI VERSION ====="
+            aws --version 2>&1 || echo "AWS CLI not installed"
+
+            echo ""
+            echo "===== EC2 INSTANCE IDENTITY (confirms IAM role attached) ====="
+            curl -sf --max-time 3 http://169.254.169.254/latest/meta-data/iam/security-credentials/ || echo "No IAM role found on instance"
+
+            echo ""
+            echo "===== S3 BUCKET ACCESS TEST ====="
+            aws s3 ls s3://specimenbase-backups/ 2>&1 || echo "FAILED: cannot list bucket"
+
+            echo ""
+            echo "===== DB.SQLITE3 SIZE (what would be backed up) ====="
+            ls -lh /srv/specimenbase/db.sqlite3 2>/dev/null || echo "db.sqlite3 not found"
+
+            echo ""
+            echo "===== MEDIA DIR SIZE ====="
+            du -sh /srv/specimenbase/media/ 2>/dev/null || echo "media/ not found"
