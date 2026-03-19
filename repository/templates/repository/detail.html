@@ -337,7 +337,7 @@
                 </a>
               </th>
               {% for col in sample_columns %}
-              <th data-group="{{ col.group }}" data-sortcol="{{ col.name|escapejs }}">
+              <th data-group="{{ col.group }}" data-sortcol="{{ col.name }}">
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                 <span id="col-label-{{ col.id }}">{{ col.name }}</span><span class="sort-ind read-ctrl" style="opacity:{% if sort_col == col.name %}1{% else %}.3{% endif %};margin-left:3px">{% if sort_col == col.name and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
                 <button type="button" id="col-rename-btn-{{ col.id }}" class="col-del-btn edit-ctrl" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
