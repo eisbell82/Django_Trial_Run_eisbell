@@ -433,8 +433,9 @@
               </td>
               <td class="expanded-data-td">
                 <div style="font-size:14px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">{{ s.sample_id }}</div>
+                <div class="exp-body">
                 {% if s.notes %}
-                <div class="exp-row" style="margin-bottom:6px">
+                <div class="exp-row">
                   <span class="exp-label">Notes</span>
                   <span class="exp-val" style="font-style:italic">{{ s.notes }}</span>
                 </div>
@@ -445,6 +446,7 @@
                   <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
                 </div>
                 {% endfor %}
+                </div>
               </td>
               <td class="sample-id-cell">
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -777,10 +779,10 @@ function savePhoto() {
 .sample-table.expanded-view tbody tr .expanded-data-td {
   display:block !important; flex:1; padding:0; min-width:0;
 }
-.exp-row { display:flex; gap:10px; padding:4px 0; border-bottom:1px solid var(--border); font-size:12px; }
-.exp-row:last-child { border-bottom:none; }
-.exp-label { color:var(--text-dim); flex-shrink:0; white-space:nowrap; font-weight:600; padding-right:8px; }
-.exp-val { flex:1; min-width:0; }
+.exp-body { display:grid; grid-template-columns:max-content 1fr; column-gap:16px; font-size:12px; }
+.exp-row { display:contents; }
+.exp-label { color:var(--text-dim); white-space:nowrap; font-weight:600; padding:4px 0; border-bottom:1px solid var(--border); }
+.exp-val { min-width:0; padding:4px 0; border-bottom:1px solid var(--border); }
 </style>
 
 <script>
