@@ -408,6 +408,19 @@ def collections_view(request):
 
 
 @login_required
+def clear_samples(request, slug):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        messages.error(request, "Permission denied.")
+        return redirect("repository:detail", slug=slug)
+    if request.method == "POST":
+        count = dataset.samples.count()
+        dataset.samples.all().delete()  # cascades to SampleValue and SamplePhoto
+        messages.success(request, f"Cleared {count} sample{'s' if count != 1 else ''} from this experiment.")
+    return redirect("repository:detail", slug=slug)
+
+
+@login_required
 def delete_dataset(request, slug):
     dataset = get_object_or_404(Dataset, slug=slug)
     if not (request.user == dataset.uploaded_by or request.user.is_staff):

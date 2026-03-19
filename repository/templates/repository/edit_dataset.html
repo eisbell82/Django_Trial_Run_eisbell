@@ -101,7 +101,7 @@
     <p style="font-size:12px;color:var(--text-dim);margin-bottom:1rem">No users added yet.</p>
     {% endif %}
 
-    <form method="post" action="{% url 'repository:add_dataset_access' dataset.slug %}" style="display:flex;gap:8px;align-items:flex-start" id="add-user-form">
+    <form method="post" action="{% url 'repository:add_dataset_access' dataset.slug %}" style="display:flex;gap:8px;align-items:flex-start;margin-bottom:0" id="add-user-form">
       {% csrf_token %}
       <div style="position:relative">
         <input type="text" name="username" id="user-search-input" placeholder="Search username…" class="sample-col-input" style="width:220px" required autocomplete="off">
@@ -113,6 +113,29 @@
       <button type="submit" class="btn-outline" style="font-size:12px;padding:5px 14px">+ Add user</button>
     </form>
   </div>
+
+  <div class="form-section" style="border:1px solid var(--danger);border-radius:6px;padding:1.25rem 1.5rem;margin-top:2rem">
+    <div class="form-section-title" style="color:var(--danger)">// Danger Zone</div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.2rem">Clear all sample data</div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          Permanently deletes all {{ dataset.samples.count }} sample{{ dataset.samples.count|pluralize }} and their photos and values. Column definitions are kept.
+        </div>
+      </div>
+      <form method="post" action="{% url 'repository:clear_samples' dataset.slug %}"
+            onsubmit="return confirm('Delete all {{ dataset.samples.count }} sample{{ dataset.samples.count|pluralize }} from this experiment? This cannot be undone.')">
+        {% csrf_token %}
+        <button type="submit"
+                style="padding:.4rem 1rem;background:transparent;border:1px solid var(--danger);border-radius:5px;color:var(--danger);font-size:12px;cursor:pointer;white-space:nowrap"
+                {% if not dataset.samples.count %}disabled title="No samples to clear"{% endif %}>
+          Clear all samples
+        </button>
+      </form>
+    </div>
+  </div>
+
 </div>
 
 <script>
