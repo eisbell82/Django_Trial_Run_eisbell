@@ -706,7 +706,8 @@ def add_sample(request, slug):
     if not _can_edit(request.user, dataset):
         messages.error(request, "Permission denied.")
         return _redirect_to_tab(slug, "tab-samples")
-    columns = list(dataset.sample_columns.all())
+    _seen = set()
+    columns = [c for c in dataset.sample_columns.all() if not (_seen.__contains__(c.name) or _seen.add(c.name))]
     if request.method == "POST":
         sample_id = request.POST.get("sample_id", "").strip()
         if sample_id:
@@ -739,7 +740,8 @@ def edit_sample(request, slug, pk):
         messages.error(request, "Permission denied.")
         return _redirect_to_tab(slug, "tab-samples")
     sample = get_object_or_404(Sample, pk=pk, dataset=dataset)
-    columns = list(dataset.sample_columns.all())
+    _seen = set()
+    columns = [c for c in dataset.sample_columns.all() if not (_seen.__contains__(c.name) or _seen.add(c.name))]
     if request.method == "POST":
         sample_id = request.POST.get("sample_id", "").strip()
         if sample_id:
