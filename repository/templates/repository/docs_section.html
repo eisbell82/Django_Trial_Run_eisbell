@@ -1,0 +1,96 @@
+{% load static %}
+<div style="margin-bottom:2rem">
+
+  <!-- View -->
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;margin-bottom:.75rem">
+    <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin:0">{{ s.heading }}</h2>
+    {% if user.is_staff %}
+      <button type="button" onclick="dsSectionEdit({{ s.pk }})"
+              style="flex-shrink:0;padding:.2rem .6rem;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);font-size:11px;cursor:pointer">Edit</button>
+    {% endif %}
+  </div>
+
+  {% if s.body %}
+    <div style="color:var(--text-muted);font-size:13px;line-height:1.9;margin-bottom:.75rem">
+      {% for para in s.body_paragraphs %}
+        <p style="margin:0 0 .6rem">{{ para }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if s.parsed_rows %}
+    {% if s.is_list %}
+      <ol style="color:var(--text-muted);font-size:13px;line-height:2;padding-left:1.25rem">
+        {% for k, v in s.parsed_rows %}<li>{{ v }}</li>{% endfor %}
+      </ol>
+    {% else %}
+      <div class="info-block">
+        {% for k, v in s.parsed_rows %}
+          <div class="info-row"><span class="info-key">{{ k }}</span><span class="info-val">{{ v }}</span></div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+
+  <!-- Inline edit form (staff only) -->
+  {% if user.is_staff %}
+  <div id="sedit-{{ s.pk }}" style="display:none;margin-top:1rem;padding:1rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:6px">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_section">
+      <input type="hidden" name="section_pk" value="{{ s.pk }}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem .75rem;margin-bottom:.6rem">
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.2rem">Heading</label>
+          <input type="text" name="heading" value="{{ s.heading }}"
+                 style="width:100%;padding:.35rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;box-sizing:border-box">
+        </div>
+        <div style="display:flex;gap:.75rem;align-items:flex-end">
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.2rem">Tab</label>
+            <select name="tab" style="padding:.35rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
+              <option value="overview" {% if s.tab == 'overview' %}selected{% endif %}>Overview</option>
+              <option value="naming"   {% if s.tab == 'naming'   %}selected{% endif %}>Naming Conventions</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.2rem">Order</label>
+            <input type="number" name="order" value="{{ s.order }}" min="0"
+                   style="width:60px;padding:.35rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:.6rem">
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.2rem">Body paragraph <span style="opacity:.6">(blank lines = new paragraph)</span></label>
+        <textarea name="body" rows="3"
+                  style="width:100%;padding:.35rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;line-height:1.6;resize:vertical;box-sizing:border-box">{{ s.body }}</textarea>
+      </div>
+      <div style="margin-bottom:.6rem">
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.2rem">
+          Rows <span style="opacity:.6">— info block: <code>Key | Value</code> per line &nbsp;|&nbsp; list: one item per line</span>
+        </label>
+        <textarea name="rows" rows="5"
+                  style="width:100%;padding:.35rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:monospace">{{ s.rows }}</textarea>
+      </div>
+      <div style="margin-bottom:.75rem">
+        <label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:.4rem;cursor:pointer">
+          <input type="checkbox" name="is_list" {% if s.is_list %}checked{% endif %}> Render rows as ordered list
+        </label>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <button type="submit" style="padding:.35rem .9rem;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer">Save</button>
+        <button type="button" onclick="dsSectionEdit({{ s.pk }}, false)"
+                style="padding:.35rem .9rem;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);font-size:12px;cursor:pointer">Cancel</button>
+      </div>
+    </form>
+    <form method="post" style="margin-top:.5rem">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete_section">
+      <input type="hidden" name="section_pk" value="{{ s.pk }}">
+      <button type="submit" onclick="return confirm('Delete this section?')"
+              style="padding:.3rem .8rem;background:transparent;border:1px solid #c44;border-radius:4px;color:#c44;font-size:11px;cursor:pointer">Delete section</button>
+    </form>
+  </div>
+  {% endif %}
+
+</div>

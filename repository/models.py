@@ -235,6 +235,45 @@ class DocsPage(models.Model):
         return [p.strip() for p in re.split(r"\n\s*\n", self.content) if p.strip()]
 
 
+class DocsSection(models.Model):
+    """An editable section block on the Docs page."""
+    TAB_OVERVIEW = 'overview'
+    TAB_NAMING   = 'naming'
+    TAB_CHOICES  = [(TAB_OVERVIEW, 'Overview'), (TAB_NAMING, 'Naming Conventions')]
+
+    tab     = models.CharField(max_length=20, choices=TAB_CHOICES, default=TAB_OVERVIEW)
+    heading = models.CharField(max_length=200)
+    body    = models.TextField(blank=True, help_text="Optional paragraph text. Blank lines = new paragraph.")
+    rows    = models.TextField(blank=True, help_text="One row per line. Info block: 'Key | Value'. List items: just the text.")
+    is_list = models.BooleanField(default=False, help_text="Render rows as ordered list instead of info block.")
+    order   = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['tab', 'order', 'pk']
+
+    def __str__(self):
+        return f"{self.get_tab_display()} — {self.heading}"
+
+    @property
+    def parsed_rows(self):
+        result = []
+        for line in self.rows.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if ' | ' in line:
+                k, v = line.split(' | ', 1)
+                result.append((k.strip(), v.strip()))
+            else:
+                result.append(('', line))
+        return result
+
+    @property
+    def body_paragraphs(self):
+        import re
+        return [p.strip() for p in re.split(r"\n\s*\n", self.body) if p.strip()]
+
+
 class AboutPhoto(models.Model):
     page = models.ForeignKey(AboutPage, on_delete=models.CASCADE, related_name="photos")
     image = models.FileField(upload_to="about/photos/", validators=[_image_validator])

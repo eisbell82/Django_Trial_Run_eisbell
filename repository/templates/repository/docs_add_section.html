@@ -1,0 +1,46 @@
+<div style="margin-bottom:2.5rem">
+  <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-dim);margin-bottom:1rem">// Add New Section</div>
+  <form method="post" style="padding:1rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:6px">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add_section">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem .75rem;margin-bottom:.6rem">
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.2rem">Heading</label>
+        <input type="text" name="heading" placeholder="Section heading"
+               style="width:100%;padding:.35rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;box-sizing:border-box">
+      </div>
+      <div style="display:flex;gap:.75rem;align-items:flex-end">
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.2rem">Tab</label>
+          <select name="tab" style="padding:.35rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
+            <option value="overview" {% if tab == 'overview' %}selected{% endif %}>Overview</option>
+            <option value="naming"   {% if tab == 'naming'   %}selected{% endif %}>Naming Conventions</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.2rem">Order</label>
+          <input type="number" name="order" value="99" min="0"
+                 style="width:60px;padding:.35rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom:.6rem">
+      <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.2rem">Body paragraph</label>
+      <textarea name="body" rows="3" placeholder="Optional introductory text…"
+                style="width:100%;padding:.35rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;line-height:1.6;resize:vertical;box-sizing:border-box"></textarea>
+    </div>
+    <div style="margin-bottom:.6rem">
+      <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:.2rem">
+        Rows <span style="opacity:.6">— info block: <code>Key | Value</code> per line &nbsp;|&nbsp; list: one item per line</span>
+      </label>
+      <textarea name="rows" rows="4" placeholder="Key | Value"
+                style="width:100%;padding:.35rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:monospace"></textarea>
+    </div>
+    <div style="margin-bottom:.75rem">
+      <label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:.4rem;cursor:pointer">
+        <input type="checkbox" name="is_list"> Render rows as ordered list
+      </label>
+    </div>
+    <button type="submit" style="padding:.35rem .9rem;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer">Add section</button>
+  </form>
+</div>

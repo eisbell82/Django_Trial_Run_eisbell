@@ -19,7 +19,6 @@
       </div>
       {% if user.is_staff %}
         <button id="edit-toggle"
-                onclick="document.getElementById('edit-panel').style.display=document.getElementById('edit-panel').style.display==='none'?'block':'none';this.textContent=this.textContent==='Edit'?'Done':'Edit'"
                 style="flex-shrink:0;margin-top:2.25rem;padding:.35rem .9rem;background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text-muted);font-size:12px;cursor:pointer">{% if edit_open %}Done{% else %}Edit{% endif %}</button>
       {% endif %}
     </div>
@@ -30,6 +29,31 @@
     <div class="dtab active" onclick="docsTab(this,'docs-overview')">Overview</div>
     <div class="dtab" onclick="docsTab(this,'docs-naming')">Naming Conventions &amp; Data Structure</div>
   </div>
+
+  {% if user.is_staff %}
+  <!-- ── Admin: edit intro ── -->
+  <div class="docs-edit-panel" style="display:{% if edit_open %}block{% else %}none{% endif %};">
+    <hr class="divider">
+    <div style="margin-bottom:2.5rem">
+      <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-dim);margin-bottom:1.25rem">// Admin — Edit Page Intro</div>
+      <form method="post" style="margin-bottom:2rem">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_intro">
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:.3rem">Page title</label>
+          <input type="text" name="title" value="{{ page.title }}"
+                 style="width:100%;padding:.5rem .75rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:.3rem">Introduction <span style="color:var(--text-dim)">(blank lines create new paragraphs)</span></label>
+          <textarea name="content" rows="5"
+                    style="width:100%;padding:.5rem .75rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;line-height:1.7;resize:vertical;box-sizing:border-box">{{ page.content }}</textarea>
+        </div>
+        <button type="submit" style="padding:.45rem 1.1rem;background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer">Save intro</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- ── Overview tab ── -->
   <div id="docs-overview">
@@ -46,165 +70,41 @@
       </p>
     {% endif %}
 
+    {% for section in overview_sections %}
+      {% include "repository/docs_section.html" with s=section %}
+    {% endfor %}
+
     {% if user.is_staff %}
-      <div id="edit-panel" style="display:{% if edit_open %}block{% else %}none{% endif %}">
-      <hr class="divider">
-      <div style="margin-bottom:3rem">
-        <div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-dim);margin-bottom:1.25rem">// Admin — Edit Page</div>
-        <form method="post" style="margin-bottom:2rem">
-          {% csrf_token %}
-          <div style="margin-bottom:.75rem">
-            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:.3rem">Page title</label>
-            <input type="text" name="title" value="{{ page.title }}"
-                   style="width:100%;padding:.5rem .75rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;box-sizing:border-box">
-          </div>
-          <div style="margin-bottom:.75rem">
-            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:.3rem">Introduction <span style="color:var(--text-dim)">(blank lines create new paragraphs)</span></label>
-            <textarea name="content" rows="6"
-                      style="width:100%;padding:.5rem .75rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:13px;line-height:1.7;resize:vertical;box-sizing:border-box">{{ page.content }}</textarea>
-          </div>
-          <button type="submit"
-                  style="padding:.45rem 1.1rem;background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer">Save</button>
-        </form>
-      </div>
-      </div>
-      <hr class="divider">
+    <div class="docs-edit-panel" style="display:{% if edit_open %}block{% else %}none{% endif %};">
+      <hr class="divider" style="margin-top:2rem">
+      {% include "repository/docs_add_section.html" with tab="overview" %}
+    </div>
     {% endif %}
 
-    <div style="margin-bottom:2rem">
-      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Getting Started</h2>
-      <div class="info-block">
-        <div class="info-row"><span class="info-key">Browse experiments</span><span class="info-val">No account required</span></div>
-        <div class="info-row"><span class="info-key">Download files</span><span class="info-val">No account required</span></div>
-        <div class="info-row"><span class="info-key">Upload experiments</span><span class="info-val">Account required</span></div>
-        <div class="info-row"><span class="info-key">Manage experiments</span><span class="info-val">Admin access required</span></div>
-      </div>
-    </div>
-
-    <div style="margin-bottom:2rem">
-      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Uploading an Experiment</h2>
-      <ol style="color:var(--text-muted);font-size:13px;line-height:2;padding-left:1.25rem">
-        <li><a href="{% url 'repository:register' %}" style="color:var(--accent-dim)">Create an account</a> or sign in</li>
-        <li>Click <strong style="color:var(--text)">+ Upload</strong> in the navigation bar</li>
-        <li>Fill in the experiment title, abstract, category, and license</li>
-        <li>Attach your data file (CSV, XLSX, JSON, ZIP — max 150 MB)</li>
-        <li>Optionally attach an analysis notebook (.ipynb)</li>
-        <li>Submit — your experiment will appear immediately</li>
-      </ol>
-    </div>
-
-    <div style="margin-bottom:2rem">
-      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Sample Records</h2>
-      <p style="color:var(--text-muted);font-size:13px;line-height:1.9;margin-bottom:.75rem">
-        Each experiment can have a structured sample table. Columns are grouped as <strong style="color:var(--text)">Sample characteristics</strong> (descriptive fields) or <strong style="color:var(--text)">Sample data</strong> (numeric measurements). Samples can be added manually, imported via CSV, or browsed globally across all experiments from the Samples tab.
-      </p>
-      <div class="info-block">
-        <div class="info-row"><span class="info-key">Add samples</span><span class="info-val">Manually or via CSV upload</span></div>
-        <div class="info-row"><span class="info-key">Sample photos</span><span class="info-val">Multiple images per sample</span></div>
-        <div class="info-row"><span class="info-key">Global search</span><span class="info-val">Filter across all experiments</span></div>
-      </div>
-    </div>
-
-    <div style="margin-bottom:2rem">
-      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Supported File Types</h2>
-      <div class="info-block">
-        <div class="info-row"><span class="info-key">Tabular data</span><span class="info-val">CSV, TSV, XLSX</span></div>
-        <div class="info-row"><span class="info-key">Structured data</span><span class="info-val">JSON</span></div>
-        <div class="info-row"><span class="info-key">Archives</span><span class="info-val">ZIP</span></div>
-        <div class="info-row"><span class="info-key">Notebooks</span><span class="info-val">.ipynb (Jupyter)</span></div>
-        <div class="info-row"><span class="info-key">Images</span><span class="info-val">JPG, PNG, WebP, TIFF, SVG, HEIC and more</span></div>
-        <div class="info-row"><span class="info-key">Max file size</span><span class="info-val">150 MB per file</span></div>
-      </div>
-    </div>
-
-    <div style="margin-bottom:2rem">
-      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Licenses</h2>
-      <div class="info-block">
-        <div class="info-row"><span class="info-key">CC BY 4.0</span><span class="info-val">Attribution required</span></div>
-        <div class="info-row"><span class="info-key">CC BY-NC 4.0</span><span class="info-val">Non-commercial only</span></div>
-        <div class="info-row"><span class="info-key">CC0</span><span class="info-val">Public domain</span></div>
-        <div class="info-row"><span class="info-key">Restricted</span><span class="info-val">Contact uploader</span></div>
-      </div>
-    </div>
-
     <hr class="divider">
     <div style="color:var(--text-dim);font-size:12px;padding-bottom:3rem">
       Questions? Contact the repository admin.
     </div>
-
   </div><!-- /docs-overview -->
 
-  <!-- ── Naming Conventions & Data Structure tab ── -->
+  <!-- ── Naming Conventions tab ── -->
   <div id="docs-naming" style="display:none">
 
-    <div style="margin-bottom:2rem">
-      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Sample ID</h2>
-      <p style="color:var(--text-muted);font-size:13px;line-height:1.9;margin-bottom:.75rem">
-        Every sample requires a unique <strong style="color:var(--text)">Sample ID</strong> within its experiment. IDs should be short, human-readable, and consistent across an experiment.
-      </p>
-      <div class="info-block">
-        <div class="info-row"><span class="info-key">Recommended format</span><span class="info-val">Alphanumeric, no spaces (e.g. <code>S-01</code>, <code>MYC-003</code>)</span></div>
-        <div class="info-row"><span class="info-key">Case</span><span class="info-val">Use a consistent case — mixed case is allowed</span></div>
-        <div class="info-row"><span class="info-key">Uniqueness</span><span class="info-val">Must be unique within an experiment</span></div>
-      </div>
-    </div>
+    {% for section in naming_sections %}
+      {% include "repository/docs_section.html" with s=section %}
+    {% endfor %}
 
-    <div style="margin-bottom:2rem">
-      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Column Names</h2>
-      <p style="color:var(--text-muted);font-size:13px;line-height:1.9;margin-bottom:.75rem">
-        Column names define the fields in the sample table. Use clear, descriptive names so that samples are interpretable across experiments.
-      </p>
-      <div class="info-block">
-        <div class="info-row"><span class="info-key">Format</span><span class="info-val">Title case preferred (e.g. <code>Substrate Type</code>, <code>Tensile Strength</code>)</span></div>
-        <div class="info-row"><span class="info-key">Units</span><span class="info-val">Include units in brackets (e.g. <code>Mass [g]</code>, <code>Temperature [°C]</code>)</span></div>
-        <div class="info-row"><span class="info-key">Reserved names</span><span class="info-val"><code>Sample ID</code> and <code>Type</code> are built-in — do not use as column names</span></div>
-      </div>
+    {% if user.is_staff %}
+    <div class="docs-edit-panel" style="display:{% if edit_open %}block{% else %}none{% endif %};">
+      <hr class="divider" style="margin-top:2rem">
+      {% include "repository/docs_add_section.html" with tab="naming" %}
     </div>
-
-    <div style="margin-bottom:2rem">
-      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Column Groups</h2>
-      <p style="color:var(--text-muted);font-size:13px;line-height:1.9;margin-bottom:.75rem">
-        Every column belongs to one of two groups, which controls where it appears in the sample table.
-      </p>
-      <div class="info-block">
-        <div class="info-row"><span class="info-key">Characteristics</span><span class="info-val">Descriptive / categorical fields (species, substrate, treatment, etc.)</span></div>
-        <div class="info-row"><span class="info-key">Data</span><span class="info-val">Numeric measurements (mass, strength, conductivity, etc.)</span></div>
-        <div class="info-row"><span class="info-key">Auto-detection</span><span class="info-val">CSV import assigns groups based on &gt;50% numeric values</span></div>
-        <div class="info-row"><span class="info-key">Override</span><span class="info-val">Group can be changed manually via the column edit dropdown</span></div>
-      </div>
-    </div>
-
-    <div style="margin-bottom:2rem">
-      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">CSV Structure</h2>
-      <p style="color:var(--text-muted);font-size:13px;line-height:1.9;margin-bottom:.75rem">
-        When importing samples via CSV, the file must follow this structure:
-      </p>
-      <div class="info-block">
-        <div class="info-row"><span class="info-key">First row</span><span class="info-val">Header row with column names</span></div>
-        <div class="info-row"><span class="info-key">Sample ID column</span><span class="info-val">Must be named <code>Sample ID</code> (case-insensitive)</span></div>
-        <div class="info-row"><span class="info-key">Type column</span><span class="info-val">Optional — maps to the built-in Type field</span></div>
-        <div class="info-row"><span class="info-key">Additional columns</span><span class="info-val">Any number of characteristic or data columns</span></div>
-        <div class="info-row"><span class="info-key">Empty cells</span><span class="info-val">Allowed — recorded as blank values</span></div>
-        <div class="info-row"><span class="info-key">Encoding</span><span class="info-val">UTF-8 recommended</span></div>
-      </div>
-    </div>
-
-    <div style="margin-bottom:2rem">
-      <h2 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:1rem">Experiment Metadata</h2>
-      <div class="info-block">
-        <div class="info-row"><span class="info-key">Title</span><span class="info-val">Descriptive, unique name for the experiment</span></div>
-        <div class="info-row"><span class="info-key">Abstract</span><span class="info-val">Short summary of the experiment's purpose and methods</span></div>
-        <div class="info-row"><span class="info-key">Category</span><span class="info-val">Broad material or research category used for global filtering</span></div>
-        <div class="info-row"><span class="info-key">Tags</span><span class="info-val">Free-form keywords for discovery (comma-separated)</span></div>
-        <div class="info-row"><span class="info-key">License</span><span class="info-val">Controls how others may reuse the data</span></div>
-      </div>
-    </div>
+    {% endif %}
 
     <hr class="divider">
     <div style="color:var(--text-dim);font-size:12px;padding-bottom:3rem">
       Questions? Contact the repository admin.
     </div>
-
   </div><!-- /docs-naming -->
 
 </div>
@@ -216,6 +116,22 @@ function docsTab(el, tabId) {
   document.querySelectorAll('#docs-overview, #docs-naming').forEach(function(p){ p.style.display = 'none'; });
   document.getElementById(tabId).style.display = 'block';
 }
+function dsSectionEdit(pk, show) {
+  var el = document.getElementById('sedit-' + pk);
+  if (!el) return;
+  el.style.display = (show === false) ? 'none' : (el.style.display === 'none' ? 'block' : 'none');
+}
+document.addEventListener('DOMContentLoaded', function() {
+  var toggle = document.getElementById('edit-toggle');
+  if (!toggle) return;
+  toggle.addEventListener('click', function() {
+    var opening = toggle.textContent.trim() === 'Edit';
+    toggle.textContent = opening ? 'Done' : 'Edit';
+    document.querySelectorAll('.docs-edit-panel').forEach(function(p){
+      p.style.display = opening ? 'block' : 'none';
+    });
+  });
+});
 </script>
 
 {% endblock %}

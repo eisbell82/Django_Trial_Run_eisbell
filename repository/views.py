@@ -17,7 +17,7 @@ from django.db.models import Q, Count
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.conf import settings
 
-from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, SamplePhoto, TodoItem, AboutPage, AboutPhoto, DocsPage, DatasetPhoto
+from .models import Dataset, Tag, DataFile, Notebook, Sample, SampleColumn, SampleValue, SamplePhoto, TodoItem, AboutPage, AboutPhoto, DocsPage, DatasetPhoto, DocsSection
 from .forms import DatasetUploadForm, DataFileForm, NotebookForm
 
 ALLOWED_UPLOAD_EXTENSIONS = {".csv", ".xlsx", ".json", ".tiff", ".tif", ".zip", ".tsv", ".txt"}
@@ -1283,13 +1283,46 @@ def docs_view(request):
         if not (request.user.is_authenticated and request.user.is_staff):
             from django.http import Http404
             raise Http404
-        page.title = request.POST.get("title", page.title).strip() or page.title
-        page.content = request.POST.get("content", "").strip()
-        page.save()
-        messages.success(request, "Docs page updated.")
+        action = request.POST.get("action", "update_intro")
+        if action == "update_intro":
+            page.title = request.POST.get("title", page.title).strip() or page.title
+            page.content = request.POST.get("content", "").strip()
+            page.save()
+            messages.success(request, "Docs page updated.")
+        elif action == "add_section":
+            DocsSection.objects.create(
+                tab=request.POST.get("tab", "overview"),
+                heading=request.POST.get("heading", "New Section").strip(),
+                body=request.POST.get("body", "").strip(),
+                rows=request.POST.get("rows", "").strip(),
+                is_list=bool(request.POST.get("is_list")),
+                order=int(request.POST.get("order", 99) or 99),
+            )
+            messages.success(request, "Section added.")
+        elif action == "update_section":
+            sec = get_object_or_404(DocsSection, pk=request.POST.get("section_pk"))
+            sec.tab     = request.POST.get("tab", sec.tab)
+            sec.heading = request.POST.get("heading", sec.heading).strip() or sec.heading
+            sec.body    = request.POST.get("body", "").strip()
+            sec.rows    = request.POST.get("rows", "").strip()
+            sec.is_list = bool(request.POST.get("is_list"))
+            sec.order   = int(request.POST.get("order", sec.order) or sec.order)
+            sec.save()
+            messages.success(request, "Section updated.")
+        elif action == "delete_section":
+            get_object_or_404(DocsSection, pk=request.POST.get("section_pk")).delete()
+            messages.success(request, "Section deleted.")
         return redirect(reverse("repository:docs") + "?edit=1")
     edit_open = request.GET.get("edit") == "1"
-    return render(request, "repository/docs.html", {"page": page, "edit_open": edit_open})
+    sections = list(DocsSection.objects.all())
+    overview_sections = [s for s in sections if s.tab == DocsSection.TAB_OVERVIEW]
+    naming_sections   = [s for s in sections if s.tab == DocsSection.TAB_NAMING]
+    return render(request, "repository/docs.html", {
+        "page": page,
+        "edit_open": edit_open,
+        "overview_sections": overview_sections,
+        "naming_sections": naming_sections,
+    })
 
 
 @login_required
