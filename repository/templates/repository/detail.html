@@ -308,6 +308,10 @@
       <!-- Per-page + sample count -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:.5rem;flex-wrap:wrap">
         <span style="font-size:12px;color:var(--text-dim)">{{ total_samples }} sample{{ total_samples|pluralize }}</span>
+        <button id="expand-toggle" type="button" onclick="toggleExpandedView()"
+                style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-dim);cursor:pointer">
+          ⊞ Expand
+        </button>
         <div style="margin-left:auto;display:flex;gap:4px;align-items:center">
           <span style="font-size:11px;color:var(--text-dim)">Show</span>
           {% for n in page_sizes %}
@@ -329,6 +333,7 @@
         <table class="sample-table">
           <thead>
             <tr>
+              <th class="sample-photo-th"></th>
               <th>
                 <a href="?sort_col=sample_id&sort_dir={% if sort_col == 'sample_id' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}#tab-samples" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:4px">
                   Sample ID <span class="sort-ind" style="opacity:{% if sort_col == 'sample_id' %}1{% else %}.3{% endif %}">{% if sort_col == 'sample_id' and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
@@ -397,6 +402,14 @@
           <tbody>
             {% for s in samples %}
             <tr>
+              <td class="sample-photo-td">
+                {% if s.photos_list %}
+                <img src="{{ s.photos_list.0.image.url }}"
+                     style="width:80px;height:80px;object-fit:cover;border-radius:4px;cursor:pointer;display:block"
+                     onclick='openPhotoViewer([{% for p in s.photos_list %}"{{ p.image.url|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}])'
+                     alt="">
+                {% endif %}
+              </td>
               <td class="sample-id-cell">
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                   <span>{{ s.sample_id }}</span>
@@ -700,6 +713,12 @@ function savePhoto() {
 </script>
 
 <script>
+/* ── Expanded photo view ── */
+.sample-photo-th, .sample-photo-td { display:none; }
+.sample-table.expanded-view .sample-photo-th,
+.sample-table.expanded-view .sample-photo-td { display:table-cell; }
+.sample-table.expanded-view td { vertical-align:top; }
+
 /* ── Column sort (server-side navigation) ── */
 document.addEventListener('DOMContentLoaded', function () {
   var thead = document.querySelector('#tab-samples .sample-table thead tr');
@@ -718,6 +737,23 @@ document.addEventListener('DOMContentLoaded', function () {
     p.set('sort_col', col); p.set('sort_dir', newDir); p.delete('page');
     window.location.search = p.toString();
   });
+});
+
+function toggleExpandedView() {
+  var table = document.querySelector('#tab-samples .sample-table');
+  var btn   = document.getElementById('expand-toggle');
+  if (!table || !btn) return;
+  var expanded = table.classList.toggle('expanded-view');
+  btn.textContent = expanded ? '⊟ Compact' : '⊞ Expand';
+  try { localStorage.setItem('samples-expanded', expanded ? '1' : '0'); } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', function () {
+  if (localStorage.getItem('samples-expanded') === '1') {
+    var table = document.querySelector('#tab-samples .sample-table');
+    var btn   = document.getElementById('expand-toggle');
+    if (table) { table.classList.add('expanded-view'); }
+    if (btn)   { btn.textContent = '⊟ Compact'; }
+  }
 });
 
 function setColumnGroup(group) {
