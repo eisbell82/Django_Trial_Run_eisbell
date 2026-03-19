@@ -20,8 +20,8 @@ git -C "$APP_DIR" reset --hard "origin/${DEPLOY_BRANCH:-claude/main}"
 git -C "$APP_DIR" rev-parse --short HEAD > "$APP_DIR/VERSION"
 
 echo "==> Backing up database and media to S3..."
-aws s3 cp "$APP_DIR/db.sqlite3" s3://specimenbase-backups/db.sqlite3 || true
-aws s3 sync "$APP_DIR/media/" s3://specimenbase-backups/media/ || true
+aws s3 cp "$APP_DIR/db.sqlite3" s3://specimenbase-backups-318270726326-us-east-1-an/db.sqlite3 || true
+aws s3 sync "$APP_DIR/media/" s3://specimenbase-backups-318270726326-us-east-1-an/media/ || true
 
 echo "==> Checking .env exists..."
 if [ ! -f "$APP_DIR/.env" ]; then

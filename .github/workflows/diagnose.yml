@@ -77,7 +77,7 @@ jobs:
 
             echo ""
             echo "===== S3 BUCKET ACCESS TEST ====="
-            aws s3 ls s3://specimenbase-backups/ 2>&1 || echo "FAILED: cannot list bucket"
+            aws s3 ls s3://specimenbase-backups-318270726326-us-east-1-an/ 2>&1 || echo "FAILED: cannot list bucket"
 
             echo ""
             echo "===== DB.SQLITE3 SIZE (what would be backed up) ====="
