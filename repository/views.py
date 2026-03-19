@@ -153,30 +153,56 @@ def dataset_detail(request, slug):
 
     columns = list(dataset.sample_columns.all())
     col_name_map = {col.name: col for col in columns}
-    all_samples = list(dataset.samples.prefetch_related("values", "photos").all())
+    reverse_sort = sort_dir == "desc"
 
-    # Build row data
-    for s in all_samples:
+    from django.core.paginator import Paginator
+
+    if not sort_col:
+        # No sort — DB-level pagination (Django issues efficient LIMIT/OFFSET)
+        qs = dataset.samples.all()
+        paginator = Paginator(qs, per_page)
+        page_obj = paginator.get_page(page_num)
+        page_samples = list(
+            dataset.samples.filter(pk__in=[s.pk for s in page_obj.object_list])
+            .prefetch_related("values", "photos")
+        )
+        # Restore DB order
+        pk_pos = {s.pk: i for i, s in enumerate(page_obj.object_list)}
+        page_samples.sort(key=lambda s: pk_pos.get(s.pk, 0))
+    else:
+        # Sort in Python (numeric-aware), paginate PKs, fetch full data for page only
+        if sort_col == "sample_id":
+            pairs = list(dataset.samples.values_list("pk", "sample_id"))
+            pairs.sort(key=lambda t: _sort_key(t[1]), reverse=reverse_sort)
+        else:
+            col_obj = col_name_map.get(sort_col)
+            if col_obj:
+                val_lookup = dict(
+                    SampleValue.objects.filter(sample__dataset=dataset, column=col_obj)
+                    .values_list("sample_id", "value")
+                )
+                all_pks = list(dataset.samples.values_list("pk", flat=True))
+                pairs = [(pk, val_lookup.get(pk, "")) for pk in all_pks]
+                pairs.sort(key=lambda t: _sort_key(t[1]), reverse=reverse_sort)
+            else:
+                pairs = [(pk, "") for pk in dataset.samples.values_list("pk", flat=True)]
+
+        paginator = Paginator(pairs, per_page)
+        page_obj = paginator.get_page(page_num)
+        page_pks = [pk for pk, _ in page_obj.object_list]
+        pk_to_sample = {
+            s.pk: s
+            for s in dataset.samples.filter(pk__in=page_pks).prefetch_related("values", "photos")
+        }
+        page_samples = [pk_to_sample[pk] for pk in page_pks if pk in pk_to_sample]
+
+    # Build row data for current page only
+    for s in page_samples:
         val_map = {v.column_id: v.value for v in s.values.all()}
         s.row_with_cols = [(col, val_map.get(col.pk, "")) for col in columns]
         s.photos_list = list(s.photos.all())
 
-    # Sort
-    reverse = sort_dir == "desc"
-    if sort_col == "sample_id":
-        all_samples.sort(key=lambda s: _sort_key(s.sample_id), reverse=reverse)
-    elif sort_col in col_name_map:
-        col_obj = col_name_map[sort_col]
-        all_samples.sort(
-            key=lambda s: _sort_key(next((val for c, val in s.row_with_cols if c.pk == col_obj.pk), "")),
-            reverse=reverse,
-        )
-
-    # Paginate
-    from django.core.paginator import Paginator
-    paginator = Paginator(all_samples, per_page)
-    page_obj = paginator.get_page(page_num)
-    samples = list(page_obj)
+    samples = page_samples
 
     # Column names already used in other datasets of the same category (for suggestions)
     existing_col_names = list(
