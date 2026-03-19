@@ -445,7 +445,9 @@
                 <div class="exp-body">
                 <div class="exp-row" style="margin-bottom:6px;padding-bottom:10px;border-bottom:3px solid var(--text)">
                   <span class="exp-label exp-label-bold" style="font-size:14px">Sample ID</span>
-                  <span class="exp-val" style="font-size:14px;font-weight:700">{{ s.sample_id }}</span>
+                  <span class="exp-val" style="font-size:14px;font-weight:700">
+                    <span style="display:inline-block;background:var(--text);color:var(--bg);padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace">{{ s.sample_id }}</span>
+                  </span>
                 </div>
                 {% if char_columns %}
                 <div class="exp-group-label">Sample Characteristics</div>
