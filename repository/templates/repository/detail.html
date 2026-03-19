@@ -359,6 +359,7 @@
                   Sample ID <span class="sort-ind" style="opacity:{% if sort_col == 'sample_id' %}1{% else %}.3{% endif %}">{% if sort_col == 'sample_id' and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
                 </a>
               </th>
+              <th></th>
               {% for col in sample_columns %}
               <th data-group="{{ col.group }}" data-sortcol="{{ col.name }}">
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
@@ -450,9 +451,9 @@
                 {% endif %}
                 </div>
               </td>
-              <td class="sample-id-cell">
-                <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-                  <span>{{ s.sample_id }}</span>
+              <td class="sample-id-cell" style="white-space:nowrap">{{ s.sample_id }}</td>
+              <td style="white-space:nowrap">
+                <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap">
                   {% if s.photos_list %}
                     <button type="button"
                       onclick='openPhotoViewer([{% for p in s.photos_list %}"{{ p.image.url|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}])'
