@@ -846,6 +846,8 @@ def rename_sample_column(request, slug, col_id):
         new_name = request.POST.get("name", "").strip()
         if new_name:
             SampleColumn.objects.filter(id=col_id, dataset=dataset).update(name=new_name)
+    if request.headers.get("X-Fetch"):
+        return HttpResponse(status=204)
     return _redirect_to_tab(slug, "tab-samples")
 
 
@@ -858,6 +860,8 @@ def set_column_unit(request, slug, col_id):
     if request.method == "POST":
         unit = request.POST.get("unit", "").strip()
         SampleColumn.objects.filter(id=col_id, dataset=dataset).update(unit=unit)
+    if request.headers.get("X-Fetch"):
+        return HttpResponse(status=204)
     return _redirect_to_tab(slug, "tab-samples")
 
 

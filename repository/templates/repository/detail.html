@@ -808,7 +808,7 @@ function confirmDelCol(name) {
   return confirm('Delete column "' + name + '"?\n\nAll values stored in this column will be permanently removed.');
 }
 
-var _renameWired = {};
+var _renameWired = {}, _unitWired = {};
 function showColRename(colId) {
   document.getElementById('col-label-' + colId).style.display = 'none';
   var btn = document.getElementById('col-rename-btn-' + colId);
@@ -827,6 +827,19 @@ function showColRename(colId) {
     document.addEventListener('click', function(e) {
       if (!drop.contains(e.target) && e.target !== input) drop.style.display = 'none';
     });
+    var form = document.getElementById('col-rename-form-' + colId);
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var newName = input.value.trim();
+      if (!newName) return;
+      fetch(form.action, { method: 'POST', headers: { 'X-Fetch': '1' }, body: new FormData(form) })
+        .then(function(r) {
+          if (r.ok) {
+            document.getElementById('col-label-' + colId).textContent = newName;
+            hideColRename(colId);
+          }
+        });
+    });
   }
   var q = input.value.trim().toLowerCase();
   if (drop && list) _colRender(list, drop, input, _colFilter(q), q);
@@ -842,9 +855,27 @@ function hideColRename(colId) {
 
 function showColUnit(colId) {
   document.getElementById('col-unit-label-' + colId).style.display = 'none';
-  document.getElementById('col-unit-form-' + colId).style.display = 'inline-flex';
+  var form = document.getElementById('col-unit-form-' + colId);
+  form.style.display = 'inline-flex';
   var inp = document.getElementById('col-unit-input-' + colId);
   if (inp) { inp.focus(); inp.select(); }
+  if (!_unitWired[colId]) {
+    _unitWired[colId] = true;
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var unit = document.getElementById('col-unit-input-' + colId).value.trim();
+      fetch(form.action, { method: 'POST', headers: { 'X-Fetch': '1' }, body: new FormData(form) })
+        .then(function(r) {
+          if (r.ok) {
+            var label = document.getElementById('col-unit-label-' + colId);
+            label.innerHTML = unit
+              ? '[' + unit + ']'
+              : '<span style="opacity:.5">+ unit</span>';
+            hideColUnit(colId);
+          }
+        });
+    });
+  }
 }
 function hideColUnit(colId) {
   document.getElementById('col-unit-label-' + colId).style.display = '';
