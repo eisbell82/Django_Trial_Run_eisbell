@@ -712,13 +712,15 @@ function savePhoto() {
 }
 </script>
 
-<script>
+<style>
 /* ── Expanded photo view ── */
 .sample-photo-th, .sample-photo-td { display:none; }
 .sample-table.expanded-view .sample-photo-th,
 .sample-table.expanded-view .sample-photo-td { display:table-cell; }
 .sample-table.expanded-view td { vertical-align:top; }
+</style>
 
+<script>
 /* ── Column sort (server-side navigation) ── */
 document.addEventListener('DOMContentLoaded', function () {
   var thead = document.querySelector('#tab-samples .sample-table thead tr');
