@@ -451,7 +451,7 @@
                 <div class="exp-group-label">Sample Characteristics</div>
                 {% for col, val in s.row_with_cols %}{% if col.group == 'characteristics' %}
                 <div class="exp-row">
-                  <span class="exp-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
+                  <span class="exp-label exp-indented">{{ col.name }}{% if col.unit %} <span style="opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
                   <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
                 </div>
                 {% endif %}{% endfor %}
@@ -460,14 +460,14 @@
                 <div class="exp-group-label">Sample Data</div>
                 {% for col, val in s.row_with_cols %}{% if col.group == 'data' %}
                 <div class="exp-row">
-                  <span class="exp-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
+                  <span class="exp-label exp-indented">{{ col.name }}{% if col.unit %} <span style="opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
                   <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
                 </div>
                 {% endif %}{% endfor %}
                 {% endif %}
                 {% if s.notes %}
                 <div class="exp-row">
-                  <span class="exp-label">Notes</span>
+                  <span class="exp-label exp-label-bold">Notes</span>
                   <span class="exp-val" style="font-style:italic">{{ s.notes }}</span>
                 </div>
                 {% endif %}
@@ -815,9 +815,11 @@ function savePhoto() {
 }
 .sample-table.expanded-view .notes-peek-btn { display:none; }
 .exp-body { display:grid; grid-template-columns:max-content 1fr; column-gap:16px; font-size:12px; }
-.exp-group-label { grid-column:1/-1; font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-dim); padding:8px 0 4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
+.exp-group-label { grid-column:1/-1; font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-dim); font-weight:700; padding:8px 0 4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
 .exp-row { display:contents; }
-.exp-label { color:var(--text-dim); white-space:nowrap; font-weight:600; padding:4px 0; border-bottom:1px solid var(--border); }
+.exp-label { color:var(--text-dim); white-space:nowrap; font-weight:normal; font-style:italic; padding:4px 0; border-bottom:1px solid var(--border); }
+.exp-label-bold { font-weight:700; font-style:normal; }
+.exp-indented { padding-left:14px; }
 .exp-val { display:block; min-width:0; padding:4px 0; border-bottom:1px solid var(--border); white-space:normal; word-break:break-word; }
 </style>
 
