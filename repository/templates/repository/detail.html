@@ -431,8 +431,11 @@
                 {% endif %}
               </td>
               <td class="expanded-data-td">
-                <div style="font-size:14px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:3px solid var(--text)">{{ s.sample_id }}</div>
                 <div class="exp-body">
+                <div class="exp-row" style="margin-bottom:6px;padding-bottom:10px;border-bottom:3px solid var(--text)">
+                  <span class="exp-label" style="font-size:14px">Sample ID</span>
+                  <span class="exp-val" style="font-size:14px;font-weight:700">{{ s.sample_id }}</span>
+                </div>
                 {% for col, val in s.row_with_cols %}
                 <div class="exp-row">
                   <span class="exp-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
@@ -769,7 +772,7 @@ function savePhoto() {
 .sample-table.expanded-view tbody { display:block; width:100%; max-width:900px; margin:0 auto; }
 .sample-table.expanded-view tbody tr {
   display:flex; align-items:flex-start; gap:20px;
-  border-bottom:1px solid var(--border); padding:20px 0;
+  border-bottom:3px solid var(--text); padding:20px 0;
 }
 .sample-table.expanded-view tbody tr td { display:none !important; }
 .sample-table.expanded-view tbody tr .sample-photo-td {
