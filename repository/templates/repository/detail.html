@@ -407,6 +407,16 @@
                     </select>
                   </form>
                 </div>
+                <div class="edit-ctrl" style="margin-top:2px;display:flex;gap:1px">
+                  <form method="post" action="{% url 'repository:move_sample_column' dataset.slug col.id %}" style="display:inline">
+                    {% csrf_token %}<input type="hidden" name="direction" value="left">
+                    <button type="submit" class="col-del-btn" title="Move left" style="font-size:11px;opacity:.6">◀</button>
+                  </form>
+                  <form method="post" action="{% url 'repository:move_sample_column' dataset.slug col.id %}" style="display:inline">
+                    {% csrf_token %}<input type="hidden" name="direction" value="right">
+                    <button type="submit" class="col-del-btn" title="Move right" style="font-size:11px;opacity:.6">▶</button>
+                  </form>
+                </div>
                 {% else %}
                 <a href="?sort_col={{ col.name|urlencode }}&sort_dir={% if sort_col == col.name and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}#tab-samples" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
                   {{ col.name }}{% if col.unit %} <span style="font-size:10px;opacity:.6;font-weight:normal">[{{ col.unit }}]</span>{% endif %}
@@ -437,12 +447,24 @@
                   <span class="exp-label" style="font-size:14px">Sample ID</span>
                   <span class="exp-val" style="font-size:14px;font-weight:700">{{ s.sample_id }}</span>
                 </div>
-                {% for col, val in s.row_with_cols %}
+                {% if char_columns %}
+                <div class="exp-group-label">Sample Characteristics</div>
+                {% for col, val in s.row_with_cols %}{% if col.group == 'characteristics' %}
                 <div class="exp-row">
                   <span class="exp-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
                   <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
                 </div>
-                {% endfor %}
+                {% endif %}{% endfor %}
+                {% endif %}
+                {% if data_columns %}
+                <div class="exp-group-label">Sample Data</div>
+                {% for col, val in s.row_with_cols %}{% if col.group == 'data' %}
+                <div class="exp-row">
+                  <span class="exp-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
+                  <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
+                </div>
+                {% endif %}{% endfor %}
+                {% endif %}
                 {% if s.notes %}
                 <div class="exp-row">
                   <span class="exp-label">Notes</span>
@@ -793,6 +815,7 @@ function savePhoto() {
 }
 .sample-table.expanded-view .notes-peek-btn { display:none; }
 .exp-body { display:grid; grid-template-columns:max-content 1fr; column-gap:16px; font-size:12px; }
+.exp-group-label { grid-column:1/-1; font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-dim); padding:8px 0 4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
 .exp-row { display:contents; }
 .exp-label { color:var(--text-dim); white-space:nowrap; font-weight:600; padding:4px 0; border-bottom:1px solid var(--border); }
 .exp-val { display:block; min-width:0; padding:4px 0; border-bottom:1px solid var(--border); white-space:normal; word-break:break-word; }

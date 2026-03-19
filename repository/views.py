@@ -895,6 +895,30 @@ def set_column_group(request, slug, col_id):
 
 
 @login_required
+def move_sample_column(request, slug, col_id):
+    dataset = get_object_or_404(Dataset, slug=slug)
+    if not _can_edit(request.user, dataset):
+        return _redirect_to_tab(slug, "tab-samples")
+    if request.method == "POST":
+        direction = request.POST.get("direction")
+        columns = list(dataset.sample_columns.order_by("order", "id"))
+        # Normalize orders
+        for i, col in enumerate(columns):
+            if col.order != i:
+                col.order = i
+        SampleColumn.objects.bulk_update(columns, ["order"])
+        idx = next((i for i, c in enumerate(columns) if c.id == int(col_id)), None)
+        if idx is not None:
+            if direction == "left" and idx > 0:
+                columns[idx].order, columns[idx - 1].order = idx - 1, idx
+                SampleColumn.objects.bulk_update([columns[idx], columns[idx - 1]], ["order"])
+            elif direction == "right" and idx < len(columns) - 1:
+                columns[idx].order, columns[idx + 1].order = idx + 1, idx
+                SampleColumn.objects.bulk_update([columns[idx], columns[idx + 1]], ["order"])
+    return _redirect_to_tab(slug, "tab-samples")
+
+
+@login_required
 def upload_csv_samples(request, slug):
     import csv, io
     dataset = get_object_or_404(Dataset, slug=slug)
