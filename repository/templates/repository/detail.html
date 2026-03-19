@@ -24,8 +24,6 @@
       {% if dataset.institution %}, {{ dataset.institution }}{% endif %}
       &nbsp;·&nbsp;
       Published <strong>{{ dataset.created_at|date:"F j, Y" }}</strong>
-      &nbsp;·&nbsp;
-      {{ dataset.version }}
       {% if dataset.doi %}
         &nbsp;·&nbsp;
         <span class="accent">DOI: {{ dataset.doi }}</span>
@@ -501,7 +499,7 @@
       {% if dataset.files.exists %}<div class="info-row"><span class="info-key">Files</span><span class="info-val">{{ dataset.files.count }}</span></div>{% endif %}
       {% if dataset.file_size_display %}<div class="info-row"><span class="info-key">Size</span><span class="info-val">{{ dataset.file_size_display }}</span></div>{% endif %}
       <div class="info-row"><span class="info-key">License</span><span class="info-val">{{ dataset.get_license_display_short }}</span></div>
-      <div class="info-row"><span class="info-key">Version</span><span class="info-val">{{ dataset.version }}</span></div>
+      <div class="info-row"><span class="info-key">Uploaded</span><span class="info-val">{{ dataset.created_at|date:"N j, Y" }}</span></div>
       <div class="info-row"><span class="info-key">Downloads</span><span class="info-val">{{ dataset.download_count }}</span></div>
     </div>
 

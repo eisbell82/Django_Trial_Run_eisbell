@@ -18,7 +18,7 @@ class NotebookInline(admin.TabularInline):
 
 @admin.register(Dataset)
 class DatasetAdmin(admin.ModelAdmin):
-    list_display = ["title", "category", "institution", "version", "download_count", "created_at"]
+    list_display = ["title", "category", "institution", "download_count", "created_at"]
     list_filter = ["category", "license"]
     search_fields = ["title", "abstract", "species", "doi"]
     prepopulated_fields = {"slug": ("title",)}

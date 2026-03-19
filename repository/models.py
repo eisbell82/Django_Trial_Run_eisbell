@@ -50,7 +50,6 @@ class Dataset(models.Model):
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default="flame")
     license = models.CharField(max_length=20, choices=LICENSE_CHOICES, default="cc_by_4")
     doi = models.CharField(max_length=200, blank=True)
-    version = models.CharField(max_length=20, default="v1")
     experiment_date = models.DateField(null=True, blank=True)
     lab = models.CharField(max_length=200, blank=True)
     institution = models.CharField(max_length=200, blank=True)
