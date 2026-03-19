@@ -746,7 +746,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!thead) return;
   thead.querySelectorAll('th[data-sortcol]').forEach(function (th) { th.style.cursor = 'pointer'; });
   thead.addEventListener('click', function (e) {
-    if (e.target.closest('button, form, select, input')) return;
+    if (e.target.closest('button, form, select, input, [onclick]')) return;
     var a = e.target.closest('a[href]');
     if (a && a.href.indexOf('sort_col') !== -1) return;
     if (a) return;
