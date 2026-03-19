@@ -339,7 +339,7 @@
               {% for col in sample_columns %}
               <th data-group="{{ col.group }}" data-sortcol="{{ col.name|escapejs }}">
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-                <span id="col-label-{{ col.id }}">{{ col.name }}</span><span class="sort-ind read-ctrl" style="opacity:.3;margin-left:3px">↑</span>
+                <span id="col-label-{{ col.id }}">{{ col.name }}</span><span class="sort-ind read-ctrl" style="opacity:{% if sort_col == col.name %}1{% else %}.3{% endif %};margin-left:3px">{% if sort_col == col.name and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
                 <button type="button" id="col-rename-btn-{{ col.id }}" class="col-del-btn edit-ctrl" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
                 <form method="post" action="{% url 'repository:rename_sample_column' dataset.slug col.id %}" id="col-rename-form-{{ col.id }}" style="display:none;margin-top:2px;align-items:center;gap:2px">
                   {% csrf_token %}
@@ -732,7 +732,14 @@ function setColumnGroup(group) {
   });
 }
 {% if char_columns and data_columns %}
-document.addEventListener('DOMContentLoaded', function() { setColumnGroup('characteristics'); });
+document.addEventListener('DOMContentLoaded', function() {
+  {% if sort_col %}
+  var _dataColNames = [{% for c in data_columns %}'{{ c.name|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+  setColumnGroup(_dataColNames.indexOf('{{ sort_col|escapejs }}') !== -1 ? 'data' : 'characteristics');
+  {% else %}
+  setColumnGroup('characteristics');
+  {% endif %}
+});
 {% endif %}
 
 function toggleSamplesEdit() {
