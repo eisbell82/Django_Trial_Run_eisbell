@@ -1015,8 +1015,11 @@ def _build_samples_qs(query, active_category, f_species, f_substrate, f_coating,
         qs = qs.filter(values__column__name__iexact="substrate", values__value=f_substrate)
     if f_coating:
         qs = qs.filter(values__column__name__iexact="coating", values__value=f_coating)
-    if filter_col and filter_col_val:
-        qs = qs.filter(values__column__name__iexact=filter_col, values__value__icontains=filter_col_val)
+    if filter_col_val:
+        if filter_col:
+            qs = qs.filter(values__column__name__iexact=filter_col, values__value__icontains=filter_col_val)
+        else:
+            qs = qs.filter(values__value__icontains=filter_col_val)
     return qs
 
 
@@ -1140,7 +1143,7 @@ def samples_view(request):
     ]
 
     adv_filter_values = _col_values_bulk(["species", "substrate", "coating"], active_category)
-    adv_active = bool(show_columns or f_species or f_substrate or f_coating or (filter_col and filter_col_val))
+    adv_active = bool(show_columns or f_species or f_substrate or f_coating or filter_col_val)
 
     return render(request, "repository/samples.html", {
         "samples": samples,
