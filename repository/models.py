@@ -239,7 +239,12 @@ class DocsSection(models.Model):
     """An editable section block on the Docs page."""
     TAB_OVERVIEW = 'overview'
     TAB_NAMING   = 'naming'
-    TAB_CHOICES  = [(TAB_OVERVIEW, 'Overview'), (TAB_NAMING, 'Naming Conventions')]
+    TAB_COLUMNS  = 'columns'
+    TAB_CHOICES  = [
+        (TAB_OVERVIEW, 'Overview'),
+        (TAB_NAMING,   'Data Structure'),
+        (TAB_COLUMNS,  'Column Structure'),
+    ]
 
     tab     = models.CharField(max_length=20, choices=TAB_CHOICES, default=TAB_OVERVIEW)
     heading = models.CharField(max_length=200)

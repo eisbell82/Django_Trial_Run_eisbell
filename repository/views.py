@@ -1350,11 +1350,13 @@ def docs_view(request):
     sections = list(DocsSection.objects.all())
     overview_sections = [s for s in sections if s.tab == DocsSection.TAB_OVERVIEW]
     naming_sections   = [s for s in sections if s.tab == DocsSection.TAB_NAMING]
+    columns_sections  = [s for s in sections if s.tab == DocsSection.TAB_COLUMNS]
     return render(request, "repository/docs.html", {
         "page": page,
         "edit_open": edit_open,
         "overview_sections": overview_sections,
         "naming_sections": naming_sections,
+        "columns_sections": columns_sections,
     })
 
 

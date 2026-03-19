@@ -27,7 +27,8 @@
   <!-- Tab bar -->
   <div class="detail-tabs" style="border-bottom:1px solid var(--border);margin-bottom:2rem">
     <div class="dtab active" onclick="docsTab(this,'docs-overview')">Overview</div>
-    <div class="dtab" onclick="docsTab(this,'docs-naming')">Naming Conventions &amp; Data Structure</div>
+    <div class="dtab" onclick="docsTab(this,'docs-naming')">Data Structure</div>
+    <div class="dtab" onclick="docsTab(this,'docs-columns')">Column Structure</div>
   </div>
 
   {% if user.is_staff %}
@@ -107,13 +108,33 @@
     </div>
   </div><!-- /docs-naming -->
 
+  <!-- ── Column Structure tab ── -->
+  <div id="docs-columns" style="display:none">
+
+    {% for section in columns_sections %}
+      {% include "repository/docs_section.html" with s=section %}
+    {% endfor %}
+
+    {% if user.is_staff %}
+    <div class="docs-edit-panel" style="display:{% if edit_open %}block{% else %}none{% endif %};">
+      <hr class="divider" style="margin-top:2rem">
+      {% include "repository/docs_add_section.html" with tab="columns" %}
+    </div>
+    {% endif %}
+
+    <hr class="divider">
+    <div style="color:var(--text-dim);font-size:12px;padding-bottom:3rem">
+      Questions? Contact the repository admin.
+    </div>
+  </div><!-- /docs-columns -->
+
 </div>
 
 <script>
 function docsTab(el, tabId) {
   document.querySelectorAll('.detail-tabs .dtab').forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
-  document.querySelectorAll('#docs-overview, #docs-naming').forEach(function(p){ p.style.display = 'none'; });
+  document.querySelectorAll('#docs-overview, #docs-naming, #docs-columns').forEach(function(p){ p.style.display = 'none'; });
   document.getElementById(tabId).style.display = 'block';
 }
 function dsSectionEdit(pk, show) {
