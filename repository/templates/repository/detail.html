@@ -361,7 +361,7 @@
               </th>
               <th></th>
               {% for col in sample_columns %}
-              <th data-group="{{ col.group }}" data-sortcol="{{ col.name }}">
+              <th data-group="{{ col.group }}" data-sortcol="{{ col.name }}" data-col-id="{{ col.id }}">
                 {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                 <span id="col-label-{{ col.id }}">{{ col.name }}</span><span class="sort-ind read-ctrl" style="opacity:{% if sort_col == col.name %}1{% else %}.3{% endif %};margin-left:3px">{% if sort_col == col.name and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
                 <button type="button" id="col-rename-btn-{{ col.id }}" class="col-del-btn edit-ctrl" onclick="showColRename({{ col.id }})" title="Rename column" style="opacity:.5;font-size:11px">✎</button>
@@ -510,7 +510,7 @@
                   {% endif %}
                 </div>
               </td>
-              {% for col, val in s.row_with_cols %}<td data-group="{{ col.group }}">{{ val }}{% if val and col.unit %} <span style="font-size:10px;opacity:.65;font-style:italic">{{ col.unit }}</span>{% endif %}</td>{% endfor %}
+              {% for col, val in s.row_with_cols %}<td data-group="{{ col.group }}" data-col-id="{{ col.id }}">{{ val }}{% if val and col.unit %} <span style="font-size:10px;opacity:.65;font-style:italic">{{ col.unit }}</span>{% endif %}</td>{% endfor %}
               {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
               <td class="edit-ctrl" style="white-space:nowrap">
                 <a href="{% url 'repository:edit_sample' dataset.slug s.pk %}" class="col-del-btn" title="Edit sample" style="text-decoration:none;opacity:.6">✎</a>
@@ -890,6 +890,46 @@ function toggleSamplesEdit() {
     location.reload();
   }
 }
+
+function _swapColumns(colId, direction) {
+  var table = document.querySelector('#tab-samples .sample-table');
+  if (!table) return;
+  // Swap <th> elements
+  var ths = Array.from(table.querySelectorAll('thead th[data-col-id]'));
+  var idx = ths.findIndex(function(th) { return th.dataset.colId == colId; });
+  if (idx === -1) return;
+  var neighborIdx = direction === 'left' ? idx - 1 : idx + 1;
+  if (neighborIdx < 0 || neighborIdx >= ths.length) return;
+  var thA = ths[idx], thB = ths[neighborIdx];
+  if (direction === 'left') { thA.parentNode.insertBefore(thA, thB); }
+  else { thA.parentNode.insertBefore(thB, thA); }
+  // Swap matching <td> elements in every body row
+  table.querySelectorAll('tbody tr').forEach(function(row) {
+    var tds = Array.from(row.querySelectorAll('td[data-col-id]'));
+    var tdIdx = tds.findIndex(function(td) { return td.dataset.colId == colId; });
+    if (tdIdx === -1) return;
+    var neighborTdIdx = direction === 'left' ? tdIdx - 1 : tdIdx + 1;
+    if (neighborTdIdx < 0 || neighborTdIdx >= tds.length) return;
+    var tdA = tds[tdIdx], tdB = tds[neighborTdIdx];
+    if (direction === 'left') { tdA.parentNode.insertBefore(tdA, tdB); }
+    else { tdA.parentNode.insertBefore(tdB, tdA); }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('#tab-samples .sample-table').forEach(function(table) {
+    table.addEventListener('submit', function(e) {
+      var form = e.target;
+      if (!form.action.includes('/move/')) return;
+      e.preventDefault();
+      var direction = form.querySelector('input[name="direction"]').value;
+      var colId = form.action.match(/\/columns\/(\d+)\/move\//)[1];
+      var fd = new FormData(form);
+      fetch(form.action, { method: 'POST', headers: { 'X-Fetch': '1' }, body: fd })
+        .then(function(r) { if (r.ok) _swapColumns(colId, direction); });
+    });
+  });
+});
 
 function confirmDelCol(name) {
   return confirm('Delete column "' + name + '"?\n\nAll values stored in this column will be permanently removed.');

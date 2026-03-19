@@ -915,6 +915,8 @@ def move_sample_column(request, slug, col_id):
             elif direction == "right" and idx < len(columns) - 1:
                 columns[idx].order, columns[idx + 1].order = idx + 1, idx
                 SampleColumn.objects.bulk_update([columns[idx], columns[idx + 1]], ["order"])
+        if request.headers.get("X-Fetch"):
+            return HttpResponse(status=204)
     return _redirect_to_tab(slug, "tab-samples")
 
 
