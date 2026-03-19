@@ -23,10 +23,16 @@
 - certbot step in deploy.sh auto-issues SSL cert on first deploy (requires A record pointing to EC2 IP)
 
 ## S3 Backups
-- Bucket: `s3://specimenbase-backups` (versioning enabled)
+- Bucket: `s3://specimenbase-backups-318270726326-us-east-1-an`
 - IAM role `Bucket_Access` attached to EC2 instance (no credentials in code)
-- deploy.sh backs up `db.sqlite3` and `media/` to S3 before each deploy
-- View backups: AWS Console → S3 → specimenbase-backups
+- **Important:** deploy.sh runs `rm -f ~/.aws/credentials` before backup so the instance role is used (hardcoded user credentials were previously blocking S3 access)
+- Three backup tiers:
+  - `db.sqlite3` (root) — overwritten on every deploy, single latest copy
+  - `daily/db-YYYY-MM-DD.sqlite3` — every day at 3am UTC, kept 7 days
+  - `snapshots/db-YYYY-MM-DD.sqlite3` + `snapshots/media-YYYY-MM-DD/` — 1st & 15th of month, kept 60 days
+- S3 lifecycle rules set automatically by `backup.yml` (7-day expiry on `daily/`, 60-day on `snapshots/`)
+- **Restore:** use `restore.yml` workflow_dispatch — enter date + type (daily/snapshots); auto-saves pre-restore copy to `pre-restore/` before overwriting
+- View backups: AWS Console → S3 → specimenbase-backups-318270726326-us-east-1-an
 
 ## Data Model Overview
 All models live in `repository/models.py`. Key models:
@@ -40,11 +46,14 @@ All models live in `repository/models.py`. Key models:
 - **Tag, AboutPage, AboutPhoto, TodoItem** — supporting models
 
 ## Key Features Built
-- **Dataset samples tab** (detail page): two column group toggles (Characteristics / Data), sortable column headers, 25/50/100 per-page, pagination
+- **Dataset samples tab** (detail page): two column group toggles (Characteristics / Data), sortable column headers, 25/50/100 per-page, pagination. Sort is page-aware: fetches only current page data (no full table load).
 - **Sample photos**: multiple photos per sample via SamplePhoto model; crop/rotate editor popup (Cropper.js, lazy-loaded); lightbox viewer with prev/next navigation and keyboard arrows; "N photos" tab button inline with sample ID
 - **CSV upload auto-detection**: columns with >50% numeric values → 'data' group; otherwise → 'characteristics'. Manual override via group dropdown in edit mode.
 - **Global samples page** (`/samples/`): column value text filter in advanced filters (pick column + contains text); persists across column sort clicks
 - **HTTPS**: nginx serves HTTPS on port 443; HTTP redirects to HTTPS; certbot auto-provisions cert on first deploy
+- **Docs page**: three tabs (Overview, Data Structure, Column Structure) backed by `DocsSection` model; all content editable by admin inline
+- **Edit sample**: prev/next navigation between samples, auto-save on page hide/unload via `navigator.sendBeacon`, dirty-state tracking
+- **Clear samples**: danger-zone action on edit dataset page to delete all sample data for an experiment
 
 ## Known Issues & Fixes
 - **Git "dubious ownership":** If files in `/srv/specimenbase` are owned by `root:root`, git refuses
