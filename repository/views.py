@@ -742,6 +742,16 @@ def edit_sample(request, slug, pk):
     sample = get_object_or_404(Sample, pk=pk, dataset=dataset)
     _seen = set()
     columns = [c for c in dataset.sample_columns.all() if not (_seen.__contains__(c.name.strip().lower()) or _seen.add(c.name.strip().lower()))]
+
+    # Build ordered sample list for prev/next navigation
+    all_pks = list(dataset.samples.order_by("sample_id").values_list("pk", flat=True))
+    try:
+        idx = all_pks.index(sample.pk)
+    except ValueError:
+        idx = 0
+    prev_pk = all_pks[idx - 1] if idx > 0 else None
+    next_pk = all_pks[idx + 1] if idx < len(all_pks) - 1 else None
+
     if request.method == "POST":
         sample_id = request.POST.get("sample_id", "").strip()
         if sample_id:
@@ -752,14 +762,22 @@ def edit_sample(request, slug, pk):
                 SampleValue.objects.update_or_create(
                     sample=sample, column=col, defaults={"value": val}
                 )
-            messages.success(request, f"Sample '{sample_id}' updated.")
+        # Silent autosave (fetch / sendBeacon) — just return 200, no redirect
+        if request.POST.get("autosave") == "1":
+            return HttpResponse("ok")
+        messages.success(request, f"Sample '{sample.sample_id}' updated.")
         return _redirect_to_tab(slug, "tab-samples")
+
     current_values = {v.column_id: v.value for v in sample.values.all()}
     column_values = [(col, current_values.get(col.id, "")) for col in columns]
     return render(request, "repository/edit_sample.html", {
         "dataset": dataset,
         "sample": sample,
         "column_values": column_values,
+        "prev_pk": prev_pk,
+        "next_pk": next_pk,
+        "current_idx": idx + 1,
+        "total_samples": len(all_pks),
     })
 
 

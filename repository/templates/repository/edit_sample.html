@@ -3,12 +3,29 @@
 {% block title %}Edit Sample — {{ dataset.title }} — Myco-material Database{% endblock %}
 
 {% block content %}
-<div class="section" style="padding-top:3rem;max-width:600px;margin:0 auto">
-  <div style="margin-bottom:1.5rem">
-    <a href="{% url 'repository:detail' dataset.slug %}" style="color:var(--text-dim);font-size:12px">← Back to {{ dataset.title|truncatechars:50 }}</a>
+<div class="section" style="padding-top:2.5rem;max-width:600px;margin:0 auto">
+
+  <!-- Back link + position counter -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+    <a href="{% url 'repository:detail' dataset.slug %}" style="color:var(--text-dim);font-size:12px">← Back to {{ dataset.title|truncatechars:40 }}</a>
+    <span style="font-size:12px;color:var(--text-muted)">{{ current_idx }} / {{ total_samples }}</span>
   </div>
-  <h2 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:1.5rem">Edit sample</h2>
-  <form method="post">
+
+  <!-- Prev / sample ID / Next -->
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:.75rem">
+    <button type="button" id="btn-prev"
+            {% if not prev_pk %}disabled{% endif %}
+            style="padding:6px 16px;font-size:12px;background:transparent;border:1px solid var(--border);border-radius:5px;color:{% if prev_pk %}var(--text){% else %}var(--text-dim){% endif %};cursor:{% if prev_pk %}pointer{% else %}default{% endif %};opacity:{% if prev_pk %}1{% else %}.35{% endif %}">← Previous</button>
+    <h2 style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin:0;text-align:center;flex:1">{{ sample.sample_id }}</h2>
+    <button type="button" id="btn-next"
+            {% if not next_pk %}disabled{% endif %}
+            style="padding:6px 16px;font-size:12px;background:transparent;border:1px solid var(--border);border-radius:5px;color:{% if next_pk %}var(--text){% else %}var(--text-dim){% endif %};cursor:{% if next_pk %}pointer{% else %}default{% endif %};opacity:{% if next_pk %}1{% else %}.35{% endif %}">Next →</button>
+  </div>
+
+  <!-- Save status -->
+  <div id="save-status" style="font-size:11px;color:var(--text-dim);margin-bottom:1rem;min-height:16px;text-align:center"></div>
+
+  <form method="post" id="edit-form">
     {% csrf_token %}
     <div class="form-group">
       <label class="form-label">Sample ID <span style="color:var(--accent)">*</span></label>
@@ -23,9 +40,84 @@
     <p style="color:var(--text-dim);font-size:12px;margin-bottom:1rem">No columns defined for this experiment yet.</p>
     {% endfor %}
     <div style="display:flex;gap:12px;margin-top:1.5rem">
-      <button type="submit" class="btn-accent">Save changes</button>
-      <a href="{% url 'repository:detail' dataset.slug %}" class="btn-outline">Cancel</a>
+      <button type="submit" class="btn-accent">Done</button>
+      <button type="button" id="btn-discard" class="btn-outline">Discard &amp; close</button>
     </div>
   </form>
+
 </div>
+
+<script>
+(function () {
+  var dirty = false;
+  var saveUrl = '{{ request.path }}';
+  var prevUrl = {% if prev_pk %}'{% url "repository:edit_sample" dataset.slug prev_pk %}'{% else %}null{% endif %};
+  var nextUrl = {% if next_pk %}'{% url "repository:edit_sample" dataset.slug next_pk %}'{% else %}null{% endif %};
+  var closeUrl = '{% url "repository:detail" dataset.slug %}';
+  var statusEl = document.getElementById('save-status');
+
+  /* ── Dirty tracking ── */
+  document.getElementById('edit-form').addEventListener('input', function () {
+    if (!dirty) {
+      dirty = true;
+      statusEl.textContent = 'Unsaved changes';
+    }
+  });
+
+  /* ── Build FormData with autosave flag ── */
+  function getFormData() {
+    var fd = new FormData(document.getElementById('edit-form'));
+    fd.append('autosave', '1');
+    return fd;
+  }
+
+  /* ── Fetch-based save (awaitable) ── */
+  function save() {
+    if (!dirty) return Promise.resolve();
+    return fetch(saveUrl, { method: 'POST', body: getFormData() })
+      .then(function () {
+        dirty = false;
+        statusEl.textContent = 'Saved';
+        setTimeout(function () { statusEl.textContent = ''; }, 1800);
+      })
+      .catch(function () {
+        statusEl.textContent = 'Auto-save failed';
+      });
+  }
+
+  /* ── Auto-save on page hide / unload (fire-and-forget) ── */
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && dirty) {
+      navigator.sendBeacon(saveUrl, getFormData());
+      dirty = false;
+    }
+  });
+  window.addEventListener('pagehide', function () {
+    if (dirty) navigator.sendBeacon(saveUrl, getFormData());
+  });
+
+  /* ── Prev / Next ── */
+  var prevBtn = document.getElementById('btn-prev');
+  var nextBtn = document.getElementById('btn-next');
+  if (prevBtn && prevUrl) {
+    prevBtn.addEventListener('click', function () {
+      save().then(function () { window.location.href = prevUrl; });
+    });
+  }
+  if (nextBtn && nextUrl) {
+    nextBtn.addEventListener('click', function () {
+      save().then(function () { window.location.href = nextUrl; });
+    });
+  }
+
+  /* ── Discard & close ── */
+  document.getElementById('btn-discard').addEventListener('click', function () {
+    if (!dirty || confirm('Discard unsaved changes?')) {
+      dirty = false;
+      window.location.href = closeUrl;
+    }
+  });
+})();
+</script>
+
 {% endblock %}
