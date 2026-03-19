@@ -431,20 +431,20 @@
                 {% endif %}
               </td>
               <td class="expanded-data-td">
-                <div style="font-size:14px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">{{ s.sample_id }}</div>
+                <div style="font-size:14px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:3px solid var(--text)">{{ s.sample_id }}</div>
                 <div class="exp-body">
-                {% if s.notes %}
-                <div class="exp-row">
-                  <span class="exp-label">Notes</span>
-                  <span class="exp-val" style="font-style:italic">{{ s.notes }}</span>
-                </div>
-                {% endif %}
                 {% for col, val in s.row_with_cols %}
                 <div class="exp-row">
                   <span class="exp-label">{{ col.name }}{% if col.unit %} <span style="font-weight:normal;opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
                   <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
                 </div>
                 {% endfor %}
+                {% if s.notes %}
+                <div class="exp-row">
+                  <span class="exp-label">Notes</span>
+                  <span class="exp-val" style="font-style:italic">{{ s.notes }}</span>
+                </div>
+                {% endif %}
                 </div>
               </td>
               <td class="sample-id-cell">
