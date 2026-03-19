@@ -20,7 +20,6 @@
   <span style="font-size:10px;color:var(--text-dim);letter-spacing:.05em">v{{ APP_VERSION }}</span>
   <div class="nav-links">
     <a href="{% url 'repository:home' %}" class="{% block nav_datasets %}{% endblock %}">Home</a>
-    <a href="{% url 'repository:collections' %}" class="{% block nav_collections %}{% endblock %}">Experiments</a>
     <a href="{% url 'repository:samples' %}" class="{% block nav_samples %}{% endblock %}">Samples</a>
     <a href="{% url 'repository:docs' %}" class="{% block nav_docs %}{% endblock %}">Docs</a>
     <a href="{% url 'repository:about' %}" class="{% block nav_about %}{% endblock %}">About</a>
