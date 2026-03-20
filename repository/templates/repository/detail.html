@@ -443,11 +443,9 @@
               </td>
               <td class="expanded-data-td">
                 <div class="exp-body">
-                <div style="grid-column:1/-1;margin-bottom:8px;margin-left:-8px;width:calc(100% + 8px);border-bottom:3px solid var(--text);display:flex;align-items:stretch">
-                  <span style="display:flex;align-items:center;gap:8px;background:rgba(140,21,21,0.25);color:white;padding:8px 14px 8px 8px;width:100%;font-family:'DM Mono',monospace;font-size:16px">
-                    <span style="font-weight:700">Sample ID</span>
-                    <span>{{ s.sample_id }}</span>
-                  </span>
+                <div style="grid-column:1/-1;display:grid;grid-template-columns:subgrid;margin-bottom:8px;margin-left:-8px;border-bottom:3px solid var(--text);background:rgba(140,21,21,0.25)">
+                  <span style="color:white;padding:8px 0;font-family:'DM Mono',monospace;font-size:16px;font-weight:700;white-space:nowrap">Sample ID</span>
+                  <span style="color:rgba(255,255,255,0.75);padding:8px 14px 8px 0;font-family:'DM Mono',monospace;font-size:16px">{{ s.sample_id }}</span>
                 </div>
                 {% if char_columns %}
                 <div class="exp-group-label">Sample Characteristics</div>
