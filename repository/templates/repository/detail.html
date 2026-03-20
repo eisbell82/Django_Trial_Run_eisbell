@@ -443,10 +443,10 @@
               </td>
               <td class="expanded-data-td">
                 <div class="exp-body">
-                <div style="grid-column:1/-1;margin-bottom:6px;padding-bottom:10px;border-bottom:3px solid var(--text)">
-                  <span style="display:inline-flex;align-items:center;gap:10px;background:rgba(46,45,41,0.5);color:var(--bg);padding:5px 14px;border-radius:6px;font-family:'DM Mono',monospace">
-                    <span style="font-size:11px;font-weight:700;opacity:.85">Sample ID</span>
-                    <span style="font-size:14px;font-weight:700">{{ s.sample_id }}</span>
+                <div style="grid-column:1/-1;margin-bottom:8px;border-bottom:3px solid var(--text);display:flex;align-items:stretch">
+                  <span style="display:flex;align-items:center;gap:10px;background:rgba(140,21,21,0.25);color:white;padding:8px 14px;width:100%;font-family:'DM Mono',monospace;font-size:14px">
+                    <span style="opacity:.85">Sample ID</span>
+                    <span>{{ s.sample_id }}</span>
                   </span>
                 </div>
                 {% if char_columns %}
