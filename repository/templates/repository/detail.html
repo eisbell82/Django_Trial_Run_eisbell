@@ -342,8 +342,8 @@
 
       {% if char_columns and data_columns %}
       <div style="display:flex;gap:0;margin-bottom:.75rem;border:1px solid var(--border);border-radius:6px;overflow:hidden;width:fit-content">
-        <button id="toggle-char" type="button" onclick="setColumnGroup('characteristics')" style="padding:6px 16px;font-size:12px;font-family:'Syne',sans-serif;font-weight:700;border:none;cursor:pointer;background:var(--accent);color:#fff">Sample Characteristics</button>
-        <button id="toggle-data" type="button" onclick="setColumnGroup('data')" style="padding:6px 16px;font-size:12px;font-family:'Syne',sans-serif;font-weight:700;border:none;cursor:pointer;background:var(--surface);color:var(--text)">Sample Data</button>
+        <button id="toggle-char" type="button" data-active="1" onclick="toggleColumnGroup('characteristics')" style="padding:6px 16px;font-size:12px;font-family:'Syne',sans-serif;font-weight:700;border:none;cursor:pointer;background:var(--accent);color:#fff">Sample Characteristics</button>
+        <button id="toggle-data" type="button" data-active="0" onclick="toggleColumnGroup('data')" style="padding:6px 16px;font-size:12px;font-family:'Syne',sans-serif;font-weight:700;border:none;cursor:pointer;background:var(--surface);color:var(--text)">Sample Data</button>
       </div>
       {% endif %}
       </div><!-- end centered controls -->
@@ -861,14 +861,30 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+function _applyGroupVisibility() {
+  var btnChar = document.getElementById('toggle-char');
+  var btnData = document.getElementById('toggle-data');
+  var charActive = btnChar && btnChar.dataset.active === '1';
+  var dataActive = btnData && btnData.dataset.active === '1';
+  document.querySelectorAll('#tab-samples [data-group]').forEach(function(el) {
+    var g = el.dataset.group;
+    el.style.display = ((g === 'characteristics' && charActive) || (g === 'data' && dataActive)) ? '' : 'none';
+  });
+}
+function toggleColumnGroup(group) {
+  var btn = document.getElementById(group === 'characteristics' ? 'toggle-char' : 'toggle-data');
+  if (!btn) return;
+  btn.dataset.active = btn.dataset.active === '1' ? '0' : '1';
+  btn.style.background = btn.dataset.active === '1' ? 'var(--accent)' : 'var(--surface)';
+  btn.style.color = btn.dataset.active === '1' ? '#fff' : 'var(--text)';
+  _applyGroupVisibility();
+}
 function setColumnGroup(group) {
   var btnChar = document.getElementById('toggle-char');
   var btnData = document.getElementById('toggle-data');
-  if (btnChar) { btnChar.style.background = group === 'characteristics' ? 'var(--accent)' : 'var(--surface)'; btnChar.style.color = group === 'characteristics' ? '#fff' : 'var(--text)'; }
-  if (btnData) { btnData.style.background = group === 'data' ? 'var(--accent)' : 'var(--surface)'; btnData.style.color = group === 'data' ? '#fff' : 'var(--text)'; }
-  document.querySelectorAll('#tab-samples [data-group]').forEach(function(el) {
-    el.style.display = el.dataset.group === group ? '' : 'none';
-  });
+  if (btnChar) { btnChar.dataset.active = group === 'characteristics' ? '1' : '0'; btnChar.style.background = group === 'characteristics' ? 'var(--accent)' : 'var(--surface)'; btnChar.style.color = group === 'characteristics' ? '#fff' : 'var(--text)'; }
+  if (btnData) { btnData.dataset.active = group === 'data' ? '1' : '0'; btnData.style.background = group === 'data' ? 'var(--accent)' : 'var(--surface)'; btnData.style.color = group === 'data' ? '#fff' : 'var(--text)'; }
+  _applyGroupVisibility();
 }
 {% if char_columns and data_columns %}
 document.addEventListener('DOMContentLoaded', function() {
