@@ -382,7 +382,7 @@ var _pickerCols = [{% for n in available_columns %}'{{ n|escapejs }}'{% if not f
     document.querySelectorAll('.adv-val-input').forEach(function(inp) {
       var drop = inp.parentNode.querySelector('.adv-val-drop');
       var slot = inp.closest('.adv-col-filter-slot');
-      function getCol() { return slot.querySelector('input[name="fcol"]').value.trim(); }
+      function getCol() { return slot.querySelector('[name="fcol"]').value.trim(); }
 
       inp.addEventListener('input', function() {
         var col = getCol();
