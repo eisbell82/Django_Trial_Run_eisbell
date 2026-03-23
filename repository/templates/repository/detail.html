@@ -600,7 +600,7 @@
       </div>
       {% endif %}
 
-      <div style="height:calc(100vh - 64px)"></div>
+      <div id="samples-scroll-spacer" style="height:0;transition:height 0.4s ease"></div>
     </div>
 
   </div>
@@ -929,6 +929,16 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+function scrollRowToTop(row, delay) {
+  var spacer = document.getElementById('samples-scroll-spacer');
+  var navOffset = (document.querySelector('nav') ? document.querySelector('nav').offsetHeight : 56) + 8;
+  if (spacer) spacer.style.height = 'calc(100vh - 64px)';
+  setTimeout(function() {
+    window.scrollTo({top: row.getBoundingClientRect().top + window.scrollY - navOffset, behavior: 'smooth'});
+    setTimeout(function() { if (spacer) spacer.style.height = '0'; }, 800);
+  }, delay || 50);
+}
+
 function expNav(btn, dir) {
   var rows = Array.from(document.querySelectorAll('#tab-samples .sample-table tbody tr.sample-compact-row'));
   var detailRow = btn.closest('.sample-detail-row');
@@ -948,10 +958,7 @@ function expNav(btn, dir) {
       var rb = target.querySelector('.row-expand-btn');
       if (rb) rb.classList.add('open');
     }
-    var navOffset = (document.querySelector('nav') ? document.querySelector('nav').offsetHeight : 56) + 8;
-    setTimeout(function() {
-      window.scrollTo({top: target.getBoundingClientRect().top + window.scrollY - navOffset, behavior: 'smooth'});
-    }, 340);
+    scrollRowToTop(target, 340);
   } else if (dir === -1 && {% if page_obj.has_previous %}true{% else %}false{% endif %}) {
     window.location.href = '?page={{ page_obj.number|add:"-1" }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples';
   } else if (dir === 1 && {% if page_obj.has_next %}true{% else %}false{% endif %}) {
@@ -965,12 +972,7 @@ function toggleSampleRow(btn) {
   if (!detailRow || !detailRow.classList.contains('sample-detail-row')) return;
   var expanded = detailRow.classList.toggle('expanded');
   btn.classList.toggle('open', expanded);
-  if (expanded) {
-    var navOffset = (document.querySelector('nav') ? document.querySelector('nav').offsetHeight : 56) + 8;
-    setTimeout(function() {
-      window.scrollTo({top: compactRow.getBoundingClientRect().top + window.scrollY - navOffset, behavior: 'smooth'});
-    }, 50);
-  }
+  if (expanded) scrollRowToTop(compactRow, 50);
 }
 
 function toggleExpandedView() {
