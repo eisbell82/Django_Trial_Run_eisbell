@@ -352,8 +352,6 @@
         <table class="sample-table">
           <thead>
             <tr>
-              <th class="sample-photo-th"></th>
-              <th class="expanded-data-th"></th>
               <th class="sample-row-toggle-th"></th>
               <th>
                 <a href="?sort_col=sample_id&sort_dir={% if sort_col == 'sample_id' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}#tab-samples" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:4px">
@@ -433,85 +431,7 @@
           </thead>
           <tbody>
             {% for s in samples %}
-            <tr id="sample-{{ s.pk }}">
-              <td class="sample-photo-td">
-                {% if s.photos_list %}
-                <img src="{{ s.photos_list.0.image.url }}"
-                     style="width:80px;height:80px;object-fit:cover;border-radius:4px;cursor:pointer;display:block"
-                     onclick='openPhotoViewer([{% for p in s.photos_list %}"{{ p.image.url|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}])'
-                     alt="">
-                {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-                <div class="edit-ctrl exp-photo-edit-bar">
-                  {% for p in s.photos_list %}
-                  <form method="post" action="{% url 'repository:delete_sample_photo' dataset.slug s.pk p.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" class="col-del-btn" title="Remove photo {{ forloop.counter }}" onclick="return confirm('Remove photo {{ forloop.counter }}?')">× p{{ forloop.counter }}</button>
-                  </form>
-                  {% endfor %}
-                  <label class="col-del-btn" style="cursor:pointer">+ photo
-                    <input type="file" accept="image/*" style="display:none"
-                           data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
-                           data-csrf="{{ csrf_token }}"
-                           onchange="openPhotoEditor(this)">
-                  </label>
-                </div>
-                {% endif %}
-                {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-                <label class="sample-photo-add-placeholder">
-                  Add photo +
-                  <input type="file" accept="image/*" style="display:none"
-                         data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
-                         data-csrf="{{ csrf_token }}"
-                         onchange="openPhotoEditor(this)">
-                </label>
-                {% endif %}
-              </td>
-              <td class="expanded-data-td">
-                <div class="exp-body">
-                <div style="grid-column:1/-1;display:grid;grid-template-columns:subgrid;margin-bottom:8px;margin-left:-8px;border-bottom:3px solid var(--text);background:rgba(140,21,21,0.25)">
-                  <span style="color:white;padding:8px 0 8px 8px;font-family:'DM Mono',monospace;font-size:16px;font-weight:700;white-space:nowrap">Sample ID</span>
-                  <span style="color:rgba(255,255,255,0.75);padding:8px 14px 8px 0;font-family:'DM Mono',monospace;font-size:16px">{{ s.sample_id }}</span>
-                </div>
-                {% if char_columns %}
-                <div class="exp-group-label">Sample Characteristics</div>
-                {% for col, val in s.row_with_cols %}{% if col.group == 'characteristics' %}
-                <div class="exp-row">
-                  <span class="exp-label exp-indented">{{ col.name }}{% if col.unit %} <span style="opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
-                  <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
-                </div>
-                {% endif %}{% endfor %}
-                {% endif %}
-                {% if data_columns %}
-                <div class="exp-group-label">Sample Data</div>
-                {% for col, val in s.row_with_cols %}{% if col.group == 'data' %}
-                <div class="exp-row">
-                  <span class="exp-label exp-indented">{{ col.name }}{% if col.unit %} <span style="opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
-                  <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
-                </div>
-                {% endif %}{% endfor %}
-                {% endif %}
-                {% if s.notes %}
-                <div class="exp-row">
-                  <span class="exp-label exp-label-bold">Notes</span>
-                  <span class="exp-val" style="font-style:italic">{{ s.notes }}</span>
-                </div>
-                {% endif %}
-                </div>
-                {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
-                <div class="edit-ctrl exp-sample-edit-bar">
-                  <a href="{% url 'repository:edit_sample' dataset.slug s.pk %}" class="col-del-btn" style="text-decoration:none;opacity:.6" title="Edit sample">✎ Edit</a>
-                  <form method="post" action="{% url 'repository:delete_sample' dataset.slug s.pk %}" style="display:inline">
-                    {% csrf_token %}
-                    <button type="submit" class="col-del-btn" title="Delete sample" onclick="return confirm('Delete this sample?')">× Delete</button>
-                  </form>
-                </div>
-                {% endif %}
-                <div class="exp-nav-bar">
-                  <button class="exp-nav-btn" onclick="expNav(this,-1)"{% if forloop.first and not page_obj.has_previous %} disabled{% endif %}>← Prev</button>
-                  <span class="exp-nav-counter">{{ page_start|add:forloop.counter }} / {{ total_samples }}</span>
-                  <button class="exp-nav-btn" onclick="expNav(this,1)"{% if forloop.last and not page_obj.has_next %} disabled{% endif %}>Next →</button>
-                </div>
-              </td>
+            <tr id="sample-{{ s.pk }}" class="sample-compact-row">
               <td class="sample-row-toggle-td"><button class="row-expand-btn" onclick="toggleSampleRow(this)" title="Expand">▶</button></td>
               <td class="sample-id-cell" style="white-space:nowrap">{{ s.sample_id }}</td>
               <td style="white-space:nowrap">
@@ -560,6 +480,89 @@
                 </form>
               </td>
               {% endif %}
+            </tr>
+            <tr class="sample-detail-row" id="sample-detail-{{ s.pk }}">
+              <td colspan="99" class="sample-detail-cell">
+                <div class="sample-detail-wrap">
+                  <div class="sample-detail-photo">
+                    {% if s.photos_list %}
+                    <img src="{{ s.photos_list.0.image.url }}"
+                         onclick='openPhotoViewer([{% for p in s.photos_list %}"{{ p.image.url|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}])'
+                         alt="">
+                    {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                    <div class="edit-ctrl exp-photo-edit-bar">
+                      {% for p in s.photos_list %}
+                      <form method="post" action="{% url 'repository:delete_sample_photo' dataset.slug s.pk p.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="col-del-btn" title="Remove photo {{ forloop.counter }}" onclick="return confirm('Remove photo {{ forloop.counter }}?')">× p{{ forloop.counter }}</button>
+                      </form>
+                      {% endfor %}
+                      <label class="col-del-btn" style="cursor:pointer">+ photo
+                        <input type="file" accept="image/*" style="display:none"
+                               data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
+                               data-csrf="{{ csrf_token }}"
+                               onchange="openPhotoEditor(this)">
+                      </label>
+                    </div>
+                    {% endif %}
+                    {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                    <label class="sample-photo-add-placeholder">
+                      Add photo +
+                      <input type="file" accept="image/*" style="display:none"
+                             data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
+                             data-csrf="{{ csrf_token }}"
+                             onchange="openPhotoEditor(this)">
+                    </label>
+                    {% endif %}
+                  </div>
+                  <div class="sample-detail-data">
+                    <div class="exp-body">
+                    <div style="grid-column:1/-1;display:grid;grid-template-columns:subgrid;margin-bottom:8px;margin-left:-8px;border-bottom:3px solid var(--text);background:rgba(140,21,21,0.25)">
+                      <span style="color:white;padding:8px 0 8px 8px;font-family:'DM Mono',monospace;font-size:16px;font-weight:700;white-space:nowrap">Sample ID</span>
+                      <span style="color:rgba(255,255,255,0.75);padding:8px 14px 8px 0;font-family:'DM Mono',monospace;font-size:16px">{{ s.sample_id }}</span>
+                    </div>
+                    {% if char_columns %}
+                    <div class="exp-group-label">Sample Characteristics</div>
+                    {% for col, val in s.row_with_cols %}{% if col.group == 'characteristics' %}
+                    <div class="exp-row">
+                      <span class="exp-label exp-indented">{{ col.name }}{% if col.unit %} <span style="opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
+                      <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
+                    </div>
+                    {% endif %}{% endfor %}
+                    {% endif %}
+                    {% if data_columns %}
+                    <div class="exp-group-label">Sample Data</div>
+                    {% for col, val in s.row_with_cols %}{% if col.group == 'data' %}
+                    <div class="exp-row">
+                      <span class="exp-label exp-indented">{{ col.name }}{% if col.unit %} <span style="opacity:.7">[{{ col.unit }}]</span>{% endif %}</span>
+                      <span class="exp-val">{% if val %}{{ val }}{% else %}<span style="opacity:.3">—</span>{% endif %}</span>
+                    </div>
+                    {% endif %}{% endfor %}
+                    {% endif %}
+                    {% if s.notes %}
+                    <div class="exp-row">
+                      <span class="exp-label exp-label-bold">Notes</span>
+                      <span class="exp-val" style="font-style:italic">{{ s.notes }}</span>
+                    </div>
+                    {% endif %}
+                    </div>
+                    {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                    <div class="edit-ctrl exp-sample-edit-bar">
+                      <a href="{% url 'repository:edit_sample' dataset.slug s.pk %}" class="col-del-btn" style="text-decoration:none;opacity:.6" title="Edit sample">✎ Edit</a>
+                      <form method="post" action="{% url 'repository:delete_sample' dataset.slug s.pk %}" style="display:inline">
+                        {% csrf_token %}
+                        <button type="submit" class="col-del-btn" title="Delete sample" onclick="return confirm('Delete this sample?')">× Delete</button>
+                      </form>
+                    </div>
+                    {% endif %}
+                    <div class="exp-nav-bar">
+                      <button class="exp-nav-btn" onclick="expNav(this,-1)"{% if forloop.first and not page_obj.has_previous %} disabled{% endif %}>← Prev</button>
+                      <span class="exp-nav-counter">{{ page_start|add:forloop.counter }} / {{ total_samples }}</span>
+                      <button class="exp-nav-btn" onclick="expNav(this,1)"{% if forloop.last and not page_obj.has_next %} disabled{% endif %}>Next →</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
             </tr>
             {% empty %}
             <tr><td colspan="{{ sample_columns|length|add:2 }}" style="color:var(--text-dim);text-align:center;padding:1.5rem">No samples yet.</td></tr>
@@ -824,74 +827,57 @@ function savePhoto() {
 </script>
 
 <style>
-/* ── Expanded photo view ── */
-.sample-photo-th, .sample-photo-td { display:none; }
-.expanded-data-th, .expanded-data-td { display:none; }
-
-/* Compact: normal table */
-.sample-table:not(.expanded-view) .sample-photo-th,
-.sample-table:not(.expanded-view) .sample-photo-td { display:none; }
-
-/* Expanded: flex card layout — break out of table */
+/* ── Sample detail rows (accordion) ── */
+.sample-detail-cell { padding:0 !important; border-top:none !important; }
+.sample-detail-wrap {
+  display:flex; gap:20px; overflow:hidden;
+  max-height:0;
+  transition: max-height 0.32s cubic-bezier(0.4,0,0.2,1),
+              padding 0.32s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.25s ease;
+  opacity:0; padding:0 0;
+}
+.sample-detail-row.expanded .sample-detail-wrap {
+  max-height:700px; padding:20px 0; opacity:1;
+  transition: max-height 0.38s cubic-bezier(0.0,0,0.2,1),
+              padding 0.38s cubic-bezier(0.0,0,0.2,1),
+              opacity 0.3s ease 0.05s;
+}
+/* Photo side */
+.sample-detail-photo {
+  flex:2; display:flex; flex-direction:column; justify-content:flex-start; align-items:flex-end;
+}
+.sample-detail-photo img {
+  display:block; cursor:pointer; border-radius:8px;
+  max-width:500px; max-height:380px; width:auto; height:auto;
+}
+.sample-photo-add-placeholder {
+  display:none; border:2px dashed var(--border); border-radius:8px;
+  align-items:center; justify-content:center; cursor:pointer;
+  color:var(--text-dim); font-size:13px; font-weight:700; font-family:'DM Mono',monospace;
+  width:100%; min-height:120px;
+}
+.sample-detail-row.expanded .sample-photo-add-placeholder { display:flex; }
+/* Data side */
+.sample-detail-data { flex:3; min-width:0; }
+/* Full expanded view: hide compact rows, show all detail rows open */
 .sample-table.expanded-view thead { display:none; }
 .sample-table.expanded-view,
 .sample-table.expanded-view tbody { display:block; width:100%; max-width:1200px; margin:0 auto; }
-.sample-table.expanded-view tbody tr {
-  display:flex; align-items:flex-start; gap:20px;
-  padding:20px 0;
+.sample-table.expanded-view tr.sample-compact-row { display:none; }
+.sample-table.expanded-view .sample-detail-wrap {
+  max-height:none; padding:20px 0; opacity:1;
+  transition:none;
 }
-.sample-table.expanded-view tbody tr td { display:none !important; }
-.sample-table.expanded-view tbody tr .sample-photo-td {
-  display:flex !important; flex:2; justify-content:flex-end; align-items:flex-start; align-self:stretch; padding:0;
-}
-.sample-table.expanded-view .sample-photo-td img {
-  display:block !important; cursor:pointer; border-radius:8px;
-  max-width:600px !important; max-height:400px !important;
-  width:auto !important; height:auto !important;
-}
-.sample-photo-add-placeholder {
-  display:none;
-  border:2px dashed var(--border); border-radius:8px;
-  align-items:center; justify-content:center;
-  cursor:pointer; color:var(--text-dim);
-  font-size:13px; font-weight:700; font-family:'DM Mono',monospace;
-}
-.sample-table.expanded-view .sample-photo-add-placeholder {
-  display:flex; width:100%; align-self:stretch;
-}
+/* Edit bars */
 .exp-photo-edit-bar, .exp-sample-edit-bar { display:none; }
 #tab-samples.samples-edit-active .exp-photo-edit-bar,
 #tab-samples.samples-edit-active .exp-sample-edit-bar {
   display:flex !important; flex-wrap:wrap; gap:4px; margin-top:8px; align-items:center;
 }
-.sample-table.expanded-view tbody tr .expanded-data-td {
-  display:block !important; flex:3; padding:0; min-width:0;
-}
-.sample-table.expanded-view .notes-peek-btn { display:none; }
-/* Hide toggle column in full expanded view */
-.sample-table.expanded-view .sample-row-toggle-th,
-.sample-table.expanded-view .sample-row-toggle-td { display:none; }
-/* Individual row expansion */
-.sample-table:not(.expanded-view) tr.row-expanded {
-  display:flex !important; align-items:flex-start; gap:20px; padding:20px 0;
-}
-.sample-table:not(.expanded-view) tr.row-expanded td { display:none !important; }
-.sample-table:not(.expanded-view) tr.row-expanded .sample-photo-td {
-  display:flex !important; flex:2; justify-content:flex-end; align-items:flex-start; align-self:stretch; padding:0;
-}
-.sample-table:not(.expanded-view) tr.row-expanded .sample-photo-td img {
-  display:block !important; cursor:pointer; border-radius:8px;
-  max-width:600px !important; max-height:400px !important; width:auto !important; height:auto !important;
-}
-.sample-table:not(.expanded-view) tr.row-expanded .sample-photo-add-placeholder { display:flex; width:100%; align-self:stretch; }
-.sample-table:not(.expanded-view) tr.row-expanded .expanded-data-td { display:block !important; flex:3; padding:0; min-width:0; }
-.sample-table:not(.expanded-view) tr.row-expanded .exp-nav-bar { display:flex !important; }
-.sample-table:not(.expanded-view) tr.row-expanded .notes-peek-btn { display:none; }
-/* Row toggle button */
-.row-expand-btn { font-size:10px; background:none; border:none; color:var(--text-dim); cursor:pointer; padding:2px 5px; opacity:.4; transition:opacity .1s; }
-.row-expand-btn:hover { opacity:1; }
-tr.row-expanded .row-expand-btn { opacity:1; color:var(--accent); }
+/* Nav bar */
 .exp-nav-bar { display:none; }
+.sample-detail-row.expanded .exp-nav-bar,
 .sample-table.expanded-view .exp-nav-bar {
   display:flex; align-items:center; justify-content:space-between; gap:8px;
   margin-top:12px; padding-top:10px; border-top:1px solid var(--border);
@@ -904,6 +890,14 @@ tr.row-expanded .row-expand-btn { opacity:1; color:var(--accent); }
 .exp-nav-btn:hover:not(:disabled) { color:var(--text); border-color:var(--text-dim); }
 .exp-nav-btn:disabled { opacity:.25; cursor:default; }
 .exp-nav-counter { font-size:11px; font-family:'DM Mono',monospace; color:var(--text-dim); }
+/* Row toggle button */
+.sample-row-toggle-th, .sample-row-toggle-td { width:28px; }
+.sample-table.expanded-view .sample-row-toggle-th,
+.sample-table.expanded-view .sample-row-toggle-td { display:none; }
+.row-expand-btn { font-size:10px; background:none; border:none; color:var(--text-dim); cursor:pointer; padding:2px 5px; opacity:.4; transition:opacity .1s, transform .2s ease; display:inline-block; }
+.row-expand-btn:hover { opacity:1; }
+.row-expand-btn.open { opacity:1; color:var(--accent); transform:rotate(90deg); }
+/* Exp body grid */
 .exp-body { display:grid; grid-template-columns:max-content 1fr; column-gap:16px; font-size:12px; }
 .exp-group-label { grid-column:1/-1; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim); font-weight:700; padding:8px 0 4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
 .exp-row { display:contents; }
@@ -935,16 +929,17 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function expNav(btn, dir) {
-  var rows = Array.from(document.querySelectorAll('#tab-samples .sample-table tbody tr[id^="sample-"]'));
-  var tr = btn.closest('tr');
-  var idx = rows.indexOf(tr);
-  var target = rows[idx + dir];
+  var rows = Array.from(document.querySelectorAll('#tab-samples .sample-table tbody tr.sample-compact-row'));
+  var detailRow = btn.closest('.sample-detail-row');
+  var compactRow = detailRow ? detailRow.previousElementSibling : null;
+  var idx = compactRow ? rows.indexOf(compactRow) : -1;
+  var target = idx >= 0 ? rows[idx + dir] : null;
   if (target) {
-    var table = document.querySelector('#tab-samples .sample-table');
-    if (table && !table.classList.contains('expanded-view') && !target.classList.contains('row-expanded')) {
-      target.classList.add('row-expanded');
+    var targetDetail = target.nextElementSibling;
+    if (targetDetail && !targetDetail.classList.contains('expanded')) {
+      targetDetail.classList.add('expanded');
       var rb = target.querySelector('.row-expand-btn');
-      if (rb) rb.textContent = '▼';
+      if (rb) rb.classList.add('open');
     }
     target.scrollIntoView({behavior:'smooth', block:'start'});
   } else if (dir === -1 && {% if page_obj.has_previous %}true{% else %}false{% endif %}) {
@@ -955,9 +950,11 @@ function expNav(btn, dir) {
 }
 
 function toggleSampleRow(btn) {
-  var tr = btn.closest('tr');
-  var expanded = tr.classList.toggle('row-expanded');
-  btn.textContent = expanded ? '▼' : '▶';
+  var compactRow = btn.closest('tr');
+  var detailRow  = compactRow.nextElementSibling;
+  if (!detailRow || !detailRow.classList.contains('sample-detail-row')) return;
+  var expanded = detailRow.classList.toggle('expanded');
+  btn.classList.toggle('open', expanded);
 }
 
 function toggleExpandedView() {
@@ -967,10 +964,10 @@ function toggleExpandedView() {
   var expanded = table.classList.toggle('expanded-view');
   btn.textContent = expanded ? '⊟ Compact All' : '⊞ Expand All';
   if (!expanded) {
-    table.querySelectorAll('tr.row-expanded').forEach(function(tr) {
-      tr.classList.remove('row-expanded');
-      var rb = tr.querySelector('.row-expand-btn');
-      if (rb) rb.textContent = '▶';
+    table.querySelectorAll('.sample-detail-row.expanded').forEach(function(dr) {
+      dr.classList.remove('expanded');
+      var rb = dr.previousElementSibling && dr.previousElementSibling.querySelector('.row-expand-btn');
+      if (rb) rb.classList.remove('open');
     });
   }
   try { localStorage.setItem('samples-expanded', expanded ? '1' : '0'); } catch(e) {}
@@ -979,15 +976,21 @@ document.addEventListener('DOMContentLoaded', function () {
   var table = document.querySelector('#tab-samples .sample-table');
   var btn   = document.getElementById('expand-toggle');
   var hash  = window.location.hash;
-  var targetSample = hash && hash.match(/^#sample-(\d+)$/) ? document.querySelector(hash) : null;
-  if (targetSample || localStorage.getItem('samples-expanded') === '1') {
+  var targetCompact = hash && hash.match(/^#sample-(\d+)$/) ? document.querySelector(hash) : null;
+  if (localStorage.getItem('samples-expanded') === '1') {
     if (table) { table.classList.add('expanded-view'); }
     if (btn)   { btn.textContent = '⊟ Compact All'; }
   }
-  if (targetSample) {
+  if (targetCompact) {
     var samplesTabBtn = document.querySelector('.dtab[onclick*="\'tab-samples\'"]');
     switchTab(samplesTabBtn || null, 'tab-samples');
-    setTimeout(function(){ targetSample.scrollIntoView({behavior:'smooth', block:'center'}); }, 150);
+    var targetDetail = targetCompact.nextElementSibling;
+    if (targetDetail && targetDetail.classList.contains('sample-detail-row')) {
+      targetDetail.classList.add('expanded');
+      var rb = targetCompact.querySelector('.row-expand-btn');
+      if (rb) rb.classList.add('open');
+    }
+    setTimeout(function(){ targetCompact.scrollIntoView({behavior:'smooth', block:'center'}); }, 150);
   }
 });
 
