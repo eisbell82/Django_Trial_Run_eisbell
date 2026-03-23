@@ -439,6 +439,22 @@
                      style="width:80px;height:80px;object-fit:cover;border-radius:4px;cursor:pointer;display:block"
                      onclick='openPhotoViewer([{% for p in s.photos_list %}"{{ p.image.url|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}])'
                      alt="">
+                {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                <div class="edit-ctrl exp-photo-edit-bar">
+                  {% for p in s.photos_list %}
+                  <form method="post" action="{% url 'repository:delete_sample_photo' dataset.slug s.pk p.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="col-del-btn" title="Remove photo {{ forloop.counter }}" onclick="return confirm('Remove photo {{ forloop.counter }}?')">× p{{ forloop.counter }}</button>
+                  </form>
+                  {% endfor %}
+                  <label class="col-del-btn" style="cursor:pointer">+ photo
+                    <input type="file" accept="image/*" style="display:none"
+                           data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
+                           data-csrf="{{ csrf_token }}"
+                           onchange="openPhotoEditor(this)">
+                  </label>
+                </div>
+                {% endif %}
                 {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                 <label class="sample-photo-add-placeholder">
                   Add photo +
@@ -480,6 +496,15 @@
                 </div>
                 {% endif %}
                 </div>
+                {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                <div class="edit-ctrl exp-sample-edit-bar">
+                  <a href="{% url 'repository:edit_sample' dataset.slug s.pk %}" class="col-del-btn" style="text-decoration:none;opacity:.6" title="Edit sample">✎ Edit</a>
+                  <form method="post" action="{% url 'repository:delete_sample' dataset.slug s.pk %}" style="display:inline">
+                    {% csrf_token %}
+                    <button type="submit" class="col-del-btn" title="Delete sample" onclick="return confirm('Delete this sample?')">× Delete</button>
+                  </form>
+                </div>
+                {% endif %}
               </td>
               <td class="sample-id-cell" style="white-space:nowrap">{{ s.sample_id }}</td>
               <td style="white-space:nowrap">
@@ -826,6 +851,11 @@ function savePhoto() {
 }
 .sample-table.expanded-view .sample-photo-add-placeholder {
   display:flex; width:100%; align-self:stretch;
+}
+.exp-photo-edit-bar, .exp-sample-edit-bar { display:none; }
+#tab-samples.samples-edit-active .exp-photo-edit-bar,
+#tab-samples.samples-edit-active .exp-sample-edit-bar {
+  display:flex !important; flex-wrap:wrap; gap:4px; margin-top:8px; align-items:center;
 }
 .sample-table.expanded-view tbody tr .expanded-data-td {
   display:block !important; flex:3; padding:0; min-width:0;
