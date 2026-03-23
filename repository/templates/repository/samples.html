@@ -74,15 +74,6 @@
           </div>
           {% endif %}
 
-          {% if coating_values %}
-          <div class="adv-filter-group">
-            <label class="adv-label">Coating</label>
-            <select name="filter_coating" class="adv-select" onchange="this.form.submit()">
-              <option value="">All</option>
-              {% for v in coating_values %}<option value="{{ v }}" {% if f_coating == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
-            </select>
-          </div>
-          {% endif %}
 
           {% if available_columns %}
           <div class="adv-filter-group">

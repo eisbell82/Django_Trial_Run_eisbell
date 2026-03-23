@@ -1120,7 +1120,7 @@ def _sort_key(val):
         return (1, 0.0, v.lower())
 
 
-def _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, filter_col="", filter_col_val="", user=None):
+def _build_samples_qs(query, active_category, f_species, f_substrate, filter_col="", filter_col_val="", user=None):
     """Return a filtered (but not yet evaluated) Sample queryset."""
     visible_ids = _visible_datasets(user).values_list("id", flat=True)
     qs = Sample.objects.select_related("dataset").filter(dataset_id__in=visible_ids)
@@ -1136,8 +1136,6 @@ def _build_samples_qs(query, active_category, f_species, f_substrate, f_coating,
         qs = qs.filter(values__column__name__iexact="species", values__value=f_species)
     if f_substrate:
         qs = qs.filter(values__column__name__iexact="substrate", values__value=f_substrate)
-    if f_coating:
-        qs = qs.filter(values__column__name__iexact="coating", values__value=f_coating)
     if filter_col_val:
         if filter_col:
             qs = qs.filter(values__column__name__iexact=filter_col, values__value__icontains=filter_col_val)
@@ -1265,8 +1263,8 @@ def samples_view(request):
         for c in sorted(category_values)
     ]
 
-    adv_filter_values = _col_values_bulk(["species", "substrate", "coating"], active_category)
-    adv_active = bool(show_columns or f_species or f_substrate or f_coating or filter_col_val)
+    adv_filter_values = _col_values_bulk(["species", "substrate"], active_category)
+    adv_active = bool(show_columns or f_species or f_substrate or filter_col_val)
 
     return render(request, "repository/samples.html", {
         "samples": samples,
@@ -1282,12 +1280,10 @@ def samples_view(request):
         "total_results": total_results,
         "f_species": f_species,
         "f_substrate": f_substrate,
-        "f_coating": f_coating,
         "filter_col": filter_col,
         "filter_col_val": filter_col_val,
         "species_values": adv_filter_values["species"],
         "substrate_values": adv_filter_values["substrate"],
-        "coating_values": adv_filter_values["coating"],
         "adv_active": adv_active,
         "sort_col": sort_col,
         "sort_dir": sort_dir,
@@ -1354,13 +1350,12 @@ def samples_csv_view(request):
     selected_cols   = request.GET.getlist("cols")
     f_species       = request.GET.get("filter_species", "")
     f_substrate     = request.GET.get("filter_substrate", "")
-    f_coating       = request.GET.get("filter_coating", "")
     filter_col      = request.GET.get("filter_col", "")
     filter_col_val  = request.GET.get("filter_col_val", "")
     sort_col        = request.GET.get("sort_col", "")
     sort_dir        = request.GET.get("sort_dir", "asc")
 
-    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, filter_col, filter_col_val, user=request.user)
+    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, filter_col, filter_col_val, user=request.user)
 
     available_columns = []
     if active_category:
