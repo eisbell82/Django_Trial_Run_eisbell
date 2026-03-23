@@ -964,6 +964,12 @@ function toggleSampleRow(btn) {
   if (!detailRow || !detailRow.classList.contains('sample-detail-row')) return;
   var expanded = detailRow.classList.toggle('expanded');
   btn.classList.toggle('open', expanded);
+  if (expanded) {
+    var navOffset = (document.querySelector('nav') ? document.querySelector('nav').offsetHeight : 56) + 8;
+    setTimeout(function() {
+      window.scrollTo({top: compactRow.getBoundingClientRect().top + window.scrollY - navOffset, behavior: 'smooth'});
+    }, 50);
+  }
 }
 
 function toggleExpandedView() {
