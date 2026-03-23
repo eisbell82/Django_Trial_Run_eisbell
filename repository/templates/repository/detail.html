@@ -600,7 +600,7 @@
       </div>
       {% endif %}
 
-      <div id="samples-scroll-spacer" style="height:0;transition:height 0.4s ease"></div>
+      <div id="samples-scroll-spacer" style="height:0"></div>
     </div>
 
   </div>
@@ -932,10 +932,18 @@ document.addEventListener('DOMContentLoaded', function () {
 function scrollRowToTop(row, delay) {
   var spacer = document.getElementById('samples-scroll-spacer');
   var navOffset = (document.querySelector('nav') ? document.querySelector('nav').offsetHeight : 56) + 8;
-  if (spacer) spacer.style.height = 'calc(100vh - 64px)';
+  if (spacer) {
+    spacer.style.transition = 'none';
+    spacer.style.height = 'calc(100vh - 64px)';
+  }
   setTimeout(function() {
     window.scrollTo({top: row.getBoundingClientRect().top + window.scrollY - navOffset, behavior: 'smooth'});
-    setTimeout(function() { if (spacer) spacer.style.height = '0'; }, 800);
+    setTimeout(function() {
+      if (spacer) {
+        spacer.style.transition = 'height 0.4s ease';
+        spacer.style.height = '0';
+      }
+    }, 800);
   }, delay || 50);
 }
 
