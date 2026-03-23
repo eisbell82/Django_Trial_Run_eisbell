@@ -24,8 +24,8 @@
 
           <div style="display:flex;flex-direction:column;gap:10px">
             {% if categories_with_samples %}
-            <div class="adv-filter-group">
-              <label class="adv-label">Type</label>
+            <div class="adv-filter-group" style="flex-direction:row;align-items:center">
+              <label class="adv-label" style="white-space:nowrap;margin-right:8px">Type</label>
               <select name="category" class="adv-select" onchange="this.form.submit()">
                 <option value="">All types</option>
                 {% for cat in categories_with_samples %}
@@ -35,8 +35,8 @@
             </div>
             {% endif %}
             {% if available_columns %}
-            <div class="adv-filter-group" style="position:relative">
-              <label class="adv-label">Columns</label>
+            <div class="adv-filter-group" style="flex-direction:row;align-items:center;position:relative">
+              <label class="adv-label" style="white-space:nowrap;margin-right:8px">Columns</label>
               <button type="button" id="col-drop-btn" onclick="toggleColDrop()" class="adv-select" style="text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
                 <span>{% if show_columns %}{{ show_columns|length }} selected{% else %}None selected{% endif %}</span>
                 <span style="font-size:10px;opacity:.6">▾</span>
@@ -68,13 +68,12 @@
           </div>
           {% endfor %}
 
-          {% if adv_active %}
-          <div class="adv-filter-group" style="display:flex;align-items:flex-end">
-            <a href="?{% if query %}q={{ query }}&{% endif %}{% if active_category %}category={{ active_category }}{% endif %}" class="btn-outline" style="font-size:11px;padding:6px 12px">Clear filters ×</a>
-          </div>
-          {% endif %}
-
         </div>
+        {% if adv_active %}
+        <div style="padding:8px 12px 4px">
+          <a href="?{% if query %}q={{ query }}&{% endif %}" class="btn-outline" style="font-size:11px;padding:6px 12px">Clear filters ×</a>
+        </div>
+        {% endif %}
       </details>
 
     </form>
