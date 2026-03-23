@@ -96,6 +96,11 @@
   </div>
 </div>
 
+{% if not show_columns %}
+  <div style="text-align:center;padding:3rem 2rem;color:var(--text-dim)">
+    <p style="font-size:13px;margin:0">Select experiment type and columns to show samples.</p>
+  </div>
+{% else %}
   <div class="sample-table-wrap">
     <table class="sample-table">
       <thead>
@@ -158,6 +163,8 @@
     {% endif %}
   </div>
   {% endif %}
+
+{% endif %}
 
 </div>
 

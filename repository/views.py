@@ -1257,48 +1257,42 @@ def samples_view(request):
 
     show_cols_zip = [(col, col_unit_map.get(col, "")) for col in show_columns]
 
-    reverse = sort_dir == "desc"
-    is_python_sort = sort_col and sort_col not in _DB_SORT and sort_col in show_columns
-
-    if is_python_sort:
-        # Fetch all PKs + sort-column values (lightweight), sort in Python, then
-        # fetch full data only for the current page's PKs.
-        sv_qs = (SampleValue.objects
-                 .filter(sample__in=samples_qs, column__name__iexact=sort_col)
-                 .values("sample_id", "value"))
-        sort_val_map = {row["sample_id"]: row["value"] for row in sv_qs}
-        all_pks = list(samples_qs.values_list("pk", flat=True))
-        all_pks.sort(key=lambda pk: _sort_key(sort_val_map.get(pk, "")), reverse=reverse)
-        total_results = len(all_pks)
-        paginator = Paginator(all_pks, per_page)
-        page_obj = paginator.get_page(page_num)
-        page_pks = list(page_obj.object_list)
-        page_qs = Sample.objects.filter(pk__in=page_pks).select_related("dataset")
-        if show_columns:
-            page_qs = page_qs.prefetch_related("values__column")
-        pk_order = {pk: i for i, pk in enumerate(page_pks)}
-        page_samples = sorted(page_qs, key=lambda s: pk_order[s.pk])
+    if not show_columns:
+        samples = []
+        total_results = 0
+        page_obj = Paginator([], per_page).get_page(1)
     else:
-        if sort_col in _DB_SORT:
-            order = f"{'-' if reverse else ''}{_DB_SORT[sort_col]}"
-            samples_qs = samples_qs.order_by(order)
-        total_results = samples_qs.count()
-        paginator = Paginator(samples_qs, per_page)
-        page_obj = paginator.get_page(page_num)
-        page_qs = page_obj.object_list.select_related("dataset")
-        if show_columns:
-            page_qs = page_qs.prefetch_related("values__column")
-        page_samples = list(page_qs)
+        reverse = sort_dir == "desc"
+        is_python_sort = sort_col and sort_col not in _DB_SORT and sort_col in show_columns
 
-    # Build .row only for the current page's samples
-    for s in page_samples:
-        if show_columns:
+        if is_python_sort:
+            sv_qs = (SampleValue.objects
+                     .filter(sample__in=samples_qs, column__name__iexact=sort_col)
+                     .values("sample_id", "value"))
+            sort_val_map = {row["sample_id"]: row["value"] for row in sv_qs}
+            all_pks = list(samples_qs.values_list("pk", flat=True))
+            all_pks.sort(key=lambda pk: _sort_key(sort_val_map.get(pk, "")), reverse=reverse)
+            total_results = len(all_pks)
+            paginator = Paginator(all_pks, per_page)
+            page_obj = paginator.get_page(page_num)
+            page_pks = list(page_obj.object_list)
+            page_qs = Sample.objects.filter(pk__in=page_pks).select_related("dataset").prefetch_related("values__column")
+            pk_order = {pk: i for i, pk in enumerate(page_pks)}
+            page_samples = sorted(page_qs, key=lambda s: pk_order[s.pk])
+        else:
+            if sort_col in _DB_SORT:
+                order = f"{'-' if reverse else ''}{_DB_SORT[sort_col]}"
+                samples_qs = samples_qs.order_by(order)
+            total_results = samples_qs.count()
+            paginator = Paginator(samples_qs, per_page)
+            page_obj = paginator.get_page(page_num)
+            page_samples = list(page_obj.object_list.select_related("dataset").prefetch_related("values__column"))
+
+        for s in page_samples:
             val_map = {v.column.name: v.value for v in s.values.all()}
             s.row = [(val_map.get(col, ""), col_unit_map.get(col, "")) for col in show_columns]
-        else:
-            s.row = []
 
-    samples = page_samples
+        samples = page_samples
 
     category_values = (
         visible_ds.filter(samples__isnull=False)
