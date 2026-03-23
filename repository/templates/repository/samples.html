@@ -69,12 +69,12 @@
           {% endfor %}
 
         </div>
-        {% if adv_active %}
-        <div style="padding:8px 12px 4px">
-          <a href="?{% if query %}q={{ query }}&{% endif %}" class="btn-outline" style="font-size:11px;padding:6px 12px">Clear filters ×</a>
-        </div>
-        {% endif %}
       </details>
+      {% if adv_active %}
+      <div style="padding:6px 0 0">
+        <a href="?{% if query %}q={{ query }}&{% endif %}" class="btn-outline" style="font-size:11px;padding:6px 12px">Clear filters ×</a>
+      </div>
+      {% endif %}
 
     </form>
   </div>
