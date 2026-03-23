@@ -1225,16 +1225,27 @@ def samples_view(request):
     visible_ds = _visible_datasets(request.user)
     samples_qs = _build_samples_qs(query, active_category, col_filter_pairs, visible_ds=visible_ds)
 
-    available_columns = []
+    # All column names across all visible datasets (used for picker and filter autocomplete)
+    all_column_names = list(
+        SampleColumn.objects
+        .filter(dataset__in=visible_ds)
+        .values_list("name", flat=True)
+        .distinct()
+        .order_by("name")
+    )
+
+    # Columns shown in the picker panel (scoped to active category when set)
     if active_category:
         available_columns = list(
             SampleColumn.objects.filter(dataset__category=active_category)
-            .values_list("name", flat=True)
-            .distinct()
-            .order_by("name")
+            .values_list("name", flat=True).distinct().order_by("name")
         )
+    else:
+        available_columns = all_column_names
 
-    show_columns = [c for c in selected_cols if c in available_columns]
+    # Validate selected cols against all visible columns; cap at 9
+    _col_pool = set(all_column_names)
+    show_columns = [c for c in selected_cols if c in _col_pool][:9]
 
     col_unit_map = {}
     if show_columns:
@@ -1305,15 +1316,6 @@ def samples_view(request):
     NUM_COL_SLOTS = 4
     active_pairs = col_filter_pairs[:NUM_COL_SLOTS]
     col_filter_slots_padded = active_pairs + [("", "")] * (NUM_COL_SLOTS - len(active_pairs))
-
-    # All column names across visible datasets (for JS autocomplete)
-    all_column_names = list(
-        SampleColumn.objects
-        .filter(dataset__in=visible_ds)
-        .values_list("name", flat=True)
-        .distinct()
-        .order_by("name")
-    )
 
     adv_active = bool(active_category or show_columns or col_filter_pairs)
 

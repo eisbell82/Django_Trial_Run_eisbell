@@ -37,23 +37,14 @@
               </div>
             </div>
             {% endif %}
-            {% if available_columns %}
             <div class="adv-filter-group" style="flex-direction:row;align-items:center;position:relative">
               <label class="adv-label" style="white-space:nowrap;margin-right:8px;min-width:60px">Columns</label>
-              <button type="button" id="col-drop-btn" onclick="toggleColDrop()" class="adv-select" style="flex:1;text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
-                <span>{% if show_columns %}{{ show_columns|length }} selected{% else %}None selected{% endif %}</span>
+              <button type="button" id="col-pick-btn" onclick="colPickerOpen()" class="adv-select" style="flex:1;text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <span id="col-pick-label">{% if show_columns %}{{ show_columns|length }} of 9 selected{% else %}None selected{% endif %}</span>
                 <span style="font-size:16px;opacity:.6;line-height:1">▾</span>
               </button>
-              <div id="col-drop-panel" style="display:none;position:absolute;top:100%;left:0;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:300;padding:8px;margin-top:3px;display:none;flex-direction:column;gap:4px">
-                {% for col in available_columns %}
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                  <input type="checkbox" name="cols" value="{{ col }}" {% if col in show_columns %}checked{% endif %} style="accent-color:var(--accent)">
-                  <span style="font-size:12px;color:var(--text)">{{ col }}</span>
-                </label>
-                {% endfor %}
-              </div>
+              <span id="col-hidden-inputs">{% for col in show_columns %}<input type="hidden" name="cols" value="{{ col }}">{% endfor %}</span>
             </div>
-            {% endif %}
           </div>
 
           <!-- Column filter slots (5 fixed) -->
@@ -165,6 +156,28 @@
 
 </div>
 
+<!-- Column picker overlay -->
+<div id="col-picker-overlay" style="display:none;position:fixed;inset:0;z-index:800" onclick="colPickerOverlayClick(event)">
+  <div id="col-picker-panel" style="position:absolute;width:460px;max-width:calc(100vw - 2rem);background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <span style="font-size:13px;font-weight:600;color:var(--text)">Display columns</span>
+      <span id="col-pick-count" style="font-size:12px;color:var(--text-dim)">0 / 9 selected</span>
+    </div>
+    <div id="col-chips" style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--border);flex-shrink:0;min-height:40px;align-items:center"></div>
+    <div style="padding:10px 14px;flex-shrink:0">
+      <input type="text" id="col-picker-search" placeholder="Search columns…" autocomplete="off"
+             style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"
+             oninput="colPickerSearch()">
+    </div>
+    <div id="col-picker-list" style="overflow-y:auto;flex:1;padding:0 8px 8px;min-height:180px;max-height:300px"></div>
+    <div id="col-picker-info" style="padding:2px 16px 8px;font-size:10px;color:var(--text-dim);flex-shrink:0"></div>
+    <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0">
+      <button type="button" onclick="colPickerCancel()" class="btn-outline" style="font-size:12px;padding:6px 14px">Cancel</button>
+      <button type="button" onclick="colPickerApply()" class="btn-accent" style="font-size:12px;padding:6px 14px">Apply</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ── Per-page and pagination helpers ── */
 function spSetPerPage(n) {
@@ -178,9 +191,136 @@ function spGoToPage(n) {
   window.location.search = p.toString();
 }
 
+/* ── Shared column name list ── */
+var _allColumnNames = [{% for n in all_column_names %}'{{ n|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+
+/* ── Column picker panel ── */
+(function() {
+  var _selected = new Set([{% for col in show_columns %}'{{ col|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}]);
+  var _original = new Set(_selected);
+  var MAX_SEL = 9;
+  var MAX_LIST = 150;
+
+  var overlay   = document.getElementById('col-picker-overlay');
+  var panel     = document.getElementById('col-picker-panel');
+  var searchInp = document.getElementById('col-picker-search');
+  var listEl    = document.getElementById('col-picker-list');
+  var chipsEl   = document.getElementById('col-chips');
+  var countEl   = document.getElementById('col-pick-count');
+  var infoEl    = document.getElementById('col-picker-info');
+  var labelEl   = document.getElementById('col-pick-label');
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function render() {
+    var q = searchInp ? searchInp.value.toLowerCase().trim() : '';
+    var filtered = q
+      ? _allColumnNames.filter(function(c){ return c.toLowerCase().indexOf(q) !== -1; })
+      : _allColumnNames;
+
+    /* chips */
+    chipsEl.innerHTML = '';
+    if (_selected.size) {
+      _selected.forEach(function(col) {
+        var chip = document.createElement('span');
+        chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:var(--accent);color:#fff;border-radius:4px;font-size:11px;cursor:pointer;user-select:none';
+        chip.innerHTML = escHtml(col) + ' <span style="opacity:.75;font-size:14px;line-height:1">&times;</span>';
+        chip.onclick = function(){ toggleCol(col); };
+        chipsEl.appendChild(chip);
+      });
+    } else {
+      chipsEl.innerHTML = '<span style="font-size:11px;color:var(--text-dim)">No columns selected — up to 9</span>';
+    }
+
+    /* count */
+    countEl.textContent = _selected.size + ' / ' + MAX_SEL + ' selected';
+
+    /* list — selected items float to top */
+    var shown = filtered.slice(0, MAX_LIST);
+    var selIn = shown.filter(function(c){ return _selected.has(c); });
+    var unsel = shown.filter(function(c){ return !_selected.has(c); });
+    listEl.innerHTML = '';
+    selIn.concat(unsel).forEach(function(col) {
+      var row = document.createElement('label');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;border-radius:4px';
+      row.onmouseenter = function(){ this.style.background='var(--tag-bg)'; };
+      row.onmouseleave = function(){ this.style.background=''; };
+      var chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.style.accentColor = 'var(--accent)';
+      chk.checked = _selected.has(col);
+      chk.disabled = !_selected.has(col) && _selected.size >= MAX_SEL;
+      chk.onchange = function(){ toggleCol(col); };
+      var lbl = document.createElement('span');
+      lbl.style.cssText = 'font-size:12px;color:var(--text)';
+      lbl.textContent = col;
+      row.appendChild(chk); row.appendChild(lbl);
+      listEl.appendChild(row);
+    });
+
+    /* info line */
+    if (filtered.length > MAX_LIST) {
+      infoEl.textContent = 'Showing ' + MAX_LIST + ' of ' + filtered.length + ' matches — type to narrow';
+    } else if (q) {
+      infoEl.textContent = filtered.length + ' matching column' + (filtered.length !== 1 ? 's' : '');
+    } else {
+      infoEl.textContent = _allColumnNames.length + ' column' + (_allColumnNames.length !== 1 ? 's' : '') + ' total';
+    }
+  }
+
+  function toggleCol(col) {
+    if (_selected.has(col)) { _selected.delete(col); }
+    else if (_selected.size < MAX_SEL) { _selected.add(col); }
+    render();
+  }
+
+  window.colPickerOpen = function() {
+    var btn = document.getElementById('col-pick-btn');
+    var rect = btn.getBoundingClientRect();
+    var top = rect.bottom + window.scrollY + 6;
+    var left = rect.left + window.scrollX;
+    var pw = 460;
+    if (left + pw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - pw - 8);
+    panel.style.top = top + 'px';
+    panel.style.left = left + 'px';
+    _selected = new Set(_original);
+    overlay.style.display = 'block';
+    searchInp.value = '';
+    render();
+    setTimeout(function(){ searchInp.focus(); }, 50);
+  };
+
+  window.colPickerOverlayClick = function(e) {
+    if (!panel.contains(e.target)) colPickerCancel();
+  };
+
+  window.colPickerCancel = function() {
+    overlay.style.display = 'none';
+    _selected = new Set(_original);
+  };
+
+  window.colPickerApply = function() {
+    overlay.style.display = 'none';
+    _original = new Set(_selected);
+    var container = document.getElementById('col-hidden-inputs');
+    container.innerHTML = '';
+    _selected.forEach(function(col) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = 'cols'; inp.value = col;
+      container.appendChild(inp);
+    });
+    labelEl.textContent = _original.size ? _original.size + ' of 9 selected' : 'None selected';
+    document.getElementById('samples-filter-form').submit();
+  };
+
+  window.colPickerSearch = render;
+})();
+
 /* ── Column-name filter slots autocomplete ── */
 (function() {
-  var _allCols = [{% for n in all_column_names %}'{{ n|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+  var _allCols = _allColumnNames;
 
   function colLev(a, b) {
     var m=a.length,n=b.length,dp=[],i,j;
@@ -304,22 +444,6 @@ function spGoToPage(n) {
     });
   });
 })();
-
-/* ── Column selector dropdown ── */
-function toggleColDrop() {
-  var panel = document.getElementById('col-drop-panel');
-  var open = panel.style.display === 'flex';
-  if (open) { panel.style.display = 'none'; document.getElementById('samples-filter-form').submit(); }
-  else { panel.style.display = 'flex'; }
-}
-document.addEventListener('click', function(e) {
-  var btn = document.getElementById('col-drop-btn');
-  var panel = document.getElementById('col-drop-panel');
-  if (btn && panel && panel.style.display === 'flex' && !btn.contains(e.target) && !panel.contains(e.target)) {
-    panel.style.display = 'none';
-    document.getElementById('samples-filter-form').submit();
-  }
-});
 
 
 /* ── Main search bar autocomplete ── */
