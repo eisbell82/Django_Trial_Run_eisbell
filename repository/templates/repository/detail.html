@@ -484,6 +484,7 @@
             <tr class="sample-detail-row" id="sample-detail-{{ s.pk }}">
               <td colspan="99" class="sample-detail-cell">
                 <div class="sample-detail-wrap">
+                  {% if s.photos_list or user.is_staff or user.is_authenticated and user == dataset.uploaded_by %}
                   <div class="sample-detail-photo">
                     {% if s.photos_list %}
                     <img src="{{ s.photos_list.0.image.url }}"
@@ -515,6 +516,7 @@
                     </label>
                     {% endif %}
                   </div>
+                  {% endif %}
                   <div class="sample-detail-data">
                     <div class="exp-body">
                     <div style="grid-column:1/-1;display:grid;grid-template-columns:subgrid;margin-bottom:8px;margin-left:-8px;border-bottom:3px solid var(--text);background:rgba(140,21,21,0.25)">
