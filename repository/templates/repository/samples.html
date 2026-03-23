@@ -39,7 +39,7 @@
               <label class="adv-label" style="white-space:nowrap;margin-right:8px;min-width:60px">Columns</label>
               <button type="button" id="col-drop-btn" onclick="toggleColDrop()" class="adv-select" style="text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
                 <span>{% if show_columns %}{{ show_columns|length }} selected{% else %}None selected{% endif %}</span>
-                <span style="font-size:10px;opacity:.6">▾</span>
+                <span style="font-size:16px;opacity:.6;line-height:1">▾</span>
               </button>
               <div id="col-drop-panel" style="display:none;position:absolute;top:100%;left:0;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:300;padding:8px;margin-top:3px;display:none;flex-direction:column;gap:4px">
                 {% for col in available_columns %}
