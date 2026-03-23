@@ -145,7 +145,7 @@ class SampleColumn(models.Model):
         ("data", "Sample data"),
     ]
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="sample_columns")
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, db_index=True)
     unit = models.CharField(max_length=50, blank=True, default="")
     group = models.CharField(max_length=20, choices=GROUP_CHOICES, default="data")
     order = models.PositiveIntegerField(default=0)

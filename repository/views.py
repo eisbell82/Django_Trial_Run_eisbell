@@ -13,6 +13,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.conf import settings
@@ -154,8 +155,6 @@ def dataset_detail(request, slug):
     columns = list(dataset.sample_columns.all())
     col_name_map = {col.name: col for col in columns}
     reverse_sort = sort_dir == "desc"
-
-    from django.core.paginator import Paginator
 
     if not sort_col:
         # No sort — DB-level pagination (Django issues efficient LIMIT/OFFSET)
@@ -1121,12 +1120,14 @@ def _sort_key(val):
         return (1, 0.0, v.lower())
 
 
-def _build_samples_qs(query, active_category, col_filters=None, user=None):
+def _build_samples_qs(query, active_category, col_filters=None, user=None, visible_ds=None):
     """Return a filtered (but not yet evaluated) Sample queryset.
     col_filters: list of (col_name, contains_value) pairs.
+    visible_ds: pre-computed visible datasets queryset (avoids extra DB subquery call).
     """
-    visible_ids = _visible_datasets(user).values_list("id", flat=True)
-    qs = Sample.objects.select_related("dataset").filter(dataset_id__in=visible_ids)
+    if visible_ds is None:
+        visible_ds = _visible_datasets(user)
+    qs = Sample.objects.select_related("dataset").filter(dataset__in=visible_ds)
     if query:
         qs = qs.filter(
             Q(sample_id__icontains=query)
@@ -1221,7 +1222,8 @@ def samples_view(request):
         if c.strip()
     ]
 
-    samples_qs = _build_samples_qs(query, active_category, col_filter_pairs, user=request.user)
+    visible_ds = _visible_datasets(request.user)
+    samples_qs = _build_samples_qs(query, active_category, col_filter_pairs, visible_ds=visible_ds)
 
     available_columns = []
     if active_category:
@@ -1244,16 +1246,51 @@ def samples_view(request):
 
     show_cols_zip = [(col, col_unit_map.get(col, "")) for col in show_columns]
 
-    all_samples = _apply_sort_and_build_rows(samples_qs, show_columns, col_unit_map, sort_col, sort_dir)
-    total_results = len(all_samples)
+    reverse = sort_dir == "desc"
+    is_python_sort = sort_col and sort_col not in _DB_SORT and sort_col in show_columns
 
-    from django.core.paginator import Paginator
-    paginator = Paginator(all_samples, per_page)
-    page_obj = paginator.get_page(page_num)
-    samples = list(page_obj)
+    if is_python_sort:
+        # Fetch all PKs + sort-column values (lightweight), sort in Python, then
+        # fetch full data only for the current page's PKs.
+        sv_qs = (SampleValue.objects
+                 .filter(sample__in=samples_qs, column__name__iexact=sort_col)
+                 .values("sample_id", "value"))
+        sort_val_map = {row["sample_id"]: row["value"] for row in sv_qs}
+        all_pks = list(samples_qs.values_list("pk", flat=True))
+        all_pks.sort(key=lambda pk: _sort_key(sort_val_map.get(pk, "")), reverse=reverse)
+        total_results = len(all_pks)
+        paginator = Paginator(all_pks, per_page)
+        page_obj = paginator.get_page(page_num)
+        page_pks = list(page_obj.object_list)
+        page_qs = Sample.objects.filter(pk__in=page_pks).select_related("dataset")
+        if show_columns:
+            page_qs = page_qs.prefetch_related("values__column")
+        pk_order = {pk: i for i, pk in enumerate(page_pks)}
+        page_samples = sorted(page_qs, key=lambda s: pk_order[s.pk])
+    else:
+        if sort_col in _DB_SORT:
+            order = f"{'-' if reverse else ''}{_DB_SORT[sort_col]}"
+            samples_qs = samples_qs.order_by(order)
+        total_results = samples_qs.count()
+        paginator = Paginator(samples_qs, per_page)
+        page_obj = paginator.get_page(page_num)
+        page_qs = page_obj.object_list.select_related("dataset")
+        if show_columns:
+            page_qs = page_qs.prefetch_related("values__column")
+        page_samples = list(page_qs)
+
+    # Build .row only for the current page's samples
+    for s in page_samples:
+        if show_columns:
+            val_map = {v.column.name: v.value for v in s.values.all()}
+            s.row = [(val_map.get(col, ""), col_unit_map.get(col, "")) for col in show_columns]
+        else:
+            s.row = []
+
+    samples = page_samples
 
     category_values = (
-        _visible_datasets(request.user).filter(samples__isnull=False)
+        visible_ds.filter(samples__isnull=False)
         .order_by()
         .values_list("category", flat=True)
         .distinct()
@@ -1264,7 +1301,7 @@ def samples_view(request):
         for c in sorted(category_values)
     ]
 
-    # Pad to 5 slots for the template (always show 5 column filter inputs)
+    # Pad to 4 slots for the template (always show 4 column filter inputs)
     NUM_COL_SLOTS = 4
     active_pairs = col_filter_pairs[:NUM_COL_SLOTS]
     col_filter_slots_padded = active_pairs + [("", "")] * (NUM_COL_SLOTS - len(active_pairs))
@@ -1272,7 +1309,7 @@ def samples_view(request):
     # All column names across visible datasets (for JS autocomplete)
     all_column_names = list(
         SampleColumn.objects
-        .filter(dataset__in=_visible_datasets(request.user))
+        .filter(dataset__in=visible_ds)
         .values_list("name", flat=True)
         .distinct()
         .order_by("name")
@@ -1322,15 +1359,14 @@ def samples_suggest_view(request):
     q = request.GET.get("q", "").strip()
     category = request.GET.get("category", "").strip()
     if len(q) < 2:
-        return JsonResponse({"samples": [], "columns": [], "values": [], "types": []})
+        return JsonResponse({"samples": [], "values": [], "types": []})
     ds_qs = _visible_datasets(request.user)
     if category:
         ds_qs = ds_qs.filter(category=category)
     # Experiment types
-    from repository.models import Dataset as _DS
     types = [
         {"value": val, "label": label}
-        for val, label in _DS.CATEGORY_CHOICES
+        for val, label in Dataset.CATEGORY_CHOICES
         if q.lower() in label.lower()
     ]
     # Sample IDs
@@ -1338,15 +1374,6 @@ def samples_suggest_view(request):
                    .filter(dataset__in=ds_qs, sample_id__icontains=q)
                    .select_related("dataset")[:8])
     samples = [{"id": s.sample_id, "slug": s.dataset.slug} for s in sample_rows]
-    # Column names (deduplicated)
-    col_rows = (SampleColumn.objects
-                .filter(dataset__in=ds_qs, name__icontains=q)
-                .values("name", "unit").distinct()[:20])
-    seen_cols, columns = set(), []
-    for c in col_rows:
-        if c["name"] not in seen_cols and len(columns) < 8:
-            seen_cols.add(c["name"])
-            columns.append({"name": c["name"], "unit": c["unit"] or ""})
     # Unique column values
     val_rows = (SampleValue.objects
                 .filter(column__dataset__in=ds_qs, value__icontains=q)
@@ -1358,7 +1385,7 @@ def samples_suggest_view(request):
         if key not in seen_vals and len(values) < 8:
             seen_vals.add(key)
             values.append({"column": v["column__name"], "value": v["value"]})
-    return JsonResponse({"samples": samples, "columns": columns, "values": values, "types": types})
+    return JsonResponse({"samples": samples, "values": values, "types": types})
 
 
 def samples_csv_view(request):
