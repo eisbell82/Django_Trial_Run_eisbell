@@ -947,7 +947,8 @@ function expNav(btn, dir) {
       var rb = target.querySelector('.row-expand-btn');
       if (rb) rb.classList.add('open');
     }
-    target.scrollIntoView({behavior:'smooth', block:'start'});
+    var navOffset = (document.querySelector('nav') ? document.querySelector('nav').offsetHeight : 56) + 8;
+    window.scrollTo({top: target.getBoundingClientRect().top + window.scrollY - navOffset, behavior: 'smooth'});
   } else if (dir === -1 && {% if page_obj.has_previous %}true{% else %}false{% endif %}) {
     window.location.href = '?page={{ page_obj.number|add:"-1" }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples';
   } else if (dir === 1 && {% if page_obj.has_next %}true{% else %}false{% endif %}) {
