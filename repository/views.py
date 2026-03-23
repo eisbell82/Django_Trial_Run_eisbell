@@ -1264,7 +1264,7 @@ def samples_view(request):
     ]
 
     # Pad to 5 slots for the template (always show 5 column filter inputs)
-    NUM_COL_SLOTS = 5
+    NUM_COL_SLOTS = 4
     active_pairs = col_filter_pairs[:NUM_COL_SLOTS]
     col_filter_slots_padded = active_pairs + [("", "")] * (NUM_COL_SLOTS - len(active_pairs))
 

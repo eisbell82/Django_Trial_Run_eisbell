@@ -22,35 +22,36 @@
         <summary class="adv-filters-toggle">Advanced filters {% if adv_active %}<span class="adv-active-dot"></span>{% endif %}</summary>
         <div class="adv-filters-grid">
 
-          {% if categories_with_samples %}
-          <div class="adv-filter-group">
-            <label class="adv-label">Type</label>
-            <select name="category" class="adv-select" onchange="this.form.submit()">
-              <option value="">All types</option>
-              {% for cat in categories_with_samples %}
-              <option value="{{ cat.value }}" {% if active_category == cat.value %}selected{% endif %}>{{ cat.label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          {% endif %}
-
-          {% if available_columns %}
-          <div class="adv-filter-group" style="position:relative">
-            <label class="adv-label">Columns</label>
-            <button type="button" id="col-drop-btn" onclick="toggleColDrop()" class="adv-select" style="text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
-              <span>{% if show_columns %}{{ show_columns|length }} selected{% else %}None selected{% endif %}</span>
-              <span style="font-size:10px;opacity:.6">▾</span>
-            </button>
-            <div id="col-drop-panel" style="display:none;position:absolute;top:100%;left:0;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:300;padding:8px;margin-top:3px;display:none;flex-direction:column;gap:4px">
-              {% for col in available_columns %}
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" name="cols" value="{{ col }}" {% if col in show_columns %}checked{% endif %} style="accent-color:var(--accent)">
-                <span style="font-size:12px;color:var(--text)">{{ col }}</span>
-              </label>
-              {% endfor %}
+          <div style="display:flex;flex-direction:column;gap:10px">
+            {% if categories_with_samples %}
+            <div class="adv-filter-group">
+              <label class="adv-label">Type</label>
+              <select name="category" class="adv-select" onchange="this.form.submit()">
+                <option value="">All types</option>
+                {% for cat in categories_with_samples %}
+                <option value="{{ cat.value }}" {% if active_category == cat.value %}selected{% endif %}>{{ cat.label }}</option>
+                {% endfor %}
+              </select>
             </div>
+            {% endif %}
+            {% if available_columns %}
+            <div class="adv-filter-group" style="position:relative">
+              <label class="adv-label">Columns</label>
+              <button type="button" id="col-drop-btn" onclick="toggleColDrop()" class="adv-select" style="text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <span>{% if show_columns %}{{ show_columns|length }} selected{% else %}None selected{% endif %}</span>
+                <span style="font-size:10px;opacity:.6">▾</span>
+              </button>
+              <div id="col-drop-panel" style="display:none;position:absolute;top:100%;left:0;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:300;padding:8px;margin-top:3px;display:none;flex-direction:column;gap:4px">
+                {% for col in available_columns %}
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                  <input type="checkbox" name="cols" value="{{ col }}" {% if col in show_columns %}checked{% endif %} style="accent-color:var(--accent)">
+                  <span style="font-size:12px;color:var(--text)">{{ col }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
           </div>
-          {% endif %}
 
           <!-- Column filter slots (5 fixed) -->
           {% for slot_col, slot_val in col_filter_slots_padded %}
