@@ -432,7 +432,7 @@
           </thead>
           <tbody>
             {% for s in samples %}
-            <tr id="sample-{{ s.pk }}"
+            <tr id="sample-{{ s.pk }}">
               <td class="sample-photo-td">
                 {% if s.photos_list %}
                 <img src="{{ s.photos_list.0.image.url }}"
