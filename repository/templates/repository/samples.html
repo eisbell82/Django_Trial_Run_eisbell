@@ -369,6 +369,18 @@ document.addEventListener('click', function(e) {
         any = true;
       });
     }
+    if (d.columns && d.columns.length) {
+      drop.appendChild(sqSection('Column names'));
+      d.columns.forEach(function(col){
+        drop.appendChild(sqMakeItem(col, '', function(){
+          var params = new URLSearchParams(window.location.search);
+          params.delete('q');
+          params.set('fcol', col);
+          window.location.search = params.toString();
+        }));
+        any = true;
+      });
+    }
     if (d.values && d.values.length) {
       drop.appendChild(sqSection('Filter by value'));
       d.values.forEach(function(v){

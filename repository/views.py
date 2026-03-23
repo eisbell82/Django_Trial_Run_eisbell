@@ -1359,7 +1359,7 @@ def samples_suggest_view(request):
     q = request.GET.get("q", "").strip()
     category = request.GET.get("category", "").strip()
     if len(q) < 2:
-        return JsonResponse({"samples": [], "values": [], "types": []})
+        return JsonResponse({"samples": [], "columns": [], "values": [], "types": []})
     ds_qs = _visible_datasets(request.user)
     if category:
         ds_qs = ds_qs.filter(category=category)
@@ -1374,6 +1374,15 @@ def samples_suggest_view(request):
                    .filter(dataset__in=ds_qs, sample_id__icontains=q)
                    .select_related("dataset")[:8])
     samples = [{"id": s.sample_id, "slug": s.dataset.slug} for s in sample_rows]
+    # Column names (deduplicated)
+    col_rows = (SampleColumn.objects
+                .filter(dataset__in=ds_qs, name__icontains=q)
+                .values("name").distinct()[:20])
+    seen_cols, columns = set(), []
+    for c in col_rows:
+        if c["name"] not in seen_cols and len(columns) < 8:
+            seen_cols.add(c["name"])
+            columns.append(c["name"])
     # Unique column values
     val_rows = (SampleValue.objects
                 .filter(column__dataset__in=ds_qs, value__icontains=q)
@@ -1385,7 +1394,7 @@ def samples_suggest_view(request):
         if key not in seen_vals and len(values) < 8:
             seen_vals.add(key)
             values.append({"column": v["column__name"], "value": v["value"]})
-    return JsonResponse({"samples": samples, "values": values, "types": types})
+    return JsonResponse({"samples": samples, "columns": columns, "values": values, "types": types})
 
 
 def samples_csv_view(request):
