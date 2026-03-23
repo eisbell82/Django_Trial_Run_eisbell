@@ -54,26 +54,36 @@
           </div>
           {% endif %}
 
-          {% if species_values %}
-          <div class="adv-filter-group">
-            <label class="adv-label">Species</label>
-            <select name="filter_species" class="adv-select" onchange="this.form.submit()">
-              <option value="">All</option>
-              {% for v in species_values %}<option value="{{ v }}" {% if f_species == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
+          <!-- Dynamic column-value filters -->
+          <datalist id="adv-col-names">
+            {% for n in all_column_names %}<option value="{{ n }}">{% endfor %}
+          </datalist>
+          {% for col, val, col_vals in col_filter_slots %}
+          <div class="adv-filter-group adv-col-filter-slot">
+            <label class="adv-label">Column filter</label>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input type="text" name="fcol" value="{{ col }}" list="adv-col-names"
+                     class="adv-select" placeholder="Column name…"
+                     onchange="this.form.submit()" style="flex:1;min-width:0">
+              <button type="button" class="col-del-btn" style="flex-shrink:0" onclick="removeColFilterSlot(this)">×</button>
+            </div>
+            <input type="hidden" name="fval" value="{{ val }}">
+            {% if col_vals %}
+            <select name="" class="adv-select" style="margin-top:4px" onchange="setColFilterVal(this, '{{ col|escapejs }}')">
+              <option value="">All values</option>
+              {% for v in col_vals %}<option value="{{ v }}" {% if val == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
             </select>
+            {% endif %}
           </div>
-          {% endif %}
-
-          {% if substrate_values %}
-          <div class="adv-filter-group">
-            <label class="adv-label">Substrate</label>
-            <select name="filter_substrate" class="adv-select" onchange="this.form.submit()">
-              <option value="">All</option>
-              {% for v in substrate_values %}<option value="{{ v }}" {% if f_substrate == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
-            </select>
+          {% endfor %}
+          <!-- Empty slot for adding a new column filter -->
+          <div class="adv-filter-group adv-col-filter-slot" id="adv-empty-slot">
+            <label class="adv-label">Column filter</label>
+            <input type="text" name="fcol" value="" list="adv-col-names"
+                   class="adv-select" placeholder="Column name…"
+                   onchange="this.form.submit()">
+            <input type="hidden" name="fval" value="">
           </div>
-          {% endif %}
-
 
           {% if available_columns %}
           <div class="adv-filter-group">
@@ -200,6 +210,20 @@ function spGoToPage(n) {
   var p = new URLSearchParams(window.location.search);
   p.set('page', n);
   window.location.search = p.toString();
+}
+
+/* ── Dynamic column-value filter slots ── */
+function removeColFilterSlot(btn) {
+  var slot = btn.closest('.adv-col-filter-slot');
+  slot.querySelectorAll('input[name="fcol"], input[name="fval"]').forEach(function(el) { el.name = ''; });
+  slot.remove();
+  document.getElementById('samples-filter-form').submit();
+}
+function setColFilterVal(sel, colName) {
+  var slot = sel.closest('.adv-col-filter-slot');
+  var hidden = slot.querySelector('input[name="fval"]');
+  if (hidden) hidden.value = sel.value;
+  sel.form.submit();
 }
 
 /* ── Column selector dropdown ── */

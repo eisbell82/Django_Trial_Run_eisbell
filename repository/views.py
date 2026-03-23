@@ -1120,8 +1120,10 @@ def _sort_key(val):
         return (1, 0.0, v.lower())
 
 
-def _build_samples_qs(query, active_category, f_species, f_substrate, filter_col="", filter_col_val="", user=None):
-    """Return a filtered (but not yet evaluated) Sample queryset."""
+def _build_samples_qs(query, active_category, col_filters=None, filter_col="", filter_col_val="", user=None):
+    """Return a filtered (but not yet evaluated) Sample queryset.
+    col_filters: list of (col_name, value) exact-match pairs.
+    """
     visible_ids = _visible_datasets(user).values_list("id", flat=True)
     qs = Sample.objects.select_related("dataset").filter(dataset_id__in=visible_ids)
     if query:
@@ -1132,10 +1134,9 @@ def _build_samples_qs(query, active_category, f_species, f_substrate, filter_col
         ).distinct()
     if active_category:
         qs = qs.filter(dataset__category=active_category)
-    if f_species:
-        qs = qs.filter(values__column__name__iexact="species", values__value=f_species)
-    if f_substrate:
-        qs = qs.filter(values__column__name__iexact="substrate", values__value=f_substrate)
+    for col, val in (col_filters or []):
+        if col and val:
+            qs = qs.filter(values__column__name__iexact=col, values__value=val)
     if filter_col_val:
         if filter_col:
             qs = qs.filter(values__column__name__iexact=filter_col, values__value__icontains=filter_col_val)
@@ -1201,9 +1202,8 @@ def samples_view(request):
     query           = request.GET.get("q", "")
     active_category = request.GET.get("category", "")
     selected_cols   = request.GET.getlist("cols")
-    f_species       = request.GET.get("filter_species", "")
-    f_substrate     = request.GET.get("filter_substrate", "")
-    f_coating       = request.GET.get("filter_coating", "")
+    fcol_raw        = request.GET.getlist("fcol")
+    fval_raw        = request.GET.getlist("fval")
     filter_col      = request.GET.get("filter_col", "")
     filter_col_val  = request.GET.get("filter_col_val", "")
     sort_col        = request.GET.get("sort_col", "")
@@ -1220,7 +1220,14 @@ def samples_view(request):
     except ValueError:
         page_num = 1
 
-    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, f_coating, filter_col, filter_col_val, user=request.user)
+    # Zip fcol/fval lists into (col, val) pairs, dropping empty column names
+    col_filter_pairs = [
+        (c.strip(), v.strip())
+        for c, v in zip(fcol_raw, fval_raw + [""] * len(fcol_raw))
+        if c.strip()
+    ]
+
+    samples_qs = _build_samples_qs(query, active_category, col_filter_pairs, filter_col, filter_col_val, user=request.user)
 
     available_columns = []
     if active_category:
@@ -1263,8 +1270,24 @@ def samples_view(request):
         for c in sorted(category_values)
     ]
 
-    adv_filter_values = _col_values_bulk(["species", "substrate"], active_category)
-    adv_active = bool(show_columns or f_species or f_substrate or filter_col_val)
+    # Fetch distinct values for each active column filter
+    active_cols = [c for c, v in col_filter_pairs]
+    col_values_map = _col_values_bulk(active_cols, active_category) if active_cols else {}
+    col_filter_slots = [
+        (col, val, col_values_map.get(col.lower(), []))
+        for col, val in col_filter_pairs
+    ]
+
+    # All column names across visible datasets (for datalist autocomplete)
+    all_column_names = list(
+        SampleColumn.objects
+        .filter(dataset__in=_visible_datasets(request.user))
+        .values_list("name", flat=True)
+        .distinct()
+        .order_by("name")
+    )
+
+    adv_active = bool(show_columns or col_filter_pairs or filter_col_val)
 
     return render(request, "repository/samples.html", {
         "samples": samples,
@@ -1278,12 +1301,10 @@ def samples_view(request):
         "active_category": active_category,
         "categories_with_samples": categories_with_samples,
         "total_results": total_results,
-        "f_species": f_species,
-        "f_substrate": f_substrate,
+        "col_filter_slots": col_filter_slots,
+        "all_column_names": all_column_names,
         "filter_col": filter_col,
         "filter_col_val": filter_col_val,
-        "species_values": adv_filter_values["species"],
-        "substrate_values": adv_filter_values["substrate"],
         "adv_active": adv_active,
         "sort_col": sort_col,
         "sort_dir": sort_dir,
@@ -1348,14 +1369,20 @@ def samples_csv_view(request):
     query           = request.GET.get("q", "")
     active_category = request.GET.get("category", "")
     selected_cols   = request.GET.getlist("cols")
-    f_species       = request.GET.get("filter_species", "")
-    f_substrate     = request.GET.get("filter_substrate", "")
+    fcol_raw        = request.GET.getlist("fcol")
+    fval_raw        = request.GET.getlist("fval")
     filter_col      = request.GET.get("filter_col", "")
     filter_col_val  = request.GET.get("filter_col_val", "")
     sort_col        = request.GET.get("sort_col", "")
     sort_dir        = request.GET.get("sort_dir", "asc")
 
-    samples_qs = _build_samples_qs(query, active_category, f_species, f_substrate, filter_col, filter_col_val, user=request.user)
+    col_filter_pairs = [
+        (c.strip(), v.strip())
+        for c, v in zip(fcol_raw, fval_raw + [""] * len(fcol_raw))
+        if c.strip()
+    ]
+
+    samples_qs = _build_samples_qs(query, active_category, col_filter_pairs, filter_col, filter_col_val, user=request.user)
 
     available_columns = []
     if active_category:
