@@ -40,7 +40,7 @@
             <div class="adv-filter-group" style="flex-direction:row;align-items:center;position:relative">
               <label class="adv-label" style="white-space:nowrap;margin-right:8px;min-width:60px">Columns</label>
               <button type="button" id="col-pick-btn" onclick="colPickerOpen()" class="adv-select" style="flex:1;text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
-                <span id="col-pick-label">{% if show_columns %}{{ show_columns|length }} of 9 selected{% else %}None selected{% endif %}</span>
+                <span id="col-pick-label">{% if show_columns %}{{ show_columns|length }} selected{% else %}None selected{% endif %}</span>
                 <span style="font-size:16px;opacity:.6;line-height:1">▾</span>
               </button>
               <span id="col-hidden-inputs">{% for col in show_columns %}<input type="hidden" name="cols" value="{{ col }}">{% endfor %}</span>
@@ -321,7 +321,7 @@ var _pickerCols = [{% for n in available_columns %}'{{ n|escapejs }}'{% if not f
       inp.type = 'hidden'; inp.name = 'cols'; inp.value = col;
       container.appendChild(inp);
     });
-    labelEl.textContent = _original.size ? _original.size + ' of 9 selected' : 'None selected';
+    labelEl.textContent = _original.size ? _original.size + ' selected' : 'None selected';
     document.getElementById('samples-filter-form').submit();
   };
 
