@@ -820,13 +820,14 @@ function savePhoto() {
 }
 .sample-photo-add-placeholder {
   display:none;
-  width:220px; height:160px;
   border:2px dashed var(--border); border-radius:8px;
   align-items:center; justify-content:center;
   cursor:pointer; color:var(--text-dim);
   font-size:13px; font-weight:700; font-family:'DM Mono',monospace;
 }
-.sample-table.expanded-view .sample-photo-add-placeholder { display:flex; }
+.sample-table.expanded-view .sample-photo-add-placeholder {
+  display:flex; width:100%; align-self:stretch;
+}
 .sample-table.expanded-view tbody tr .expanded-data-td {
   display:block !important; flex:3; padding:0; min-width:0;
 }
