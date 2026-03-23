@@ -26,18 +26,21 @@
             {% if categories_with_samples %}
             <div class="adv-filter-group" style="flex-direction:row;align-items:center">
               <label class="adv-label" style="white-space:nowrap;margin-right:8px;min-width:60px">Type</label>
-              <select name="category" class="adv-select" onchange="this.form.submit()">
-                <option value="">All types</option>
-                {% for cat in categories_with_samples %}
-                <option value="{{ cat.value }}" {% if active_category == cat.value %}selected{% endif %}>{{ cat.label }}</option>
-                {% endfor %}
-              </select>
+              <div style="position:relative;flex:1">
+                <select name="category" class="adv-select" onchange="this.form.submit()" style="width:100%;padding-right:26px">
+                  <option value="">All types</option>
+                  {% for cat in categories_with_samples %}
+                  <option value="{{ cat.value }}" {% if active_category == cat.value %}selected{% endif %}>{{ cat.label }}</option>
+                  {% endfor %}
+                </select>
+                <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.6;line-height:1;pointer-events:none">▾</span>
+              </div>
             </div>
             {% endif %}
             {% if available_columns %}
             <div class="adv-filter-group" style="flex-direction:row;align-items:center;position:relative">
               <label class="adv-label" style="white-space:nowrap;margin-right:8px;min-width:60px">Columns</label>
-              <button type="button" id="col-drop-btn" onclick="toggleColDrop()" class="adv-select" style="text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <button type="button" id="col-drop-btn" onclick="toggleColDrop()" class="adv-select" style="flex:1;text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
                 <span>{% if show_columns %}{{ show_columns|length }} selected{% else %}None selected{% endif %}</span>
                 <span style="font-size:16px;opacity:.6;line-height:1">▾</span>
               </button>
