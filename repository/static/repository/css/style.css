@@ -170,7 +170,7 @@ nav {
 .adv-filters-toggle::-webkit-details-marker { display: none; }
 .adv-filters[open] .adv-filters-toggle { border-bottom: 1px solid var(--border); color: var(--accent); }
 .adv-active-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: inline-block; }
-.adv-filters-grid { padding: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.adv-filters-grid { padding: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
 .adv-filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
 .adv-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); }
 .adv-select {
