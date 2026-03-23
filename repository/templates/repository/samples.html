@@ -358,22 +358,12 @@ document.addEventListener('click', function(e) {
     drop.innerHTML = '';
     var any = false;
     if (d.values && d.values.length) {
-      drop.appendChild(sqSection('Column values'));
+      drop.appendChild(sqSection('Filter by value'));
       d.values.forEach(function(v){
         drop.appendChild(sqMakeItem(v.value, v.column, function(){
           var params = new URLSearchParams(window.location.search);
-          params.set('filter_col', v.column); params.set('filter_col_val', v.value);
-          window.location.search = params.toString();
-        }));
-        any = true;
-      });
-    }
-    if (d.columns && d.columns.length) {
-      drop.appendChild(sqSection('Column names'));
-      d.columns.forEach(function(c){
-        drop.appendChild(sqMakeItem(c.name, c.unit ? '['+c.unit+']' : '', function(){
-          var params = new URLSearchParams(window.location.search);
-          params.set('filter_col', c.name); params.delete('filter_col_val');
+          params.delete('q');
+          params.set('fcol', v.column); params.set('fval', v.value);
           window.location.search = params.toString();
         }));
         any = true;
