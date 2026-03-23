@@ -61,9 +61,11 @@
                    class="adv-select adv-col-name-input" placeholder="Column name…" autocomplete="off"
                    oninput="advColInput(this)" onblur="advColBlur(this)" onkeydown="advColKey(event,this)">
             <div class="adv-col-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);margin-top:2px;max-height:200px;overflow-y:auto"></div>
-            <input type="text" name="fval" value="{{ slot_val }}"
-                   class="adv-select" placeholder="contains…" autocomplete="off" style="margin-top:4px"
-                   onkeydown="if(event.key==='Enter'){event.preventDefault();this.form.submit();}">
+            <div style="position:relative;margin-top:4px">
+              <input type="text" name="fval" value="{{ slot_val }}"
+                     class="adv-select adv-val-input" placeholder="contains…" autocomplete="off" style="width:100%">
+              <div class="adv-val-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);margin-top:2px;max-height:200px;overflow-y:auto"></div>
+            </div>
           </div>
           {% endfor %}
 
@@ -228,6 +230,79 @@ function spGoToPage(n) {
       inp.form.submit();
     }
   };
+})();
+
+/* ── Contains input autocomplete ── */
+(function() {
+  var _colUrl = '{% url "repository:column_values" %}';
+  var _cat    = '{{ active_category|escapejs }}';
+  var _cache  = {};
+
+  function fetchVals(col, cb) {
+    if (!col) { cb([]); return; }
+    if (_cache[col]) { cb(_cache[col]); return; }
+    fetch(_colUrl + '?column=' + encodeURIComponent(col) + (_cat ? '&category=' + encodeURIComponent(_cat) : ''))
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _cache[col] = d.values || []; cb(_cache[col]); });
+  }
+
+  function lev(a, b) {
+    var m=a.length,n=b.length,dp=[],i,j;
+    for(i=0;i<=m;i++){dp[i]=[i];}for(j=0;j<=n;j++){dp[0][j]=j;}
+    for(i=1;i<=m;i++)for(j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+
+  function suggest(q, vals) {
+    if (!q) return [];
+    var ql = q.toLowerCase(), out = [];
+    vals.forEach(function(v) {
+      var vl = v.toLowerCase();
+      if (vl.indexOf(ql) !== -1) { out.push({v:v,s:2}); }
+      else if (lev(ql, vl.substring(0, Math.min(vl.length, ql.length+2))) <= Math.ceil(ql.length/3)) { out.push({v:v,s:1}); }
+    });
+    out.sort(function(a,b){ return b.s-a.s||a.v.localeCompare(b.v); });
+    return out.map(function(r){ return r.v; });
+  }
+
+  function renderDrop(inp, drop, vals) {
+    var sug = suggest(inp.value, vals);
+    if (!sug.length || sug.length >= 10) { drop.style.display='none'; return; }
+    drop.innerHTML = '';
+    sug.forEach(function(v) {
+      var item = document.createElement('div');
+      item.textContent = v;
+      item.style.cssText = 'padding:6px 10px;cursor:pointer;font-size:12px;color:var(--text);white-space:nowrap';
+      item.onmouseenter=function(){this.style.background='var(--tag-bg)';}; item.onmouseleave=function(){this.style.background='';};
+      item.onmousedown=function(e){ e.preventDefault(); inp.value=v; drop.style.display='none'; inp.form.submit(); };
+      drop.appendChild(item);
+    });
+    drop.style.display='block';
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.adv-val-input').forEach(function(inp) {
+      var drop = inp.parentNode.querySelector('.adv-val-drop');
+      var slot = inp.closest('.adv-col-filter-slot');
+      function getCol() { return slot.querySelector('input[name="fcol"]').value.trim(); }
+
+      inp.addEventListener('input', function() {
+        var col = getCol();
+        if (!col) { drop.style.display='none'; return; }
+        fetchVals(col, function(vals) { renderDrop(inp, drop, vals); });
+      });
+      inp.addEventListener('focus', function() {
+        var col = getCol();
+        if (!col || !inp.value) return;
+        fetchVals(col, function(vals) { renderDrop(inp, drop, vals); });
+      });
+      inp.addEventListener('blur', function() { setTimeout(function(){ drop.style.display='none'; }, 150); });
+      inp.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); drop.style.display='none'; inp.form.submit(); }
+      });
+    });
+  });
 })();
 
 /* ── Column selector dropdown ── */

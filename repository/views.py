@@ -1137,8 +1137,6 @@ def _build_samples_qs(query, active_category, col_filters=None, user=None):
     for col, val in (col_filters or []):
         if col and val:
             qs = qs.filter(values__column__name__iexact=col, values__value__icontains=val)
-        elif col:
-            qs = qs.filter(values__column__name__iexact=col).exclude(values__value="")
     return qs
 
 
