@@ -20,7 +20,7 @@
       <!-- Advanced Filters -->
       <details class="adv-filters" open>
         <summary class="adv-filters-toggle">Advanced filters {% if adv_active %}<span class="adv-active-dot"></span>{% endif %}</summary>
-        <div class="adv-filters-grid">
+        <div class="adv-filters-grid" style="display:grid;grid-template-columns:minmax(180px,220px) repeat(4,minmax(130px,1fr))">
 
           <div style="display:flex;flex-direction:column;gap:10px">
             {% if categories_with_samples %}
