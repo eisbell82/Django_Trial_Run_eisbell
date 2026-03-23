@@ -1277,7 +1277,7 @@ def samples_view(request):
         .order_by("name")
     )
 
-    adv_active = bool(show_columns or col_filter_pairs)
+    adv_active = bool(active_category or show_columns or col_filter_pairs)
 
     return render(request, "repository/samples.html", {
         "samples": samples,

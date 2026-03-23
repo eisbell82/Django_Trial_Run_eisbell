@@ -17,19 +17,22 @@
         <div id="sq-drop" style="display:none;position:absolute;top:100%;left:0;right:60px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:500;margin-top:2px;max-height:320px;overflow-y:auto"></div>
       </div>
 
-      {% if categories_with_samples %}
-      <div class="filter-chips" style="margin-bottom:8px">
-        <a href="{% url 'repository:samples' %}{% if query %}?q={{ query }}{% endif %}" class="chip {% if not active_category %}active{% endif %}">All</a>
-        {% for cat in categories_with_samples %}
-        <a href="?category={{ cat.value }}{% if query %}&q={{ query }}{% endif %}" class="chip {% if active_category == cat.value %}active{% endif %}">{{ cat.label }}</a>
-        {% endfor %}
-      </div>
-      {% endif %}
-
       <!-- Advanced Filters -->
       <details class="adv-filters" open>
         <summary class="adv-filters-toggle">Advanced filters {% if adv_active %}<span class="adv-active-dot"></span>{% endif %}</summary>
         <div class="adv-filters-grid">
+
+          {% if categories_with_samples %}
+          <div class="adv-filter-group">
+            <label class="adv-label">Type</label>
+            <select name="category" class="adv-select" onchange="this.form.submit()">
+              <option value="">All types</option>
+              {% for cat in categories_with_samples %}
+              <option value="{{ cat.value }}" {% if active_category == cat.value %}selected{% endif %}>{{ cat.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
 
           {% if available_columns %}
           <div class="adv-filter-group" style="position:relative">
@@ -46,11 +49,6 @@
               </label>
               {% endfor %}
             </div>
-          </div>
-          {% elif not active_category %}
-          <div class="adv-filter-group">
-            <label class="adv-label">Columns</label>
-            <span style="font-size:12px;color:var(--text-dim);font-style:italic">Select an experiment type first</span>
           </div>
           {% endif %}
 
@@ -76,7 +74,6 @@
           {% endif %}
 
         </div>
-        {% if active_category %}<input type="hidden" name="category" value="{{ active_category }}">{% endif %}
       </details>
 
     </form>
