@@ -329,7 +329,7 @@
         <span style="font-size:12px;color:var(--text-dim)">{{ total_samples }} sample{{ total_samples|pluralize }}</span>
         <button id="expand-toggle" type="button" onclick="toggleExpandedView()"
                 style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-dim);cursor:pointer">
-          ⊞ Expand
+          ⊞ Expand All
         </button>
         <div style="margin-left:auto;display:flex;gap:4px;align-items:center">
           <span style="font-size:11px;color:var(--text-dim)">Show</span>
@@ -354,6 +354,7 @@
             <tr>
               <th class="sample-photo-th"></th>
               <th class="expanded-data-th"></th>
+              <th class="sample-row-toggle-th"></th>
               <th>
                 <a href="?sort_col=sample_id&sort_dir={% if sort_col == 'sample_id' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}#tab-samples" style="color:inherit;text-decoration:none;display:flex;align-items:center;gap:4px">
                   Sample ID <span class="sort-ind" style="opacity:{% if sort_col == 'sample_id' %}1{% else %}.3{% endif %}">{% if sort_col == 'sample_id' and sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>
@@ -511,6 +512,7 @@
                   <button class="exp-nav-btn" onclick="expNav(this,1)"{% if forloop.last and not page_obj.has_next %} disabled{% endif %}>Next →</button>
                 </div>
               </td>
+              <td class="sample-row-toggle-td"><button class="row-expand-btn" onclick="toggleSampleRow(this)" title="Expand">▶</button></td>
               <td class="sample-id-cell" style="white-space:nowrap">{{ s.sample_id }}</td>
               <td style="white-space:nowrap">
                 <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap">
@@ -866,6 +868,29 @@ function savePhoto() {
   display:block !important; flex:3; padding:0; min-width:0;
 }
 .sample-table.expanded-view .notes-peek-btn { display:none; }
+/* Hide toggle column in full expanded view */
+.sample-table.expanded-view .sample-row-toggle-th,
+.sample-table.expanded-view .sample-row-toggle-td { display:none; }
+/* Individual row expansion */
+.sample-table:not(.expanded-view) tr.row-expanded {
+  display:flex !important; align-items:flex-start; gap:20px; padding:20px 0;
+}
+.sample-table:not(.expanded-view) tr.row-expanded td { display:none !important; }
+.sample-table:not(.expanded-view) tr.row-expanded .sample-photo-td {
+  display:flex !important; flex:2; justify-content:flex-end; align-items:flex-start; align-self:stretch; padding:0;
+}
+.sample-table:not(.expanded-view) tr.row-expanded .sample-photo-td img {
+  display:block !important; cursor:pointer; border-radius:8px;
+  max-width:600px !important; max-height:400px !important; width:auto !important; height:auto !important;
+}
+.sample-table:not(.expanded-view) tr.row-expanded .sample-photo-add-placeholder { display:flex; width:100%; align-self:stretch; }
+.sample-table:not(.expanded-view) tr.row-expanded .expanded-data-td { display:block !important; flex:3; padding:0; min-width:0; }
+.sample-table:not(.expanded-view) tr.row-expanded .exp-nav-bar { display:flex !important; }
+.sample-table:not(.expanded-view) tr.row-expanded .notes-peek-btn { display:none; }
+/* Row toggle button */
+.row-expand-btn { font-size:10px; background:none; border:none; color:var(--text-dim); cursor:pointer; padding:2px 5px; opacity:.4; transition:opacity .1s; }
+.row-expand-btn:hover { opacity:1; }
+tr.row-expanded .row-expand-btn { opacity:1; color:var(--accent); }
 .exp-nav-bar { display:none; }
 .sample-table.expanded-view .exp-nav-bar {
   display:flex; align-items:center; justify-content:space-between; gap:8px;
@@ -915,6 +940,12 @@ function expNav(btn, dir) {
   var idx = rows.indexOf(tr);
   var target = rows[idx + dir];
   if (target) {
+    var table = document.querySelector('#tab-samples .sample-table');
+    if (table && !table.classList.contains('expanded-view') && !target.classList.contains('row-expanded')) {
+      target.classList.add('row-expanded');
+      var rb = target.querySelector('.row-expand-btn');
+      if (rb) rb.textContent = '▼';
+    }
     target.scrollIntoView({behavior:'smooth', block:'start'});
   } else if (dir === -1 && {% if page_obj.has_previous %}true{% else %}false{% endif %}) {
     window.location.href = '?page={{ page_obj.number|add:"-1" }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples';
@@ -923,12 +954,25 @@ function expNav(btn, dir) {
   }
 }
 
+function toggleSampleRow(btn) {
+  var tr = btn.closest('tr');
+  var expanded = tr.classList.toggle('row-expanded');
+  btn.textContent = expanded ? '▼' : '▶';
+}
+
 function toggleExpandedView() {
   var table = document.querySelector('#tab-samples .sample-table');
   var btn   = document.getElementById('expand-toggle');
   if (!table || !btn) return;
   var expanded = table.classList.toggle('expanded-view');
-  btn.textContent = expanded ? '⊟ Compact' : '⊞ Expand';
+  btn.textContent = expanded ? '⊟ Compact All' : '⊞ Expand All';
+  if (!expanded) {
+    table.querySelectorAll('tr.row-expanded').forEach(function(tr) {
+      tr.classList.remove('row-expanded');
+      var rb = tr.querySelector('.row-expand-btn');
+      if (rb) rb.textContent = '▶';
+    });
+  }
   try { localStorage.setItem('samples-expanded', expanded ? '1' : '0'); } catch(e) {}
 }
 document.addEventListener('DOMContentLoaded', function () {
@@ -938,7 +982,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var targetSample = hash && hash.match(/^#sample-(\d+)$/) ? document.querySelector(hash) : null;
   if (targetSample || localStorage.getItem('samples-expanded') === '1') {
     if (table) { table.classList.add('expanded-view'); }
-    if (btn)   { btn.textContent = '⊟ Compact'; }
+    if (btn)   { btn.textContent = '⊟ Compact All'; }
   }
   if (targetSample) {
     var samplesTabBtn = document.querySelector('.dtab[onclick*="\'tab-samples\'"]');
