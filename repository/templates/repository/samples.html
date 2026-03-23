@@ -25,7 +25,7 @@
           <div style="display:flex;flex-direction:column;gap:10px">
             {% if categories_with_samples %}
             <div class="adv-filter-group" style="flex-direction:row;align-items:center">
-              <label class="adv-label" style="white-space:nowrap;margin-right:8px">Type</label>
+              <label class="adv-label" style="white-space:nowrap;margin-right:8px;min-width:60px">Type</label>
               <select name="category" class="adv-select" onchange="this.form.submit()">
                 <option value="">All types</option>
                 {% for cat in categories_with_samples %}
@@ -36,7 +36,7 @@
             {% endif %}
             {% if available_columns %}
             <div class="adv-filter-group" style="flex-direction:row;align-items:center;position:relative">
-              <label class="adv-label" style="white-space:nowrap;margin-right:8px">Columns</label>
+              <label class="adv-label" style="white-space:nowrap;margin-right:8px;min-width:60px">Columns</label>
               <button type="button" id="col-drop-btn" onclick="toggleColDrop()" class="adv-select" style="text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">
                 <span>{% if show_columns %}{{ show_columns|length }} selected{% else %}None selected{% endif %}</span>
                 <span style="font-size:10px;opacity:.6">▾</span>
