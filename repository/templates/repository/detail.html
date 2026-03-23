@@ -916,10 +916,10 @@ function expNav(btn, dir) {
   var target = rows[idx + dir];
   if (target) {
     target.scrollIntoView({behavior:'smooth', block:'start'});
-  } else if (dir === -1 && {{ page_obj.has_previous|yesno:"true,false" }}) {
-    window.location.href = '?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples';
-  } else if (dir === 1 && {{ page_obj.has_next|yesno:"true,false" }}) {
-    window.location.href = '?page={{ page_obj.next_page_number }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples';
+  } else if (dir === -1 && {% if page_obj.has_previous %}true{% else %}false{% endif %}) {
+    window.location.href = '?page={{ page_obj.number|add:"-1" }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples';
+  } else if (dir === 1 && {% if page_obj.has_next %}true{% else %}false{% endif %}) {
+    window.location.href = '?page={{ page_obj.number|add:"1" }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples';
   }
 }
 
