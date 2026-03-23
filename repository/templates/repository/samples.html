@@ -325,7 +325,7 @@ var _pickerCols = [{% for n in available_columns %}'{{ n|escapejs }}'{% if not f
 
 /* ── Column-name filter slots autocomplete ── */
 (function() {
-  var _allCols = _allColumnNames;
+  var _allCols = [{% for col in show_columns %}'{{ col|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
 
   function colLev(a, b) {
     var m=a.length,n=b.length,dp=[],i,j;
