@@ -432,7 +432,7 @@
           </thead>
           <tbody>
             {% for s in samples %}
-            <tr>
+            <tr id="sample-{{ s.pk }}"
               <td class="sample-photo-td">
                 {% if s.photos_list %}
                 <img src="{{ s.photos_list.0.image.url }}"
@@ -900,11 +900,18 @@ function toggleExpandedView() {
   try { localStorage.setItem('samples-expanded', expanded ? '1' : '0'); } catch(e) {}
 }
 document.addEventListener('DOMContentLoaded', function () {
-  if (localStorage.getItem('samples-expanded') === '1') {
-    var table = document.querySelector('#tab-samples .sample-table');
-    var btn   = document.getElementById('expand-toggle');
+  var table = document.querySelector('#tab-samples .sample-table');
+  var btn   = document.getElementById('expand-toggle');
+  var hash  = window.location.hash;
+  var targetSample = hash && hash.match(/^#sample-(\d+)$/) ? document.querySelector(hash) : null;
+  if (targetSample || localStorage.getItem('samples-expanded') === '1') {
     if (table) { table.classList.add('expanded-view'); }
     if (btn)   { btn.textContent = '⊟ Compact'; }
+  }
+  if (targetSample) {
+    var samplesTabBtn = document.querySelector('.dtab[onclick*="\'tab-samples\'"]');
+    switchTab(samplesTabBtn || null, 'tab-samples');
+    setTimeout(function(){ targetSample.scrollIntoView({behavior:'smooth', block:'center'}); }, 150);
   }
 });
 
@@ -1095,7 +1102,7 @@ function switchTab(el, tabId) {
 // On load, restore tab from URL hash (set by server redirects or manual navigation)
 (function() {
   var hash = window.location.hash.replace('#', '');
-  if (hash && document.getElementById(hash)) {
+  if (hash && /^tab-/.test(hash) && document.getElementById(hash)) {
     var btn = document.querySelector('.dtab[onclick*="\'' + hash + '\'"]');
     switchTab(btn || null, hash);
   } else {

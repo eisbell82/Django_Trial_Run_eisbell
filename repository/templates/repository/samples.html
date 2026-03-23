@@ -128,7 +128,7 @@
       <tbody>
         {% for s in samples %}
         <tr>
-          <td class="sample-id-cell">{{ s.sample_id }}</td>
+          <td class="sample-id-cell"><a href="{% url 'repository:detail' s.dataset.slug %}#sample-{{ s.pk }}" style="color:inherit;text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border)">{{ s.sample_id }}</a></td>
           <td>{{ s.dataset.get_category_display }}</td>
           {% for val, unit in s.row %}<td>{{ val }}{% if val and unit %} <span style="font-size:10px;opacity:.65;font-style:italic">{{ unit }}</span>{% endif %}</td>{% endfor %}
         </tr>
