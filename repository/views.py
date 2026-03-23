@@ -1120,9 +1120,9 @@ def _sort_key(val):
         return (1, 0.0, v.lower())
 
 
-def _build_samples_qs(query, active_category, col_filters=None, filter_col="", filter_col_val="", user=None):
+def _build_samples_qs(query, active_category, col_filters=None, user=None):
     """Return a filtered (but not yet evaluated) Sample queryset.
-    col_filters: list of (col_name, value) exact-match pairs.
+    col_filters: list of (col_name, contains_value) pairs.
     """
     visible_ids = _visible_datasets(user).values_list("id", flat=True)
     qs = Sample.objects.select_related("dataset").filter(dataset_id__in=visible_ids)
@@ -1136,14 +1136,9 @@ def _build_samples_qs(query, active_category, col_filters=None, filter_col="", f
         qs = qs.filter(dataset__category=active_category)
     for col, val in (col_filters or []):
         if col and val:
-            qs = qs.filter(values__column__name__iexact=col, values__value=val)
+            qs = qs.filter(values__column__name__iexact=col, values__value__icontains=val)
         elif col:
             qs = qs.filter(values__column__name__iexact=col).exclude(values__value="")
-    if filter_col_val:
-        if filter_col:
-            qs = qs.filter(values__column__name__iexact=filter_col, values__value__icontains=filter_col_val)
-        else:
-            qs = qs.filter(values__value__icontains=filter_col_val)
     return qs
 
 
@@ -1206,8 +1201,6 @@ def samples_view(request):
     selected_cols   = request.GET.getlist("cols")
     fcol_raw        = request.GET.getlist("fcol")
     fval_raw        = request.GET.getlist("fval")
-    filter_col      = request.GET.get("filter_col", "")
-    filter_col_val  = request.GET.get("filter_col_val", "")
     sort_col        = request.GET.get("sort_col", "")
     sort_dir        = request.GET.get("sort_dir", "asc")
     page_sizes      = [25, 50, 100]
@@ -1229,7 +1222,7 @@ def samples_view(request):
         if c.strip()
     ]
 
-    samples_qs = _build_samples_qs(query, active_category, col_filter_pairs, filter_col, filter_col_val, user=request.user)
+    samples_qs = _build_samples_qs(query, active_category, col_filter_pairs, user=request.user)
 
     available_columns = []
     if active_category:
@@ -1302,8 +1295,6 @@ def samples_view(request):
         "total_results": total_results,
         "col_filter_slots_padded": col_filter_slots_padded,
         "all_column_names": all_column_names,
-        "filter_col": filter_col,
-        "filter_col_val": filter_col_val,
         "adv_active": adv_active,
         "sort_col": sort_col,
         "sort_dir": sort_dir,
@@ -1370,8 +1361,6 @@ def samples_csv_view(request):
     selected_cols   = request.GET.getlist("cols")
     fcol_raw        = request.GET.getlist("fcol")
     fval_raw        = request.GET.getlist("fval")
-    filter_col      = request.GET.get("filter_col", "")
-    filter_col_val  = request.GET.get("filter_col_val", "")
     sort_col        = request.GET.get("sort_col", "")
     sort_dir        = request.GET.get("sort_dir", "asc")
 
@@ -1381,7 +1370,7 @@ def samples_csv_view(request):
         if c.strip()
     ]
 
-    samples_qs = _build_samples_qs(query, active_category, col_filter_pairs, filter_col, filter_col_val, user=request.user)
+    samples_qs = _build_samples_qs(query, active_category, col_filter_pairs, user=request.user)
 
     available_columns = []
     if active_category:
