@@ -357,6 +357,18 @@ document.addEventListener('click', function(e) {
   function sqRender(d) {
     drop.innerHTML = '';
     var any = false;
+    if (d.types && d.types.length) {
+      drop.appendChild(sqSection('Experiment type'));
+      d.types.forEach(function(t){
+        drop.appendChild(sqMakeItem(t.label, '', function(){
+          var params = new URLSearchParams(window.location.search);
+          params.delete('q');
+          params.set('category', t.value);
+          window.location.search = params.toString();
+        }));
+        any = true;
+      });
+    }
     if (d.values && d.values.length) {
       drop.appendChild(sqSection('Filter by value'));
       d.values.forEach(function(v){

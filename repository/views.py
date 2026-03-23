@@ -1320,10 +1320,17 @@ def samples_suggest_view(request):
     q = request.GET.get("q", "").strip()
     category = request.GET.get("category", "").strip()
     if len(q) < 2:
-        return JsonResponse({"samples": [], "columns": [], "values": []})
+        return JsonResponse({"samples": [], "columns": [], "values": [], "types": []})
     ds_qs = _visible_datasets(request.user)
     if category:
         ds_qs = ds_qs.filter(category=category)
+    # Experiment types
+    from repository.models import Dataset as _DS
+    types = [
+        {"value": val, "label": label}
+        for val, label in _DS.CATEGORY_CHOICES
+        if q.lower() in label.lower()
+    ]
     # Sample IDs
     sample_rows = (Sample.objects
                    .filter(dataset__in=ds_qs, sample_id__icontains=q)
@@ -1349,7 +1356,7 @@ def samples_suggest_view(request):
         if key not in seen_vals and len(values) < 8:
             seen_vals.add(key)
             values.append({"column": v["column__name"], "value": v["value"]})
-    return JsonResponse({"samples": samples, "columns": columns, "values": values})
+    return JsonResponse({"samples": samples, "columns": columns, "values": values, "types": types})
 
 
 def samples_csv_view(request):
