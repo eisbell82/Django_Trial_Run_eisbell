@@ -363,18 +363,27 @@ var _pickerCols = [{% for n in available_columns %}'{{ n|escapejs }}'{% if not f
     return out.map(function(r){ return r.v; });
   }
 
+  function makeItem(v, inp, drop) {
+    var item = document.createElement('div');
+    item.textContent = v;
+    item.style.cssText = 'padding:6px 10px;cursor:pointer;font-size:12px;color:var(--text);white-space:nowrap';
+    item.onmouseenter=function(){this.style.background='var(--tag-bg)';}; item.onmouseleave=function(){this.style.background='';};
+    item.onmousedown=function(e){ e.preventDefault(); inp.value=v; drop.style.display='none'; inp.form.submit(); };
+    return item;
+  }
+
   function renderDrop(inp, drop, vals) {
+    // Fewer than 6 total values → show all as a static list regardless of input
+    if (vals.length > 0 && vals.length < 6) {
+      drop.innerHTML = '';
+      vals.forEach(function(v){ drop.appendChild(makeItem(v, inp, drop)); });
+      drop.style.display = 'block';
+      return;
+    }
     var sug = suggest(inp.value, vals);
     if (!sug.length || sug.length >= 10) { drop.style.display='none'; return; }
     drop.innerHTML = '';
-    sug.forEach(function(v) {
-      var item = document.createElement('div');
-      item.textContent = v;
-      item.style.cssText = 'padding:6px 10px;cursor:pointer;font-size:12px;color:var(--text);white-space:nowrap';
-      item.onmouseenter=function(){this.style.background='var(--tag-bg)';}; item.onmouseleave=function(){this.style.background='';};
-      item.onmousedown=function(e){ e.preventDefault(); inp.value=v; drop.style.display='none'; inp.form.submit(); };
-      drop.appendChild(item);
-    });
+    sug.forEach(function(v){ drop.appendChild(makeItem(v, inp, drop)); });
     drop.style.display='block';
   }
 
@@ -391,7 +400,7 @@ var _pickerCols = [{% for n in available_columns %}'{{ n|escapejs }}'{% if not f
       });
       inp.addEventListener('focus', function() {
         var col = getCol();
-        if (!col || !inp.value) return;
+        if (!col) return;
         fetchVals(col, function(vals) { renderDrop(inp, drop, vals); });
       });
       inp.addEventListener('blur', function() { setTimeout(function(){ drop.style.display='none'; }, 150); });
