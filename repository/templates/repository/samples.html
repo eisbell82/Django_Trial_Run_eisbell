@@ -193,6 +193,8 @@ function spGoToPage(n) {
 
 /* ── Shared column name list ── */
 var _allColumnNames = [{% for n in all_column_names %}'{{ n|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+/* Columns shown in the picker (scoped to active type when one is selected) */
+var _pickerCols = [{% for n in available_columns %}'{{ n|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
 
 /* ── Column picker panel ── */
 (function() {
@@ -217,8 +219,8 @@ var _allColumnNames = [{% for n in all_column_names %}'{{ n|escapejs }}'{% if no
   function render() {
     var q = searchInp ? searchInp.value.toLowerCase().trim() : '';
     var filtered = q
-      ? _allColumnNames.filter(function(c){ return c.toLowerCase().indexOf(q) !== -1; })
-      : _allColumnNames;
+      ? _pickerCols.filter(function(c){ return c.toLowerCase().indexOf(q) !== -1; })
+      : _pickerCols;
 
     /* chips */
     chipsEl.innerHTML = '';
@@ -266,7 +268,7 @@ var _allColumnNames = [{% for n in all_column_names %}'{{ n|escapejs }}'{% if no
     } else if (q) {
       infoEl.textContent = filtered.length + ' matching column' + (filtered.length !== 1 ? 's' : '');
     } else {
-      infoEl.textContent = _allColumnNames.length + ' column' + (_allColumnNames.length !== 1 ? 's' : '') + ' total';
+      infoEl.textContent = _pickerCols.length + ' column' + (_pickerCols.length !== 1 ? 's' : '') + ' total';
     }
   }
 
