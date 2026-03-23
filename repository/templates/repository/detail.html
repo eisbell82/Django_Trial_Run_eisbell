@@ -935,6 +935,12 @@ function expNav(btn, dir) {
   var idx = compactRow ? rows.indexOf(compactRow) : -1;
   var target = idx >= 0 ? rows[idx + dir] : null;
   if (target) {
+    // Collapse the current row first
+    if (detailRow) {
+      detailRow.classList.remove('expanded');
+      var oldBtn = compactRow ? compactRow.querySelector('.row-expand-btn') : null;
+      if (oldBtn) oldBtn.classList.remove('open');
+    }
     var targetDetail = target.nextElementSibling;
     if (targetDetail && !targetDetail.classList.contains('expanded')) {
       targetDetail.classList.add('expanded');
