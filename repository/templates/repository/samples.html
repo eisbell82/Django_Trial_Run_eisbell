@@ -54,36 +54,17 @@
           </div>
           {% endif %}
 
-          <!-- Dynamic column-value filters -->
-          <datalist id="adv-col-names">
-            {% for n in all_column_names %}<option value="{{ n }}">{% endfor %}
-          </datalist>
-          {% for col, val, col_vals in col_filter_slots %}
-          <div class="adv-filter-group adv-col-filter-slot">
-            <label class="adv-label">Column filter</label>
-            <div style="display:flex;align-items:center;gap:4px">
-              <input type="text" name="fcol" value="{{ col }}" list="adv-col-names"
-                     class="adv-select" placeholder="Column name…"
-                     onchange="this.form.submit()" style="flex:1;min-width:0">
-              <button type="button" class="col-del-btn" style="flex-shrink:0" onclick="removeColFilterSlot(this)">×</button>
-            </div>
-            <input type="hidden" name="fval" value="{{ val }}">
-            {% if col_vals %}
-            <select name="" class="adv-select" style="margin-top:4px" onchange="setColFilterVal(this, '{{ col|escapejs }}')">
-              <option value="">All values</option>
-              {% for v in col_vals %}<option value="{{ v }}" {% if val == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
-            </select>
-            {% endif %}
+          <!-- Column filter slots (5 fixed) -->
+          {% for slot_col, slot_val in col_filter_slots_padded %}
+          <div class="adv-filter-group adv-col-filter-slot" style="position:relative">
+            <input type="text" name="fcol" value="{{ slot_col }}"
+                   class="adv-select adv-col-name-input" placeholder="Column name…" autocomplete="off"
+                   oninput="advColInput(this)" onblur="advColBlur(this)" onkeydown="advColKey(event,this)">
+            <input type="hidden" name="fval" value="{{ slot_val }}">
+            <div class="adv-col-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);margin-top:2px;max-height:200px;overflow-y:auto"></div>
+            {% if slot_col %}<span style="font-size:11px;color:var(--text-dim);display:block;padding-top:3px">{{ slot_col }}</span>{% endif %}
           </div>
           {% endfor %}
-          <!-- Empty slot for adding a new column filter -->
-          <div class="adv-filter-group adv-col-filter-slot" id="adv-empty-slot">
-            <label class="adv-label">Column filter</label>
-            <input type="text" name="fcol" value="" list="adv-col-names"
-                   class="adv-select" placeholder="Column name…"
-                   onchange="this.form.submit()">
-            <input type="hidden" name="fval" value="">
-          </div>
 
           {% if available_columns %}
           <div class="adv-filter-group">
@@ -212,19 +193,59 @@ function spGoToPage(n) {
   window.location.search = p.toString();
 }
 
-/* ── Dynamic column-value filter slots ── */
-function removeColFilterSlot(btn) {
-  var slot = btn.closest('.adv-col-filter-slot');
-  slot.querySelectorAll('input[name="fcol"], input[name="fval"]').forEach(function(el) { el.name = ''; });
-  slot.remove();
-  document.getElementById('samples-filter-form').submit();
-}
-function setColFilterVal(sel, colName) {
-  var slot = sel.closest('.adv-col-filter-slot');
-  var hidden = slot.querySelector('input[name="fval"]');
-  if (hidden) hidden.value = sel.value;
-  sel.form.submit();
-}
+/* ── Column-name filter slots autocomplete ── */
+(function() {
+  var _allCols = [{% for n in all_column_names %}'{{ n|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+
+  function colLev(a, b) {
+    var m=a.length,n=b.length,dp=[],i,j;
+    for(i=0;i<=m;i++){dp[i]=[i];}for(j=0;j<=n;j++){dp[0][j]=j;}
+    for(i=1;i<=m;i++)for(j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+
+  function colSuggest(q) {
+    if (!q) return [];
+    var ql = q.toLowerCase(), out = [];
+    _allCols.forEach(function(v) {
+      var vl = v.toLowerCase();
+      if (vl.indexOf(ql) !== -1) { out.push({v:v,s:2}); }
+      else if (colLev(ql, vl.substring(0, Math.min(vl.length, ql.length+2))) <= Math.ceil(ql.length/3)) { out.push({v:v,s:1}); }
+    });
+    out.sort(function(a,b){ return b.s-a.s||a.v.localeCompare(b.v); });
+    return out.map(function(r){ return r.v; });
+  }
+
+  window.advColInput = function(inp) {
+    var drop = inp.parentNode.querySelector('.adv-col-drop');
+    var sug = colSuggest(inp.value);
+    if (!inp.value || !sug.length || sug.length >= 10) { drop.style.display='none'; return; }
+    drop.innerHTML = '';
+    sug.forEach(function(v) {
+      var item = document.createElement('div');
+      item.textContent = v;
+      item.style.cssText = 'padding:6px 10px;cursor:pointer;font-size:12px;color:var(--text);white-space:nowrap';
+      item.onmouseenter=function(){this.style.background='var(--tag-bg)';}; item.onmouseleave=function(){this.style.background='';};
+      item.onmousedown=function(e){ e.preventDefault(); inp.value=v; drop.style.display='none'; inp.form.submit(); };
+      drop.appendChild(item);
+    });
+    drop.style.display='block';
+  };
+
+  window.advColBlur = function(inp) {
+    var drop = inp.parentNode.querySelector('.adv-col-drop');
+    setTimeout(function(){ drop.style.display='none'; }, 150);
+  };
+
+  window.advColKey = function(e, inp) {
+    if (e.key === 'Enter') {
+      var drop = inp.parentNode.querySelector('.adv-col-drop');
+      drop.style.display = 'none';
+      inp.form.submit();
+    }
+  };
+})();
 
 /* ── Column selector dropdown ── */
 function toggleColDrop() {

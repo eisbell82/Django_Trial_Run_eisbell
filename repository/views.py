@@ -1137,6 +1137,8 @@ def _build_samples_qs(query, active_category, col_filters=None, filter_col="", f
     for col, val in (col_filters or []):
         if col and val:
             qs = qs.filter(values__column__name__iexact=col, values__value=val)
+        elif col:
+            qs = qs.filter(values__column__name__iexact=col).exclude(values__value="")
     if filter_col_val:
         if filter_col:
             qs = qs.filter(values__column__name__iexact=filter_col, values__value__icontains=filter_col_val)
@@ -1270,15 +1272,12 @@ def samples_view(request):
         for c in sorted(category_values)
     ]
 
-    # Fetch distinct values for each active column filter
-    active_cols = [c for c, v in col_filter_pairs]
-    col_values_map = _col_values_bulk(active_cols, active_category) if active_cols else {}
-    col_filter_slots = [
-        (col, val, col_values_map.get(col.lower(), []))
-        for col, val in col_filter_pairs
-    ]
+    # Pad to 5 slots for the template (always show 5 column filter inputs)
+    NUM_COL_SLOTS = 5
+    active_pairs = col_filter_pairs[:NUM_COL_SLOTS]
+    col_filter_slots_padded = active_pairs + [("", "")] * (NUM_COL_SLOTS - len(active_pairs))
 
-    # All column names across visible datasets (for datalist autocomplete)
+    # All column names across visible datasets (for JS autocomplete)
     all_column_names = list(
         SampleColumn.objects
         .filter(dataset__in=_visible_datasets(request.user))
@@ -1301,7 +1300,7 @@ def samples_view(request):
         "active_category": active_category,
         "categories_with_samples": categories_with_samples,
         "total_results": total_results,
-        "col_filter_slots": col_filter_slots,
+        "col_filter_slots_padded": col_filter_slots_padded,
         "all_column_names": all_column_names,
         "filter_col": filter_col,
         "filter_col_val": filter_col_val,
