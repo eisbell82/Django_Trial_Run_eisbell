@@ -158,7 +158,7 @@
 
 <!-- Column picker overlay -->
 <div id="col-picker-overlay" style="display:none;position:fixed;inset:0;z-index:800" onclick="colPickerOverlayClick(event)">
-  <div id="col-picker-panel" style="position:absolute;width:460px;max-width:calc(100vw - 2rem);background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden">
+  <div id="col-picker-panel" style="position:absolute;width:460px;max-width:calc(100vw - 2rem);background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden" onclick="event.stopPropagation()">
     <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <span style="font-size:13px;font-weight:600;color:var(--text)">Display columns</span>
       <span id="col-pick-count" style="font-size:12px;color:var(--text-dim)">0 / 9 selected</span>
@@ -169,7 +169,7 @@
              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"
              oninput="colPickerSearch()">
     </div>
-    <div id="col-picker-list" style="overflow-y:auto;flex:1;padding:0 8px 8px;min-height:180px;max-height:300px"></div>
+    <div id="col-picker-list" style="overflow-y:auto;flex:1;padding:0 8px 8px;min-height:120px"></div>
     <div id="col-picker-info" style="padding:2px 16px 8px;font-size:10px;color:var(--text-dim);flex-shrink:0"></div>
     <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0">
       <button type="button" onclick="colPickerCancel()" class="btn-outline" style="font-size:12px;padding:6px 14px">Cancel</button>
@@ -279,12 +279,15 @@ var _allColumnNames = [{% for n in all_column_names %}'{{ n|escapejs }}'{% if no
   window.colPickerOpen = function() {
     var btn = document.getElementById('col-pick-btn');
     var rect = btn.getBoundingClientRect();
-    var top = rect.bottom + window.scrollY + 6;
-    var left = rect.left + window.scrollX;
     var pw = 460;
+    var left = rect.left;
     if (left + pw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - pw - 8);
-    panel.style.top = top + 'px';
+    // Clamp to viewport bottom with 20px buffer; cap list height to fit
+    var availBelow = window.innerHeight - rect.bottom - 20;
+    var panelMaxH = Math.max(280, Math.min(560, availBelow));
+    panel.style.top = (rect.bottom + 6) + 'px';
     panel.style.left = left + 'px';
+    panel.style.maxHeight = panelMaxH + 'px';
     _selected = new Set(_original);
     overlay.style.display = 'block';
     searchInp.value = '';
