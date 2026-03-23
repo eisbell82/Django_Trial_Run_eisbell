@@ -61,7 +61,6 @@
                    class="adv-select adv-col-name-input" placeholder="Column name…" autocomplete="off"
                    oninput="advColInput(this)" onblur="advColBlur(this)" onkeydown="advColKey(event,this)">
             <div class="adv-col-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);margin-top:2px;max-height:200px;overflow-y:auto"></div>
-            {% if slot_col %}<span style="font-size:11px;color:var(--text-dim);display:block;padding-top:3px">{{ slot_col }}</span>{% endif %}
             <input type="text" name="fval" value="{{ slot_val }}"
                    class="adv-select" placeholder="contains…" autocomplete="off" style="margin-top:4px"
                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.form.submit();}">
