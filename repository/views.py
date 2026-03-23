@@ -1196,6 +1196,12 @@ def _col_values_bulk(col_names, active_category):
 def samples_view(request):
     query           = request.GET.get("q", "")
     active_category = request.GET.get("category", "")
+    # If query exactly matches a category label, treat it as a category filter
+    if query and not active_category:
+        _cat_map = {label.lower(): val for val, label in Dataset.CATEGORY_CHOICES}
+        if query.strip().lower() in _cat_map:
+            active_category = _cat_map[query.strip().lower()]
+            query = ""
     selected_cols   = request.GET.getlist("cols")
     fcol_raw        = request.GET.getlist("fcol")
     fval_raw        = request.GET.getlist("fval")
