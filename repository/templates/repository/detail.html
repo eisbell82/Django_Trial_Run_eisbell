@@ -505,6 +505,11 @@
                   </form>
                 </div>
                 {% endif %}
+                <div class="exp-nav-bar">
+                  <button class="exp-nav-btn" onclick="expNav(this,-1)"{% if forloop.first and not page_obj.has_previous %} disabled{% endif %}>← Prev</button>
+                  <span class="exp-nav-counter">{{ page_start|add:forloop.counter }} / {{ total_samples }}</span>
+                  <button class="exp-nav-btn" onclick="expNav(this,1)"{% if forloop.last and not page_obj.has_next %} disabled{% endif %}>Next →</button>
+                </div>
               </td>
               <td class="sample-id-cell" style="white-space:nowrap">{{ s.sample_id }}</td>
               <td style="white-space:nowrap">
@@ -861,6 +866,19 @@ function savePhoto() {
   display:block !important; flex:3; padding:0; min-width:0;
 }
 .sample-table.expanded-view .notes-peek-btn { display:none; }
+.exp-nav-bar { display:none; }
+.sample-table.expanded-view .exp-nav-bar {
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  margin-top:12px; padding-top:10px; border-top:1px solid var(--border);
+}
+.exp-nav-btn {
+  font-size:11px; font-family:'DM Mono',monospace; color:var(--text-dim);
+  background:none; border:1px solid var(--border); border-radius:4px;
+  padding:4px 10px; cursor:pointer; transition:opacity .15s;
+}
+.exp-nav-btn:hover:not(:disabled) { color:var(--text); border-color:var(--text-dim); }
+.exp-nav-btn:disabled { opacity:.25; cursor:default; }
+.exp-nav-counter { font-size:11px; font-family:'DM Mono',monospace; color:var(--text-dim); }
 .exp-body { display:grid; grid-template-columns:max-content 1fr; column-gap:16px; font-size:12px; }
 .exp-group-label { grid-column:1/-1; font-size:12px; font-family:'DM Mono',monospace; color:var(--text-dim); font-weight:700; padding:8px 0 4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
 .exp-row { display:contents; }
@@ -890,6 +908,20 @@ document.addEventListener('DOMContentLoaded', function () {
     window.location.search = p.toString();
   });
 });
+
+function expNav(btn, dir) {
+  var rows = Array.from(document.querySelectorAll('#tab-samples .sample-table tbody tr[id^="sample-"]'));
+  var tr = btn.closest('tr');
+  var idx = rows.indexOf(tr);
+  var target = rows[idx + dir];
+  if (target) {
+    target.scrollIntoView({behavior:'smooth', block:'start'});
+  } else if (dir === -1 && {{ page_obj.has_previous|yesno:"true,false" }}) {
+    window.location.href = '?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples';
+  } else if (dir === 1 && {{ page_obj.has_next|yesno:"true,false" }}) {
+    window.location.href = '?page={{ page_obj.next_page_number }}&per_page={{ per_page }}&sort_col={{ sort_col }}&sort_dir={{ sort_dir }}#tab-samples';
+  }
+}
 
 function toggleExpandedView() {
   var table = document.querySelector('#tab-samples .sample-table');

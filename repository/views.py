@@ -243,6 +243,7 @@ def dataset_detail(request, slug):
         "samples": samples,
         "page_obj": page_obj,
         "total_samples": paginator.count,
+        "page_start": (page_obj.number - 1) * per_page,
         "per_page": per_page,
         "sort_col": sort_col,
         "sort_dir": sort_dir,
