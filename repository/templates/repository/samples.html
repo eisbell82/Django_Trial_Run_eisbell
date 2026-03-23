@@ -405,6 +405,19 @@ document.addEventListener('click', function(e) {
     if (e.key==='Escape') { drop.style.display='none'; }
     if (e.key==='Enter') { drop.style.display='none'; }
   });
+
+  var _typeLabels = [{% for val, label in category_choices %}{"value":"{{ val }}","label":"{{ label }}"},{% endfor %}];
+  document.getElementById('samples-filter-form').addEventListener('submit', function(e){
+    var q = inp.value.trim().toLowerCase();
+    var match = _typeLabels.find(function(t){ return t.label.toLowerCase() === q; });
+    if (match) {
+      e.preventDefault();
+      var params = new URLSearchParams(window.location.search);
+      params.delete('q');
+      params.set('category', match.value);
+      window.location.search = params.toString();
+    }
+  });
 })();
 </script>
 
