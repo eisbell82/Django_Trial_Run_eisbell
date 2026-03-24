@@ -484,8 +484,9 @@
             <tr class="sample-detail-row" id="sample-detail-{{ s.pk }}">
               <td colspan="99" class="sample-detail-cell">
                 <div class="sample-detail-wrap">
-                  {% if s.photos_list %}
-                  <div class="sample-detail-photo">
+                  {% if s.photos_list or user.is_staff or user.is_authenticated and user == dataset.uploaded_by %}
+                  <div class="sample-detail-photo{% if not s.photos_list %} sample-detail-photo--empty{% endif %}">
+                    {% if s.photos_list %}
                     <img src="{{ s.photos_list.0.image.url }}"
                          onclick='openPhotoViewer([{% for p in s.photos_list %}"{{ p.image.url|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}])'
                          alt="">
@@ -504,6 +505,15 @@
                                onchange="openPhotoEditor(this)">
                       </label>
                     </div>
+                    {% endif %}
+                    {% elif user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
+                    <label class="sample-photo-add-placeholder">
+                      Add photo +
+                      <input type="file" accept="image/*" style="display:none"
+                             data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
+                             data-csrf="{{ csrf_token }}"
+                             onchange="openPhotoEditor(this)">
+                    </label>
                     {% endif %}
                   </div>
                   {% endif %}
@@ -540,14 +550,6 @@
                     </div>
                     {% if user.is_authenticated and user == dataset.uploaded_by or user.is_staff %}
                     <div class="edit-ctrl exp-sample-edit-bar">
-                      {% if not s.photos_list %}
-                      <label class="col-del-btn" style="cursor:pointer;opacity:.6">+ photo
-                        <input type="file" accept="image/*" style="display:none"
-                               data-upload-url="{% url 'repository:upload_sample_photo' dataset.slug s.pk %}"
-                               data-csrf="{{ csrf_token }}"
-                               onchange="openPhotoEditor(this)">
-                      </label>
-                      {% endif %}
                       <a href="{% url 'repository:edit_sample' dataset.slug s.pk %}" class="col-del-btn" style="text-decoration:none;opacity:.6" title="Edit sample">✎ Edit</a>
                       <form method="post" action="{% url 'repository:delete_sample' dataset.slug s.pk %}" style="display:inline">
                         {% csrf_token %}
@@ -852,6 +854,7 @@ function savePhoto() {
   display:block; cursor:pointer; border-radius:8px;
   max-width:500px; max-height:380px; width:auto; height:auto;
 }
+.sample-detail-photo--empty { flex:0 0 180px; }
 .sample-photo-add-placeholder {
   display:none; border:2px dashed var(--border); border-radius:8px;
   align-items:center; justify-content:center; cursor:pointer;
@@ -859,6 +862,7 @@ function savePhoto() {
   width:100%; min-height:120px;
 }
 .sample-detail-row.expanded .sample-photo-add-placeholder { display:flex; }
+.sample-table.expanded-view .sample-photo-add-placeholder { display:flex; }
 /* Data side */
 .sample-detail-data { flex:3; min-width:0; }
 /* Full expanded view: hide compact rows, show all detail rows open */
