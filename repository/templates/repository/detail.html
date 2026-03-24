@@ -987,19 +987,20 @@ function toggleSampleRow(btn) {
   if (expanded) scrollRowToTop(compactRow, 50);
 }
 
+function _setAllExpanded(table, expanded) {
+  table.querySelectorAll('.sample-detail-row').forEach(function(dr) {
+    dr.classList.toggle('expanded', expanded);
+    var rb = dr.previousElementSibling && dr.previousElementSibling.querySelector('.row-expand-btn');
+    if (rb) rb.classList.toggle('open', expanded);
+  });
+}
 function toggleExpandedView() {
   var table = document.querySelector('#tab-samples .sample-table');
   var btn   = document.getElementById('expand-toggle');
   if (!table || !btn) return;
   var expanded = table.classList.toggle('expanded-view');
   btn.textContent = expanded ? '⊟ Compact All' : '⊞ Expand All';
-  if (!expanded) {
-    table.querySelectorAll('.sample-detail-row.expanded').forEach(function(dr) {
-      dr.classList.remove('expanded');
-      var rb = dr.previousElementSibling && dr.previousElementSibling.querySelector('.row-expand-btn');
-      if (rb) rb.classList.remove('open');
-    });
-  }
+  _setAllExpanded(table, expanded);
   try { localStorage.setItem('samples-expanded', expanded ? '1' : '0'); } catch(e) {}
 }
 document.addEventListener('DOMContentLoaded', function () {
@@ -1008,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var hash  = window.location.hash;
   var targetCompact = hash && hash.match(/^#sample-(\d+)$/) ? document.querySelector(hash) : null;
   if (localStorage.getItem('samples-expanded') === '1') {
-    if (table) { table.classList.add('expanded-view'); }
+    if (table) { table.classList.add('expanded-view'); _setAllExpanded(table, true); }
     if (btn)   { btn.textContent = '⊟ Compact All'; }
   }
   if (targetCompact) {
