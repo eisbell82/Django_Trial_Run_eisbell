@@ -998,10 +998,11 @@ function toggleExpandedView() {
   var table = document.querySelector('#tab-samples .sample-table');
   var btn   = document.getElementById('expand-toggle');
   if (!table || !btn) return;
-  var expanded = table.classList.toggle('expanded-view');
-  btn.textContent = expanded ? '⊟ Compact All' : '⊞ Expand All';
-  _setAllExpanded(table, expanded);
-  try { localStorage.setItem('samples-expanded', expanded ? '1' : '0'); } catch(e) {}
+  var anyExpanded = table.querySelector('.sample-detail-row.expanded');
+  var expand = !anyExpanded;
+  btn.textContent = expand ? '⊟ Compact All' : '⊞ Expand All';
+  _setAllExpanded(table, expand);
+  try { localStorage.setItem('samples-expanded', expand ? '1' : '0'); } catch(e) {}
 }
 document.addEventListener('DOMContentLoaded', function () {
   var table = document.querySelector('#tab-samples .sample-table');
@@ -1009,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var hash  = window.location.hash;
   var targetCompact = hash && hash.match(/^#sample-(\d+)$/) ? document.querySelector(hash) : null;
   if (localStorage.getItem('samples-expanded') === '1') {
-    if (table) { table.classList.add('expanded-view'); _setAllExpanded(table, true); }
+    if (table) { _setAllExpanded(table, true); }
     if (btn)   { btn.textContent = '⊟ Compact All'; }
   }
   if (targetCompact) {
