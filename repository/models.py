@@ -37,6 +37,7 @@ class Dataset(models.Model):
         ("chemical", "Chemical"),
         ("imaging", "Imaging"),
         ("systems_analysis", "Systems Analysis"),
+        ("hydrophobicity", "Hydrophobicity"),
     ]
     LICENSE_CHOICES = [
         ("cc_by_4", "CC BY 4.0"),
